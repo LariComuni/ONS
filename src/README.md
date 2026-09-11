@@ -6,8 +6,7 @@ O objetivo é manter as regras de processamento separadas da interface visual de
 
 ## Estrutura prevista
 
-- `configuracao.py`: configurações das fontes e padrões das URLs do ONS.
-- `coleta_ons.py`: leitura direta dos arquivos mensais disponibilizados pelo ONS.
+- `coleta_ons.py`: monta URLs, consulta o ONS, carrega os meses, consolida períodos e otimiza os tipos.
 - `calculo_curtailment.py`: aplica a metodologia de cálculo da geração de referência ajustada, do curtailment e da geração esperada para fontes eólicas e fotovoltaicas.
 - `indicadores.py`: cálculo dos indicadores apresentados na aplicação.
 - `mapa.py`: preparação das camadas e informações exibidas no mapa.
