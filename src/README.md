@@ -8,7 +8,7 @@ O objetivo é manter as regras de processamento separadas da interface visual de
 
 - `configuracao.py`: configurações das fontes e padrões das URLs do ONS.
 - `coleta_ons.py`: leitura direta dos arquivos mensais disponibilizados pelo ONS.
-- `tratamento.py`: limpeza, padronização e consolidação dos dados.
+- `calculo_curtailment.py`: aplica a metodologia de cálculo da geração de referência ajustada, do curtailment e da geração esperada para fontes eólicas e fotovoltaicas.
 - `indicadores.py`: cálculo dos indicadores apresentados na aplicação.
 - `mapa.py`: preparação das camadas e informações exibidas no mapa.
 
