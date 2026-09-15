@@ -77,6 +77,14 @@ def preparar_subestacoes(df_subestacoes):
         ignore_index=True,
     )
 
+    # Registros sem número de barra não podem ser usados
+    # como chave no relacionamento com as linhas.
+    subestacoes = (
+        subestacoes
+        .dropna(subset=["num_barra"])
+        .reset_index(drop=True)
+    )
+
     # O merge many-to-one exige uma linha por barra.
     barras_duplicadas = subestacoes[
         "num_barra"
@@ -111,6 +119,9 @@ def enriquecer_linhas_transmissao(
     Associa as coordenadas das subestações às extremidades
     DE e PARA das linhas de transmissão.
 
+    O relacionamento é realizado pelos números das barras.
+    Barras ausentes não recebem associação cadastral.
+
     Parâmetros
     ----------
     df_linhas : pandas.DataFrame
@@ -121,7 +132,8 @@ def enriquecer_linhas_transmissao(
     Retorno
     -------
     tuple
-        DataFrame de linhas enriquecido e relatório de qualidade.
+        DataFrame de linhas enriquecido e dicionário com
+        o relatório de qualidade do relacionamento.
     """
 
     if df_linhas is None:
@@ -139,21 +151,46 @@ def enriquecer_linhas_transmissao(
             "O cadastro preparado de subestações não foi informado."
         )
 
-    colunas_ausentes = [
+    if subestacoes_preparadas.empty:
+        raise ValueError(
+            "O cadastro preparado de subestações está vazio."
+        )
+
+    colunas_ausentes_linhas = [
         coluna
         for coluna in COLUNAS_BARRAS_LINHAS
         if coluna not in df_linhas.columns
     ]
 
-    if colunas_ausentes:
+    if colunas_ausentes_linhas:
         raise ValueError(
             "Colunas ausentes na base de linhas: "
-            f"{colunas_ausentes}"
+            f"{colunas_ausentes_linhas}"
+        )
+
+    colunas_subestacoes_obrigatorias = [
+        "num_barra",
+        "nom_subestacao",
+        "val_latitude",
+        "val_longitude",
+    ]
+
+    colunas_ausentes_subestacoes = [
+        coluna
+        for coluna in colunas_subestacoes_obrigatorias
+        if coluna not in subestacoes_preparadas.columns
+    ]
+
+    if colunas_ausentes_subestacoes:
+        raise ValueError(
+            "Colunas ausentes no cadastro preparado de "
+            f"subestações: {colunas_ausentes_subestacoes}"
         )
 
     linhas = df_linhas.copy()
     subestacoes = subestacoes_preparadas.copy()
 
+    # Padroniza os números das barras.
     linhas["num_barra_de"] = pd.to_numeric(
         linhas["num_barra_de"],
         errors="coerce",
@@ -164,9 +201,65 @@ def enriquecer_linhas_transmissao(
         errors="coerce",
     ).astype("Int64")
 
+    subestacoes["num_barra"] = pd.to_numeric(
+        subestacoes["num_barra"],
+        errors="coerce",
+    ).astype("Int64")
+
+    # Esta proteção evita associações entre chaves ausentes.
+    if subestacoes["num_barra"].isna().any():
+        raise ValueError(
+            "O cadastro preparado de subestações ainda possui "
+            "números de barra ausentes. Execute primeiro "
+            "preparar_subestacoes()."
+        )
+
+    # O relacionamento many-to-one exige uma linha por barra.
+    barras_duplicadas = subestacoes[
+        "num_barra"
+    ].duplicated(
+        keep=False,
+    )
+
+    if barras_duplicadas.any():
+        exemplos = (
+            subestacoes.loc[
+                barras_duplicadas,
+                "num_barra",
+            ]
+            .dropna()
+            .unique()
+            .tolist()
+        )
+
+        raise ValueError(
+            "O cadastro preparado de subestações possui "
+            "barras duplicadas. "
+            f"Exemplos: {exemplos[:10]}"
+        )
+
     linhas_antes = len(linhas)
 
-    # Cadastro preparado para a extremidade DE.
+    # Identifica barras ausentes na própria base de linhas.
+    barra_de_ausente = (
+        linhas["num_barra_de"].isna()
+    )
+
+    barra_para_ausente = (
+        linhas["num_barra_para"].isna()
+    )
+
+    ambas_barras_ausentes = (
+        barra_de_ausente
+        & barra_para_ausente
+    )
+
+    alguma_barra_ausente = (
+        barra_de_ausente
+        | barra_para_ausente
+    )
+
+    # Prepara o cadastro da extremidade DE.
     subestacoes_de = subestacoes.rename(
         columns={
             "num_barra": "num_barra_de",
@@ -178,7 +271,7 @@ def enriquecer_linhas_transmissao(
         }
     )
 
-    # Cadastro preparado para a extremidade PARA.
+    # Prepara o cadastro da extremidade PARA.
     subestacoes_para = subestacoes.rename(
         columns={
             "num_barra": "num_barra_para",
@@ -190,6 +283,7 @@ def enriquecer_linhas_transmissao(
         }
     )
 
+    # Associa a extremidade DE.
     linhas = linhas.merge(
         subestacoes_de,
         on="num_barra_de",
@@ -197,6 +291,7 @@ def enriquecer_linhas_transmissao(
         validate="many_to_one",
     )
 
+    # Associa a extremidade PARA.
     linhas = linhas.merge(
         subestacoes_para,
         on="num_barra_para",
@@ -214,6 +309,20 @@ def enriquecer_linhas_transmissao(
             f"Depois: {linhas_depois:,}."
         )
 
+    # Verifica se a barra foi encontrada no cadastro.
+    barra_de_encontrada = (
+        linhas[
+            "nom_subestacao_de_cadastro"
+        ].notna()
+    )
+
+    barra_para_encontrada = (
+        linhas[
+            "nom_subestacao_para_cadastro"
+        ].notna()
+    )
+
+    # Verifica a disponibilidade das coordenadas.
     possui_coordenadas_de = (
         linhas["val_latitude_de"].notna()
         & linhas["val_longitude_de"].notna()
@@ -229,10 +338,32 @@ def enriquecer_linhas_transmissao(
         & possui_coordenadas_para
     )
 
-    barras_de_nao_encontradas = (
+    # Barra preenchida, mas não encontrada no cadastro.
+    barra_de_preenchida_nao_encontrada = (
+        linhas["num_barra_de"].notna()
+        & ~barra_de_encontrada
+    )
+
+    barra_para_preenchida_nao_encontrada = (
+        linhas["num_barra_para"].notna()
+        & ~barra_para_encontrada
+    )
+
+    # Barra encontrada, mas sem latitude ou longitude.
+    barra_de_encontrada_sem_coordenadas = (
+        barra_de_encontrada
+        & ~possui_coordenadas_de
+    )
+
+    barra_para_encontrada_sem_coordenadas = (
+        barra_para_encontrada
+        & ~possui_coordenadas_para
+    )
+
+    # Lista as barras preenchidas que não encontraram cadastro.
+    barras_de_preenchidas_nao_encontradas = (
         linhas.loc[
-            linhas["num_barra_de"].notna()
-            & ~possui_coordenadas_de,
+            barra_de_preenchida_nao_encontrada,
             "num_barra_de",
         ]
         .dropna()
@@ -240,10 +371,9 @@ def enriquecer_linhas_transmissao(
         .tolist()
     )
 
-    barras_para_nao_encontradas = (
+    barras_para_preenchidas_nao_encontradas = (
         linhas.loc[
-            linhas["num_barra_para"].notna()
-            & ~possui_coordenadas_para,
+            barra_para_preenchida_nao_encontrada,
             "num_barra_para",
         ]
         .dropna()
@@ -251,6 +381,7 @@ def enriquecer_linhas_transmissao(
         .tolist()
     )
 
+    # Validação geográfica ampla para o território brasileiro.
     coordenadas_de_fora_faixa = (
         possui_coordenadas_de
         & (
@@ -279,9 +410,65 @@ def enriquecer_linhas_transmissao(
         )
     )
 
+    # Identifica linhas cujas duas extremidades possuem
+    # exatamente a mesma coordenada.
+    extremidades_coincidentes = (
+        possui_geometria_completa
+        & (
+            linhas["val_latitude_de"]
+            == linhas["val_latitude_para"]
+        )
+        & (
+            linhas["val_longitude_de"]
+            == linhas["val_longitude_para"]
+        )
+    )
+
+    # Uma linha desenhável precisa de quatro coordenadas
+    # e de extremidades espacialmente distintas.
+    linha_desenhavel = (
+        possui_geometria_completa
+        & ~extremidades_coincidentes
+    )
+
     relatorio = {
         "linhas_entrada": linhas_antes,
         "linhas_saida": linhas_depois,
+
+        "linhas_com_barra_de_ausente": int(
+            barra_de_ausente.sum()
+        ),
+        "linhas_com_barra_para_ausente": int(
+            barra_para_ausente.sum()
+        ),
+        "linhas_com_ambas_barras_ausentes": int(
+            ambas_barras_ausentes.sum()
+        ),
+        "linhas_com_alguma_barra_ausente": int(
+            alguma_barra_ausente.sum()
+        ),
+
+        "linhas_com_barra_de_encontrada": int(
+            barra_de_encontrada.sum()
+        ),
+        "linhas_com_barra_para_encontrada": int(
+            barra_para_encontrada.sum()
+        ),
+
+        "linhas_com_barra_de_preenchida_nao_encontrada": int(
+            barra_de_preenchida_nao_encontrada.sum()
+        ),
+        "linhas_com_barra_para_preenchida_nao_encontrada": int(
+            barra_para_preenchida_nao_encontrada.sum()
+        ),
+
+        "linhas_com_barra_de_encontrada_sem_coordenadas": int(
+            barra_de_encontrada_sem_coordenadas.sum()
+        ),
+        "linhas_com_barra_para_encontrada_sem_coordenadas": int(
+            barra_para_encontrada_sem_coordenadas.sum()
+        ),
+
         "linhas_com_coordenadas_de": int(
             possui_coordenadas_de.sum()
         ),
@@ -294,6 +481,7 @@ def enriquecer_linhas_transmissao(
         "linhas_sem_coordenadas_para": int(
             (~possui_coordenadas_para).sum()
         ),
+
         "linhas_com_geometria_completa": int(
             possui_geometria_completa.sum()
         ),
@@ -304,12 +492,25 @@ def enriquecer_linhas_transmissao(
             possui_geometria_completa.mean() * 100,
             2,
         ),
-        "barras_de_nao_encontradas": (
-            barras_de_nao_encontradas
+
+        "linhas_com_extremidades_coincidentes": int(
+            extremidades_coincidentes.sum()
         ),
-        "barras_para_nao_encontradas": (
-            barras_para_nao_encontradas
+        "linhas_desenhaveis": int(
+            linha_desenhavel.sum()
         ),
+        "percentual_linhas_desenhaveis": round(
+            linha_desenhavel.mean() * 100,
+            2,
+        ),
+
+        "barras_de_preenchidas_nao_encontradas": (
+            barras_de_preenchidas_nao_encontradas
+        ),
+        "barras_para_preenchidas_nao_encontradas": (
+            barras_para_preenchidas_nao_encontradas
+        ),
+
         "coordenadas_de_fora_faixa": int(
             coordenadas_de_fora_faixa.sum()
         ),
