@@ -15,21 +15,46 @@ COLUNAS_BARRAS_LINHAS = [
     "num_barra_para",
 ]
 
+COLUNAS_GERADAS_ENRIQUECIMENTO = [
+    "nom_subestacao_de_cadastro",
+    "val_latitude_de",
+    "val_longitude_de",
+    "nom_subestacao_para_cadastro",
+    "val_latitude_para",
+    "val_longitude_para",
+]
 
-def preparar_subestacoes(df_subestacoes):
+
+def preparar_subestacoes(
+    df_subestacoes,
+):
     """
-    Prepara o cadastro de subestações para associação
-    às extremidades das linhas de transmissão.
+    Prepara o cadastro de subestações para associação às
+    extremidades das linhas de transmissão.
+
+    A função preserva o DataFrame original e produz um cadastro
+    reduzido com uma linha por número de barra.
+
+    Registros sem número de barra permanecem na base original,
+    mas não participam do cadastro utilizado nos merges.
 
     Parâmetros
     ----------
     df_subestacoes : pandas.DataFrame
-        Cadastro completo de subestações do ONS.
+        Cadastro completo de subestações disponibilizado pelo ONS.
 
     Retorno
     -------
     pandas.DataFrame
-        Cadastro reduzido de barras, nomes e coordenadas.
+        Cadastro reduzido com números de barra, nomes e
+        coordenadas das subestações.
+
+    Raises
+    ------
+    ValueError
+        Quando a base não foi carregada, está vazia, não possui
+        as colunas obrigatórias ou contém mais de um registro
+        para o mesmo número de barra.
     """
 
     if df_subestacoes is None:
@@ -73,19 +98,24 @@ def preparar_subestacoes(df_subestacoes):
         errors="coerce",
     )
 
+    # Remove somente registros completamente duplicados
+    # nas quatro colunas utilizadas pelo cadastro.
     subestacoes = subestacoes.drop_duplicates(
         ignore_index=True,
     )
 
-    # Registros sem número de barra não podem ser usados
-    # como chave no relacionamento com as linhas.
+    # Uma chave nula não pode ser usada no relacionamento.
+    #
+    # Isso evita que linhas sem barra recebam coordenadas
+    # de uma subestação que também esteja sem número de barra.
     subestacoes = (
         subestacoes
         .dropna(subset=["num_barra"])
         .reset_index(drop=True)
     )
 
-    # O merge many-to-one exige uma linha por barra.
+    # O merge many-to-one exige uma associação única
+    # para cada número de barra.
     barras_duplicadas = subestacoes[
         "num_barra"
     ].duplicated(
@@ -111,6 +141,7 @@ def preparar_subestacoes(df_subestacoes):
 
     return subestacoes
 
+
 def enriquecer_linhas_transmissao(
     df_linhas,
     subestacoes_preparadas,
@@ -119,8 +150,9 @@ def enriquecer_linhas_transmissao(
     Associa as coordenadas das subestações às extremidades
     DE e PARA das linhas de transmissão.
 
-    O relacionamento é realizado pelos números das barras.
-    Barras ausentes não recebem associação cadastral.
+    O relacionamento é realizado exclusivamente pelos números
+    das barras. Linhas com barras ausentes são preservadas, mas
+    não recebem associação cadastral naquela extremidade.
 
     Parâmetros
     ----------
@@ -132,8 +164,18 @@ def enriquecer_linhas_transmissao(
     Retorno
     -------
     tuple
-        DataFrame de linhas enriquecido e dicionário com
-        o relatório de qualidade do relacionamento.
+        O primeiro elemento é o DataFrame de linhas enriquecido.
+        O segundo elemento é um dicionário com o relatório de
+        qualidade do relacionamento.
+
+    Raises
+    ------
+    ValueError
+        Quando alguma base não foi informada, está vazia,
+        não possui as colunas necessárias, contém barras
+        duplicadas ou aparenta já ter sido enriquecida.
+    RuntimeError
+        Quando os merges alteram a quantidade de linhas.
     """
 
     if df_linhas is None:
@@ -168,16 +210,9 @@ def enriquecer_linhas_transmissao(
             f"{colunas_ausentes_linhas}"
         )
 
-    colunas_subestacoes_obrigatorias = [
-        "num_barra",
-        "nom_subestacao",
-        "val_latitude",
-        "val_longitude",
-    ]
-
     colunas_ausentes_subestacoes = [
         coluna
-        for coluna in colunas_subestacoes_obrigatorias
+        for coluna in COLUNAS_SUBESTACOES
         if coluna not in subestacoes_preparadas.columns
     ]
 
@@ -187,10 +222,25 @@ def enriquecer_linhas_transmissao(
             f"subestações: {colunas_ausentes_subestacoes}"
         )
 
+    # Evita executar o enriquecimento sobre uma base que já
+    # tenha recebido as colunas geográficas.
+    colunas_ja_existentes = [
+        coluna
+        for coluna in COLUNAS_GERADAS_ENRIQUECIMENTO
+        if coluna in df_linhas.columns
+    ]
+
+    if colunas_ja_existentes:
+        raise ValueError(
+            "A base de linhas aparenta já estar enriquecida. "
+            "As seguintes colunas já existem: "
+            f"{colunas_ja_existentes}"
+        )
+
     linhas = df_linhas.copy()
     subestacoes = subestacoes_preparadas.copy()
 
-    # Padroniza os números das barras.
+    # Padroniza as chaves das linhas.
     linhas["num_barra_de"] = pd.to_numeric(
         linhas["num_barra_de"],
         errors="coerce",
@@ -201,12 +251,24 @@ def enriquecer_linhas_transmissao(
         errors="coerce",
     ).astype("Int64")
 
+    # Padroniza novamente a chave cadastral como medida
+    # defensiva.
     subestacoes["num_barra"] = pd.to_numeric(
         subestacoes["num_barra"],
         errors="coerce",
     ).astype("Int64")
 
-    # Esta proteção evita associações entre chaves ausentes.
+    subestacoes["val_latitude"] = pd.to_numeric(
+        subestacoes["val_latitude"],
+        errors="coerce",
+    )
+
+    subestacoes["val_longitude"] = pd.to_numeric(
+        subestacoes["val_longitude"],
+        errors="coerce",
+    )
+
+    # Impede associações entre chaves nulas.
     if subestacoes["num_barra"].isna().any():
         raise ValueError(
             "O cadastro preparado de subestações ainda possui "
@@ -214,7 +276,7 @@ def enriquecer_linhas_transmissao(
             "preparar_subestacoes()."
         )
 
-    # O relacionamento many-to-one exige uma linha por barra.
+    # Confirma a unicidade da chave cadastral.
     barras_duplicadas = subestacoes[
         "num_barra"
     ].duplicated(
@@ -238,9 +300,21 @@ def enriquecer_linhas_transmissao(
             f"Exemplos: {exemplos[:10]}"
         )
 
+    # Conjunto usado para identificar se uma barra foi
+    # encontrada no cadastro independentemente do nome
+    # ou das coordenadas da subestação.
+    barras_cadastradas = set(
+        subestacoes["num_barra"]
+        .dropna()
+        .tolist()
+    )
+
     linhas_antes = len(linhas)
 
-    # Identifica barras ausentes na própria base de linhas.
+    # ========================================================
+    # DIAGNÓSTICO DAS CHAVES DA BASE DE LINHAS
+    # ========================================================
+
     barra_de_ausente = (
         linhas["num_barra_de"].isna()
     )
@@ -259,7 +333,10 @@ def enriquecer_linhas_transmissao(
         | barra_para_ausente
     )
 
-    # Prepara o cadastro da extremidade DE.
+    # ========================================================
+    # PREPARAÇÃO DOS CADASTROS DE ESTRUTURA DE E PARA
+    # ========================================================
+
     subestacoes_de = subestacoes.rename(
         columns={
             "num_barra": "num_barra_de",
@@ -271,7 +348,6 @@ def enriquecer_linhas_transmissao(
         }
     )
 
-    # Prepara o cadastro da extremidade PARA.
     subestacoes_para = subestacoes.rename(
         columns={
             "num_barra": "num_barra_para",
@@ -283,7 +359,10 @@ def enriquecer_linhas_transmissao(
         }
     )
 
-    # Associa a extremidade DE.
+    # ========================================================
+    # ASSOCIAÇÃO DAS EXTREMIDADES
+    # ========================================================
+
     linhas = linhas.merge(
         subestacoes_de,
         on="num_barra_de",
@@ -291,7 +370,6 @@ def enriquecer_linhas_transmissao(
         validate="many_to_one",
     )
 
-    # Associa a extremidade PARA.
     linhas = linhas.merge(
         subestacoes_para,
         on="num_barra_para",
@@ -309,20 +387,27 @@ def enriquecer_linhas_transmissao(
             f"Depois: {linhas_depois:,}."
         )
 
-    # Verifica se a barra foi encontrada no cadastro.
+    # ========================================================
+    # VALIDAÇÃO DAS ASSOCIAÇÕES
+    # ========================================================
+
+    # Confirma que a barra existe no cadastro usando a chave,
+    # sem depender do nome ou das coordenadas.
     barra_de_encontrada = (
-        linhas[
-            "nom_subestacao_de_cadastro"
-        ].notna()
+        linhas["num_barra_de"].notna()
+        & linhas["num_barra_de"].isin(
+            barras_cadastradas
+        )
     )
 
     barra_para_encontrada = (
-        linhas[
-            "nom_subestacao_para_cadastro"
-        ].notna()
+        linhas["num_barra_para"].notna()
+        & linhas["num_barra_para"].isin(
+            barras_cadastradas
+        )
     )
 
-    # Verifica a disponibilidade das coordenadas.
+    # Disponibilidade das coordenadas.
     possui_coordenadas_de = (
         linhas["val_latitude_de"].notna()
         & linhas["val_longitude_de"].notna()
@@ -338,7 +423,7 @@ def enriquecer_linhas_transmissao(
         & possui_coordenadas_para
     )
 
-    # Barra preenchida, mas não encontrada no cadastro.
+    # Barra preenchida, mas ausente no cadastro.
     barra_de_preenchida_nao_encontrada = (
         linhas["num_barra_de"].notna()
         & ~barra_de_encontrada
@@ -349,7 +434,7 @@ def enriquecer_linhas_transmissao(
         & ~barra_para_encontrada
     )
 
-    # Barra encontrada, mas sem latitude ou longitude.
+    # Barra presente no cadastro, mas sem alguma coordenada.
     barra_de_encontrada_sem_coordenadas = (
         barra_de_encontrada
         & ~possui_coordenadas_de
@@ -360,7 +445,6 @@ def enriquecer_linhas_transmissao(
         & ~possui_coordenadas_para
     )
 
-    # Lista as barras preenchidas que não encontraram cadastro.
     barras_de_preenchidas_nao_encontradas = (
         linhas.loc[
             barra_de_preenchida_nao_encontrada,
@@ -381,7 +465,10 @@ def enriquecer_linhas_transmissao(
         .tolist()
     )
 
-    # Validação geográfica ampla para o território brasileiro.
+    # ========================================================
+    # VALIDAÇÃO GEOGRÁFICA
+    # ========================================================
+
     coordenadas_de_fora_faixa = (
         possui_coordenadas_de
         & (
@@ -410,8 +497,8 @@ def enriquecer_linhas_transmissao(
         )
     )
 
-    # Identifica linhas cujas duas extremidades possuem
-    # exatamente a mesma coordenada.
+    # Uma linha pode ter quatro coordenadas preenchidas, mas
+    # as duas extremidades podem estar na mesma posição.
     extremidades_coincidentes = (
         possui_geometria_completa
         & (
@@ -424,12 +511,16 @@ def enriquecer_linhas_transmissao(
         )
     )
 
-    # Uma linha desenhável precisa de quatro coordenadas
-    # e de extremidades espacialmente distintas.
+    # Uma linha desenhável precisa das quatro coordenadas e
+    # de extremidades espacialmente diferentes.
     linha_desenhavel = (
         possui_geometria_completa
         & ~extremidades_coincidentes
     )
+
+    # ========================================================
+    # RELATÓRIO
+    # ========================================================
 
     relatorio = {
         "linhas_entrada": linhas_antes,
