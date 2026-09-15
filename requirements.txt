@@ -3,3 +3,6 @@ openpyxl
 pandas
 requests
 streamlit
+geopandas
+pyogrio
+shapely
