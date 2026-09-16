@@ -3,17 +3,20 @@ Construção do mapa interativo de curtailment.
 
 O módulo cria o mapa-base, adiciona os limites das UFs,
 as usinas, os pontos de conexão, as linhas de transmissão,
-o índice de busca e o controle de camadas.
+a barra de busca e o controle de camadas.
 
-O painel lateral, as séries horárias e os gráficos serão
-adicionados em etapas posteriores.
+O módulo também integra as séries horárias ao HTML, cria
+um painel lateral para seleção das feições e apresenta
+indicadores e gráficos por usina e ponto de conexão.
 """
 
+import json
 from pathlib import Path
 
 import folium
 import geopandas as gpd
 import pandas as pd
+from branca.element import Element, JavascriptLink
 from folium.plugins import MarkerCluster, Search
 
 
@@ -942,6 +945,2106 @@ def criar_mapa_basico(
         ),
         "controle_busca": (
             controle_busca.get_name()
+        ),
+    }
+
+    return mapa, relatorio
+
+def serializar_series_mapa(
+    usina_series_map,
+    ponto_series_by_latlon,
+):
+    """
+    Serializa as séries horárias utilizadas pelo painel.
+
+    Parâmetros
+    ----------
+    usina_series_map : dict
+        Séries das usinas agrupadas por coordenada.
+    ponto_series_by_latlon : dict
+        Séries dos pontos agrupadas por coordenada.
+
+    Retorno
+    -------
+    tuple
+        JSON das usinas, JSON dos pontos e relatório da
+        serialização.
+    """
+
+    if usina_series_map is None:
+        raise ValueError(
+            "As séries geográficas das usinas "
+            "não foram informadas."
+        )
+
+    if ponto_series_by_latlon is None:
+        raise ValueError(
+            "As séries geográficas dos pontos "
+            "não foram informadas."
+        )
+
+    if not isinstance(
+        usina_series_map,
+        dict,
+    ):
+        raise TypeError(
+            "As séries geográficas das usinas "
+            "devem ser um dicionário."
+        )
+
+    if not isinstance(
+        ponto_series_by_latlon,
+        dict,
+    ):
+        raise TypeError(
+            "As séries geográficas dos pontos "
+            "devem ser um dicionário."
+        )
+
+    json_usinas = json.dumps(
+        usina_series_map,
+        ensure_ascii=False,
+        allow_nan=False,
+        separators=(",", ":"),
+    )
+
+    json_pontos = json.dumps(
+        ponto_series_by_latlon,
+        ensure_ascii=False,
+        allow_nan=False,
+        separators=(",", ":"),
+    )
+
+    relatorio = {
+        "coordenadas_usinas": len(
+            usina_series_map
+        ),
+        "coordenadas_pontos": len(
+            ponto_series_by_latlon
+        ),
+        "tamanho_json_usinas": len(
+            json_usinas
+        ),
+        "tamanho_json_pontos": len(
+            json_pontos
+        ),
+    }
+
+    return (
+        json_usinas,
+        json_pontos,
+        relatorio,
+    )
+
+
+def adicionar_estrutura_painel(
+    mapa,
+):
+    """
+    Adiciona ao mapa a estrutura HTML e os estilos básicos
+    do painel lateral.
+
+    O painel abre pela esquerda para não cobrir a barra de
+    pesquisa localizada no canto superior direito.
+    """
+
+    if mapa is None:
+        raise ValueError(
+            "O mapa não foi informado."
+        )
+
+    painel_html = """
+    <style>
+        #painel-curtailment {
+            position: fixed;
+            top: 0;
+            left: -420px;
+            width: 400px;
+            height: 100%;
+            z-index: 9999;
+            background: #ffffff;
+            border-right: 1px solid #d0d0d0;
+            box-shadow: 4px 0 14px rgba(0, 0, 0, 0.18);
+            transition: left 0.25s ease;
+            overflow-y: auto;
+            box-sizing: border-box;
+            padding: 18px;
+            font-family: Arial, sans-serif;
+        }
+
+        #painel-curtailment.aberto {
+            left: 0;
+        }
+
+        #painel-curtailment-cabecalho {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            margin-bottom: 18px;
+        }
+
+        #painel-curtailment-titulo {
+            margin: 0;
+            font-size: 18px;
+            color: #222222;
+        }
+
+        #painel-curtailment-fechar {
+            border: 0;
+            background: transparent;
+            cursor: pointer;
+            font-size: 24px;
+            line-height: 1;
+            color: #555555;
+        }
+
+        #painel-curtailment-conteudo {
+            color: #444444;
+            font-size: 14px;
+            line-height: 1.5;
+        }
+
+        #botao-abrir-painel {
+            position: fixed;
+            top: 20px;
+            left: 55px;
+            z-index: 9998;
+            border: 1px solid #bbbbbb;
+            border-radius: 4px;
+            background: #ffffff;
+            padding: 8px 10px;
+            cursor: pointer;
+            box-shadow: 0 1px 5px rgba(0, 0, 0, 0.22);
+            font-size: 13px;
+            color: #333333;
+        }
+
+        @media (max-width: 600px) {
+            #painel-curtailment {
+                left: -100%;
+                width: 100%;
+            }
+
+            #painel-curtailment.aberto {
+                left: 0;
+            }
+        }
+    </style>
+
+    <button
+        id="botao-abrir-painel"
+        type="button"
+        onclick="abrirPainelCurtailment()"
+    >
+        Abrir painel
+    </button>
+
+    <aside id="painel-curtailment">
+        <div id="painel-curtailment-cabecalho">
+            <h2 id="painel-curtailment-titulo">
+                Curtailment
+            </h2>
+
+            <button
+                id="painel-curtailment-fechar"
+                type="button"
+                aria-label="Fechar painel"
+                onclick="fecharPainelCurtailment()"
+            >
+                &times;
+            </button>
+        </div>
+
+        <div id="painel-curtailment-conteudo">
+            Selecione uma usina, ponto de conexão ou linha
+            de transmissão no mapa.
+        </div>
+    </aside>
+
+    <script>
+        function abrirPainelCurtailment() {
+            const painel = document.getElementById(
+                "painel-curtailment"
+            );
+
+            if (painel) {
+                painel.classList.add("aberto");
+            }
+        }
+
+        function fecharPainelCurtailment() {
+            const painel = document.getElementById(
+                "painel-curtailment"
+            );
+
+            if (painel) {
+                painel.classList.remove("aberto");
+            }
+        }
+    </script>
+    """
+
+    mapa.get_root().html.add_child(
+        Element(
+            painel_html
+        )
+    )
+
+    return mapa
+
+
+def adicionar_estilos_selecao_painel(
+    mapa,
+):
+    """
+    Adiciona os estilos dos menus de seleção e dos cartões
+    de usinas e pontos apresentados no painel.
+    """
+
+    if mapa is None:
+        raise ValueError(
+            "O mapa não foi informado."
+        )
+
+    estilos = """
+    <style>
+        .painel-instrucao {
+            margin-top: 0;
+            margin-bottom: 14px;
+            color: #555555;
+        }
+
+        .painel-lista-itens {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .painel-item {
+            width: 100%;
+            border: 1px solid #dddddd;
+            border-radius: 7px;
+            background: #ffffff;
+            padding: 11px 12px;
+            text-align: left;
+            cursor: pointer;
+            display: flex;
+            flex-direction: column;
+            gap: 3px;
+            color: #333333;
+        }
+
+        .painel-item:hover {
+            background: #f7f7f7;
+            border-color: #bbbbbb;
+        }
+
+        .painel-item-usina {
+            border-left: 4px solid #1f77b4;
+        }
+
+        .painel-item-ponto {
+            border-left: 4px solid #2ca02c;
+        }
+
+        .painel-item-tipo {
+            font-size: 11px;
+            font-weight: 700;
+            text-transform: uppercase;
+            color: #777777;
+        }
+
+        .painel-item small {
+            color: #666666;
+        }
+
+        .painel-voltar {
+            border: 0;
+            background: transparent;
+            color: #2b6cb0;
+            cursor: pointer;
+            padding: 0;
+            margin-bottom: 14px;
+            font-size: 13px;
+        }
+
+        .painel-voltar:hover {
+            text-decoration: underline;
+        }
+
+        .painel-cartao-detalhe {
+            border: 1px solid #dddddd;
+            border-radius: 8px;
+            padding: 14px;
+            background: #fafafa;
+        }
+
+        .painel-cartao-detalhe h3 {
+            margin: 5px 0 14px;
+            font-size: 17px;
+            color: #222222;
+        }
+
+        .painel-tipo-item {
+            color: #777777;
+            font-size: 11px;
+            font-weight: 700;
+            text-transform: uppercase;
+        }
+
+        .painel-observacao {
+            margin-top: 18px;
+            color: #777777;
+            font-size: 12px;
+        }
+    </style>
+    """
+
+    mapa.get_root().html.add_child(
+        Element(
+            estilos
+        )
+    )
+
+    return mapa
+
+
+def adicionar_estilos_graficos_painel(
+    mapa,
+):
+    """
+    Adiciona os estilos dos indicadores e gráficos
+    apresentados no painel lateral.
+    """
+
+    if mapa is None:
+        raise ValueError(
+            "O mapa não foi informado."
+        )
+
+    estilos = """
+    <style>
+        .painel-identificacao {
+            margin-bottom: 14px;
+        }
+
+        .painel-identificacao h3 {
+            margin: 4px 0 8px;
+            color: #222222;
+            font-size: 17px;
+        }
+
+        .painel-identificacao p {
+            margin: 4px 0;
+            color: #555555;
+            font-size: 13px;
+        }
+
+        .painel-kpis {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 8px;
+            margin: 14px 0;
+        }
+
+        .painel-kpi {
+            border: 1px solid #dddddd;
+            border-radius: 7px;
+            background: #fafafa;
+            padding: 10px;
+            min-height: 62px;
+            box-sizing: border-box;
+        }
+
+        .painel-kpi-label {
+            display: block;
+            margin-bottom: 5px;
+            color: #777777;
+            font-size: 10px;
+            font-weight: 700;
+            text-transform: uppercase;
+        }
+
+        .painel-kpi-valor {
+            color: #222222;
+            font-size: 17px;
+            font-weight: 700;
+        }
+
+        .painel-grafico {
+            margin-top: 14px;
+            border: 1px solid #dddddd;
+            border-radius: 8px;
+            background: #ffffff;
+            padding: 10px;
+        }
+
+        .painel-grafico h4 {
+            margin: 0 0 8px;
+            color: #333333;
+            font-size: 13px;
+        }
+
+        .painel-grafico-canvas {
+            position: relative;
+            width: 100%;
+            height: 220px;
+        }
+
+        .painel-grafico-canvas canvas {
+            width: 100% !important;
+            height: 100% !important;
+        }
+
+        .painel-sem-grafico {
+            margin-top: 16px;
+            border: 1px solid #dddddd;
+            border-radius: 7px;
+            background: #fafafa;
+            padding: 12px;
+            color: #666666;
+            font-size: 13px;
+        }
+
+        @media (max-width: 600px) {
+            .painel-kpis {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+    """
+
+    mapa.get_root().html.add_child(
+        Element(
+            estilos
+        )
+    )
+
+    return mapa
+
+
+def adicionar_chartjs(
+    mapa,
+):
+    """
+    Adiciona a biblioteca Chart.js ao HTML do mapa.
+    """
+
+    if mapa is None:
+        raise ValueError(
+            "O mapa não foi informado."
+        )
+
+    url_chartjs = (
+        "https://cdn.jsdelivr.net/npm/"
+        "chart.js@4.4.7/dist/"
+        "chart.umd.min.js"
+    )
+
+    mapa.get_root().header.add_child(
+        JavascriptLink(
+            url_chartjs
+        )
+    )
+
+    return mapa
+
+
+def adicionar_series_ao_mapa(
+    mapa,
+    json_usinas,
+    json_pontos,
+):
+    """
+    Injeta no HTML do mapa as séries horárias das usinas
+    e dos pontos de conexão.
+    """
+
+    if mapa is None:
+        raise ValueError(
+            "O mapa não foi informado."
+        )
+
+    if not isinstance(
+        json_usinas,
+        str,
+    ):
+        raise TypeError(
+            "O JSON das usinas deve ser uma string."
+        )
+
+    if not isinstance(
+        json_pontos,
+        str,
+    ):
+        raise TypeError(
+            "O JSON dos pontos deve ser uma string."
+        )
+
+    if not json_usinas.strip():
+        raise ValueError(
+            "O JSON das usinas está vazio."
+        )
+
+    if not json_pontos.strip():
+        raise ValueError(
+            "O JSON dos pontos está vazio."
+        )
+
+    script_series = f"""
+    <script>
+        window.USINA_SERIES = {json_usinas};
+        window.PONTO_SERIES_BY_LATLON = {json_pontos};
+
+        window.SERIES_MAPA_STATUS = {{
+            coordenadasUsinas: Object.keys(
+                window.USINA_SERIES
+            ).length,
+            coordenadasPontos: Object.keys(
+                window.PONTO_SERIES_BY_LATLON
+            ).length
+        }};
+
+        console.log(
+            "Séries do mapa carregadas:",
+            window.SERIES_MAPA_STATUS
+        );
+    </script>
+    """
+
+    mapa.get_root().html.add_child(
+        Element(
+            script_series
+        )
+    )
+
+    return mapa
+
+
+def localizar_camada_busca(
+    mapa,
+):
+    """
+    Localiza a camada GeoJSON utilizada pelo plugin Search.
+
+    Retorno
+    -------
+    folium.GeoJson
+        Camada denominada Índice de busca.
+    """
+
+    if mapa is None:
+        raise ValueError(
+            "O mapa não foi informado."
+        )
+
+    for elemento in mapa._children.values():
+        if (
+            isinstance(
+                elemento,
+                folium.GeoJson,
+            )
+            and getattr(
+                elemento,
+                "layer_name",
+                None,
+            ) == "Índice de busca"
+        ):
+            return elemento
+
+    raise ValueError(
+        "A camada do índice de busca não foi localizada."
+    )
+
+
+def adicionar_eventos_selecao_painel(
+    mapa,
+    camada_busca,
+    tolerancia=0.0005,
+):
+    """
+    Adiciona eventos para localizar usinas e pontos pelas
+    coordenadas e apresentá-los no painel lateral.
+
+    A seleção funciona tanto pelo clique no mapa quanto pelo
+    resultado encontrado na barra de busca.
+
+    Parâmetros
+    ----------
+    mapa : folium.Map
+        Mapa que receberá os eventos.
+    camada_busca : folium.GeoJson
+        Camada GeoJSON utilizada pelo controle de busca.
+    tolerancia : float, opcional
+        Distância máxima aproximada, em graus, utilizada para
+        localizar a coordenada quando não há igualdade exata.
+
+    Retorno
+    -------
+    folium.Map
+        Mapa com os eventos de seleção.
+    """
+
+    if mapa is None:
+        raise ValueError(
+            "O mapa não foi informado."
+        )
+
+    if camada_busca is None:
+        raise ValueError(
+            "A camada de busca não foi informada."
+        )
+
+    tolerancia = float(
+        tolerancia
+    )
+
+    if tolerancia < 0:
+        raise ValueError(
+            "A tolerância de seleção não pode ser negativa."
+        )
+
+    nome_mapa = mapa.get_name()
+
+    nome_controle_busca = (
+        f"{camada_busca.get_name()}searchControl"
+    )
+
+    script_eventos = """
+    <script>
+        window.CHAVE_SELECIONADA = null;
+
+        function escaparHtml(valor) {
+            if (
+                valor === null
+                || valor === undefined
+            ) {
+                return "";
+            }
+
+            return String(valor)
+                .replaceAll("&", "&amp;")
+                .replaceAll("<", "&lt;")
+                .replaceAll(">", "&gt;")
+                .replaceAll('"', "&quot;")
+                .replaceAll("'", "&#039;");
+        }
+
+        function criarChaveCoordenadas(
+            latitude,
+            longitude
+        ) {
+            return (
+                Number(latitude).toFixed(6)
+                + ","
+                + Number(longitude).toFixed(6)
+            );
+        }
+
+        function decomporChaveCoordenadas(chave) {
+            const partes = String(chave).split(",");
+
+            if (partes.length !== 2) {
+                return null;
+            }
+
+            const latitude = Number(partes[0]);
+            const longitude = Number(partes[1]);
+
+            if (
+                !Number.isFinite(latitude)
+                || !Number.isFinite(longitude)
+            ) {
+                return null;
+            }
+
+            return {
+                latitude: latitude,
+                longitude: longitude
+            };
+        }
+
+        function localizarChaveMaisProxima(
+            latitude,
+            longitude,
+            chaves,
+            tolerancia
+        ) {
+            const chaveExata = criarChaveCoordenadas(
+                latitude,
+                longitude
+            );
+
+            if (chaves.includes(chaveExata)) {
+                return chaveExata;
+            }
+
+            let melhorChave = null;
+            let menorDistancia = Infinity;
+
+            for (const chave of chaves) {
+                const coordenada = decomporChaveCoordenadas(
+                    chave
+                );
+
+                if (!coordenada) {
+                    continue;
+                }
+
+                const diferencaLatitude = (
+                    latitude - coordenada.latitude
+                );
+
+                const diferencaLongitude = (
+                    longitude - coordenada.longitude
+                );
+
+                const distancia = Math.sqrt(
+                    diferencaLatitude ** 2
+                    + diferencaLongitude ** 2
+                );
+
+                if (distancia < menorDistancia) {
+                    menorDistancia = distancia;
+                    melhorChave = chave;
+                }
+            }
+
+            if (menorDistancia <= tolerancia) {
+                return melhorChave;
+            }
+
+            return null;
+        }
+
+        function obterItensPorCoordenada(
+            latitude,
+            longitude
+        ) {
+            const seriesUsinas = (
+                window.USINA_SERIES || {}
+            );
+
+            const seriesPontos = (
+                window.PONTO_SERIES_BY_LATLON || {}
+            );
+
+            const todasAsChaves = Array.from(
+                new Set([
+                    ...Object.keys(seriesUsinas),
+                    ...Object.keys(seriesPontos)
+                ])
+            );
+
+            const chave = localizarChaveMaisProxima(
+                Number(latitude),
+                Number(longitude),
+                todasAsChaves,
+                __TOLERANCIA__
+            );
+
+            if (!chave) {
+                return {
+                    chave: null,
+                    usinas: [],
+                    pontos: []
+                };
+            }
+
+            return {
+                chave: chave,
+                usinas: seriesUsinas[chave] || [],
+                pontos: seriesPontos[chave] || []
+            };
+        }
+
+        function abrirPainelComConteudo(
+            titulo,
+            conteudo
+        ) {
+            const painel = document.getElementById(
+                "painel-curtailment"
+            );
+
+            const tituloElemento = document.getElementById(
+                "painel-curtailment-titulo"
+            );
+
+            const conteudoElemento = document.getElementById(
+                "painel-curtailment-conteudo"
+            );
+
+            if (tituloElemento) {
+                tituloElemento.textContent = titulo;
+            }
+
+            if (conteudoElemento) {
+                conteudoElemento.innerHTML = conteudo;
+            }
+
+            if (painel) {
+                painel.classList.add("aberto");
+            }
+        }
+
+        function renderizarResumoUsina(indice) {
+            const chave = window.CHAVE_SELECIONADA;
+
+            if (!chave) {
+                return;
+            }
+
+            const itens = (
+                window.USINA_SERIES[chave] || []
+            );
+
+            const item = itens[indice];
+
+            if (!item) {
+                return;
+            }
+
+            const html = `
+                <button
+                    type="button"
+                    class="painel-voltar"
+                    onclick="renderizarMenuCoordenada(
+                        '${escaparHtml(chave)}'
+                    )"
+                >
+                    ← Voltar
+                </button>
+
+                <div class="painel-cartao-detalhe">
+                    <div class="painel-tipo-item">
+                        Usina
+                    </div>
+
+                    <h3>
+                        ${escaparHtml(
+                            item.nome_usina
+                        )}
+                    </h3>
+
+                    <p>
+                        <strong>Ponto de conexão:</strong><br>
+                        ${escaparHtml(
+                            item.ponto || "Não informado"
+                        )}
+                    </p>
+
+                    <p>
+                        <strong>Horas disponíveis:</strong>
+                        ${
+                            Array.isArray(item.horas)
+                            ? item.horas.length
+                            : 0
+                        }
+                    </p>
+                </div>
+            `;
+
+            abrirPainelComConteudo(
+                "Detalhes da usina",
+                html
+            );
+        }
+
+        function renderizarResumoPonto(indice) {
+            const chave = window.CHAVE_SELECIONADA;
+
+            if (!chave) {
+                return;
+            }
+
+            const itens = (
+                window.PONTO_SERIES_BY_LATLON[chave] || []
+            );
+
+            const item = itens[indice];
+
+            if (!item) {
+                return;
+            }
+
+            const html = `
+                <button
+                    type="button"
+                    class="painel-voltar"
+                    onclick="renderizarMenuCoordenada(
+                        '${escaparHtml(chave)}'
+                    )"
+                >
+                    ← Voltar
+                </button>
+
+                <div class="painel-cartao-detalhe">
+                    <div class="painel-tipo-item">
+                        Ponto de conexão
+                    </div>
+
+                    <h3>
+                        ${escaparHtml(
+                            item.nome_ponto
+                            || "Ponto de conexão"
+                        )}
+                    </h3>
+
+                    <p>
+                        <strong>Horas disponíveis:</strong>
+                        ${
+                            Array.isArray(item.horas)
+                            ? item.horas.length
+                            : 0
+                        }
+                    </p>
+                </div>
+            `;
+
+            abrirPainelComConteudo(
+                "Detalhes do ponto",
+                html
+            );
+        }
+
+        function renderizarMenuCoordenada(chave) {
+            window.CHAVE_SELECIONADA = chave;
+
+            const usinas = (
+                window.USINA_SERIES[chave] || []
+            );
+
+            const pontos = (
+                window.PONTO_SERIES_BY_LATLON[chave] || []
+            );
+
+            const total = usinas.length + pontos.length;
+
+            if (total === 0) {
+                return;
+            }
+
+            if (
+                usinas.length === 1
+                && pontos.length === 0
+            ) {
+                renderizarResumoUsina(0);
+                return;
+            }
+
+            if (
+                pontos.length === 1
+                && usinas.length === 0
+            ) {
+                renderizarResumoPonto(0);
+                return;
+            }
+
+            let html = `
+                <p class="painel-instrucao">
+                    Foram encontrados
+                    <strong>${total}</strong>
+                    itens nesta coordenada.
+                    Selecione o item desejado.
+                </p>
+
+                <div class="painel-lista-itens">
+            `;
+
+            usinas.forEach(
+                function(item, indice) {
+                    html += `
+                        <button
+                            type="button"
+                            class="painel-item painel-item-usina"
+                            onclick="renderizarResumoUsina(
+                                ${indice}
+                            )"
+                        >
+                            <span class="painel-item-tipo">
+                                Usina
+                            </span>
+
+                            <strong>
+                                ${escaparHtml(
+                                    item.nome_usina
+                                )}
+                            </strong>
+
+                            <small>
+                                ${escaparHtml(
+                                    item.ponto || ""
+                                )}
+                            </small>
+                        </button>
+                    `;
+                }
+            );
+
+            pontos.forEach(
+                function(item, indice) {
+                    html += `
+                        <button
+                            type="button"
+                            class="painel-item painel-item-ponto"
+                            onclick="renderizarResumoPonto(
+                                ${indice}
+                            )"
+                        >
+                            <span class="painel-item-tipo">
+                                Ponto
+                            </span>
+
+                            <strong>
+                                ${escaparHtml(
+                                    item.nome_ponto
+                                    || "Ponto de conexão"
+                                )}
+                            </strong>
+                        </button>
+                    `;
+                }
+            );
+
+            html += "</div>";
+
+            abrirPainelComConteudo(
+                "Itens encontrados",
+                html
+            );
+        }
+
+        function selecionarPorCoordenada(
+            latitude,
+            longitude
+        ) {
+            const resultado = obterItensPorCoordenada(
+                latitude,
+                longitude
+            );
+
+            if (!resultado.chave) {
+                console.warn(
+                    "Nenhuma série encontrada para:",
+                    latitude,
+                    longitude
+                );
+
+                return false;
+            }
+
+            renderizarMenuCoordenada(
+                resultado.chave
+            );
+
+            return true;
+        }
+
+        function extrairLatLngBusca(evento) {
+            if (!evento) {
+                return null;
+            }
+
+            if (
+                evento.latlng
+                && Number.isFinite(
+                    Number(evento.latlng.lat)
+                )
+                && Number.isFinite(
+                    Number(evento.latlng.lng)
+                )
+            ) {
+                return evento.latlng;
+            }
+
+            if (
+                evento.layer
+                && typeof evento.layer.getLatLng
+                    === "function"
+            ) {
+                return evento.layer.getLatLng();
+            }
+
+            if (
+                evento.layer
+                && typeof evento.layer.getBounds
+                    === "function"
+            ) {
+                return evento.layer
+                    .getBounds()
+                    .getCenter();
+            }
+
+            return null;
+        }
+
+        function tratarCliqueMapa(evento) {
+            if (
+                !evento
+                || !evento.latlng
+            ) {
+                return;
+            }
+
+            selecionarPorCoordenada(
+                evento.latlng.lat,
+                evento.latlng.lng
+            );
+        }
+
+        function tratarResultadoBusca(evento) {
+            const coordenada = extrairLatLngBusca(
+                evento
+            );
+
+            if (!coordenada) {
+                console.warn(
+                    "Resultado da busca sem coordenada.",
+                    evento
+                );
+
+                return;
+            }
+
+            selecionarPorCoordenada(
+                coordenada.lat,
+                coordenada.lng
+            );
+        }
+
+        function inicializarEventosPainel() {
+            const mapa = __NOME_MAPA__;
+            const controleBusca = __CONTROLE_BUSCA__;
+
+            if (!mapa) {
+                console.error(
+                    "Mapa Folium não encontrado."
+                );
+
+                return;
+            }
+
+            mapa.on(
+                "click",
+                tratarCliqueMapa
+            );
+
+            if (
+                controleBusca
+                && typeof controleBusca.on === "function"
+            ) {
+                controleBusca.on(
+                    "search:locationfound",
+                    tratarResultadoBusca
+                );
+            } else {
+                console.error(
+                    "Controle de busca não encontrado."
+                );
+            }
+
+            console.log(
+                "Eventos de clique e busca inicializados."
+            );
+        }
+
+        setTimeout(
+            inicializarEventosPainel,
+            600
+        );
+    </script>
+    """
+
+    script_eventos = (
+        script_eventos
+        .replace(
+            "__NOME_MAPA__",
+            nome_mapa,
+        )
+        .replace(
+            "__CONTROLE_BUSCA__",
+            nome_controle_busca,
+        )
+        .replace(
+            "__TOLERANCIA__",
+            repr(tolerancia),
+        )
+    )
+
+    mapa.get_root().html.add_child(
+        Element(
+            script_eventos
+        )
+    )
+
+    return mapa
+
+
+def adicionar_graficos_series_painel(
+    mapa,
+):
+    """
+    Adiciona indicadores e gráficos de 24 horas aos detalhes
+    das usinas e dos pontos de conexão.
+    """
+
+    if mapa is None:
+        raise ValueError(
+            "O mapa não foi informado."
+        )
+
+    script = """
+    <script>
+        window.GRAFICOS_PAINEL = (
+            window.GRAFICOS_PAINEL || {}
+        );
+
+        function destruirGraficosPainel() {
+            Object.values(
+                window.GRAFICOS_PAINEL
+            ).forEach(
+                function(grafico) {
+                    if (
+                        grafico
+                        && typeof grafico.destroy
+                            === "function"
+                    ) {
+                        grafico.destroy();
+                    }
+                }
+            );
+
+            window.GRAFICOS_PAINEL = {};
+        }
+
+        function numeroValido(valor) {
+            if (
+                valor === null
+                || valor === undefined
+                || valor === ""
+            ) {
+                return null;
+            }
+
+            const numero = Number(valor);
+
+            return Number.isFinite(numero)
+                ? numero
+                : null;
+        }
+
+        function valoresValidos(serie) {
+            if (!Array.isArray(serie)) {
+                return [];
+            }
+
+            return serie
+                .map(numeroValido)
+                .filter(
+                    function(valor) {
+                        return valor !== null;
+                    }
+                );
+        }
+
+        function mediaSerie(serie) {
+            const valores = valoresValidos(
+                serie
+            );
+
+            if (valores.length === 0) {
+                return null;
+            }
+
+            return valores.reduce(
+                function(total, valor) {
+                    return total + valor;
+                },
+                0
+            ) / valores.length;
+        }
+
+        function maximoSerie(serie) {
+            const valores = valoresValidos(
+                serie
+            );
+
+            if (valores.length === 0) {
+                return null;
+            }
+
+            return Math.max(...valores);
+        }
+
+        function formatarNumero(
+            valor,
+            casas = 2
+        ) {
+            const numero = numeroValido(
+                valor
+            );
+
+            if (numero === null) {
+                return "—";
+            }
+
+            return numero.toLocaleString(
+                "pt-BR",
+                {
+                    minimumFractionDigits: casas,
+                    maximumFractionDigits: casas
+                }
+            );
+        }
+
+        function normalizarSerie(
+            serie,
+            quantidade = 24
+        ) {
+            const resultado = new Array(
+                quantidade
+            ).fill(null);
+
+            if (!Array.isArray(serie)) {
+                return resultado;
+            }
+
+            for (
+                let indice = 0;
+                indice < quantidade;
+                indice += 1
+            ) {
+                resultado[indice] = numeroValido(
+                    serie[indice]
+                );
+            }
+
+            return resultado;
+        }
+
+        function seriePossuiValor(serie) {
+            return valoresValidos(
+                serie
+            ).some(
+                function(valor) {
+                    return Math.abs(valor) > 1e-12;
+                }
+            );
+        }
+
+        function criarKpi(
+            titulo,
+            valor
+        ) {
+            return `
+                <div class="painel-kpi">
+                    <span class="painel-kpi-label">
+                        ${escaparHtml(titulo)}
+                    </span>
+
+                    <span class="painel-kpi-valor">
+                        ${escaparHtml(valor)}
+                    </span>
+                </div>
+            `;
+        }
+
+        function criarGraficoLinhas(
+            identificador,
+            horas,
+            conjuntos
+        ) {
+            if (typeof Chart === "undefined") {
+                console.error(
+                    "Chart.js não foi carregado."
+                );
+
+                return;
+            }
+
+            const canvas = document.getElementById(
+                identificador
+            );
+
+            if (!canvas) {
+                return;
+            }
+
+            window.GRAFICOS_PAINEL[
+                identificador
+            ] = new Chart(
+                canvas,
+                {
+                    type: "line",
+                    data: {
+                        labels: horas,
+                        datasets: conjuntos
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        interaction: {
+                            mode: "index",
+                            intersect: false
+                        },
+                        plugins: {
+                            legend: {
+                                display: true,
+                                position: "bottom",
+                                labels: {
+                                    boxWidth: 10,
+                                    font: {
+                                        size: 10
+                                    }
+                                }
+                            },
+                            tooltip: {
+                                callbacks: {
+                                    label: function(contexto) {
+                                        return (
+                                            contexto.dataset.label
+                                            + ": "
+                                            + formatarNumero(
+                                                contexto.parsed.y,
+                                                2
+                                            )
+                                            + " MW"
+                                        );
+                                    }
+                                }
+                            }
+                        },
+                        scales: {
+                            x: {
+                                title: {
+                                    display: true,
+                                    text: "Hora"
+                                },
+                                ticks: {
+                                    maxRotation: 0,
+                                    autoSkip: true,
+                                    maxTicksLimit: 12
+                                }
+                            },
+                            y: {
+                                beginAtZero: true,
+                                title: {
+                                    display: true,
+                                    text: "MW"
+                                }
+                            }
+                        }
+                    }
+                }
+            );
+        }
+
+        function criarGraficoCurtailment(
+            identificador,
+            horas,
+            curtByCode
+        ) {
+            if (typeof Chart === "undefined") {
+                console.error(
+                    "Chart.js não foi carregado."
+                );
+
+                return;
+            }
+
+            const canvas = document.getElementById(
+                identificador
+            );
+
+            if (!canvas) {
+                return;
+            }
+
+            const cores = {
+                CNF: "#9467bd",
+                ENE: "#d62728",
+                REL: "#ff7f0e",
+                SEM_CODIGO: "#7f7f7f"
+            };
+
+            const ordemCodigos = [
+                "CNF",
+                "ENE",
+                "REL",
+                "SEM_CODIGO"
+            ];
+
+            const conjuntos = [];
+
+            ordemCodigos.forEach(
+                function(codigo) {
+                    const serie = normalizarSerie(
+                        curtByCode
+                            ? curtByCode[codigo]
+                            : null
+                    );
+
+                    if (!seriePossuiValor(serie)) {
+                        return;
+                    }
+
+                    conjuntos.push({
+                        label: codigo,
+                        data: serie,
+                        borderColor: cores[codigo],
+                        backgroundColor: cores[codigo],
+                        borderWidth: 1.5,
+                        pointRadius: 1.5,
+                        pointHoverRadius: 4,
+                        tension: 0.2,
+                        spanGaps: false
+                    });
+                }
+            );
+
+            if (conjuntos.length === 0) {
+                return;
+            }
+
+            window.GRAFICOS_PAINEL[
+                identificador
+            ] = new Chart(
+                canvas,
+                {
+                    type: "line",
+                    data: {
+                        labels: horas,
+                        datasets: conjuntos
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        interaction: {
+                            mode: "index",
+                            intersect: false
+                        },
+                        plugins: {
+                            legend: {
+                                display: true,
+                                position: "bottom",
+                                labels: {
+                                    boxWidth: 10,
+                                    font: {
+                                        size: 10
+                                    }
+                                }
+                            },
+                            tooltip: {
+                                callbacks: {
+                                    label: function(contexto) {
+                                        return (
+                                            contexto.dataset.label
+                                            + ": "
+                                            + formatarNumero(
+                                                contexto.parsed.y,
+                                                2
+                                            )
+                                            + " MW"
+                                        );
+                                    }
+                                }
+                            }
+                        },
+                        scales: {
+                            x: {
+                                title: {
+                                    display: true,
+                                    text: "Hora"
+                                },
+                                ticks: {
+                                    maxRotation: 0,
+                                    autoSkip: true,
+                                    maxTicksLimit: 12
+                                }
+                            },
+                            y: {
+                                beginAtZero: true,
+                                title: {
+                                    display: true,
+                                    text: "MW"
+                                }
+                            }
+                        }
+                    }
+                }
+            );
+        }
+
+        function calcularIndicadoresItem(item) {
+            const mediaGeracao = mediaSerie(
+                item.avg_geracao
+            );
+
+            const mediaCurtailment = mediaSerie(
+                item.avg_curtailment
+            );
+
+            const mediaEsperada = mediaSerie(
+                item.avg_geracao_esperada
+            );
+
+            const picoCurtailment = maximoSerie(
+                item.avg_curtailment
+            );
+
+            let percentualCurtailment = null;
+
+            if (
+                mediaEsperada !== null
+                && mediaEsperada !== 0
+                && mediaCurtailment !== null
+            ) {
+                percentualCurtailment = (
+                    mediaCurtailment
+                    / mediaEsperada
+                    * 100
+                );
+            }
+
+            return {
+                mediaGeracao: mediaGeracao,
+                mediaCurtailment: mediaCurtailment,
+                mediaEsperada: mediaEsperada,
+                picoCurtailment: picoCurtailment,
+                percentualCurtailment: percentualCurtailment
+            };
+        }
+
+        function montarConteudoDetalhes(
+            tipo,
+            nome,
+            ponto,
+            item
+        ) {
+            const indicadores = calcularIndicadoresItem(
+                item
+            );
+
+            let identificacaoPonto = "";
+
+            if (ponto) {
+                identificacaoPonto = `
+                    <p>
+                        <strong>Ponto de conexão:</strong><br>
+                        ${escaparHtml(ponto)}
+                    </p>
+                `;
+            }
+
+            const possuiDecomposicao = (
+                item.curt_by_code
+                && Object.keys(
+                    item.curt_by_code
+                ).some(
+                    function(codigo) {
+                        return seriePossuiValor(
+                            normalizarSerie(
+                                item.curt_by_code[codigo]
+                            )
+                        );
+                    }
+                )
+            );
+
+            return `
+                <button
+                    type="button"
+                    class="painel-voltar"
+                    onclick="renderizarMenuCoordenada(
+                        '${escaparHtml(
+                            window.CHAVE_SELECIONADA
+                        )}'
+                    )"
+                >
+                    ← Voltar
+                </button>
+
+                <div class="painel-identificacao">
+                    <div class="painel-tipo-item">
+                        ${escaparHtml(tipo)}
+                    </div>
+
+                    <h3>
+                        ${escaparHtml(nome)}
+                    </h3>
+
+                    ${identificacaoPonto}
+                </div>
+
+                <div class="painel-kpis">
+                    ${criarKpi(
+                        "Geração média",
+                        formatarNumero(
+                            indicadores.mediaGeracao,
+                            2
+                        ) + " MW"
+                    )}
+
+                    ${criarKpi(
+                        "Curtailment médio",
+                        formatarNumero(
+                            indicadores.mediaCurtailment,
+                            2
+                        ) + " MW"
+                    )}
+
+                    ${criarKpi(
+                        "Geração esperada",
+                        formatarNumero(
+                            indicadores.mediaEsperada,
+                            2
+                        ) + " MW"
+                    )}
+
+                    ${criarKpi(
+                        "Pico de curtailment",
+                        formatarNumero(
+                            indicadores.picoCurtailment,
+                            2
+                        ) + " MW"
+                    )}
+
+                    ${criarKpi(
+                        "Curtailment / esperada",
+                        indicadores.percentualCurtailment
+                            === null
+                            ? "—"
+                            : (
+                                formatarNumero(
+                                    indicadores
+                                        .percentualCurtailment,
+                                    2
+                                )
+                                + "%"
+                            )
+                    )}
+
+                    ${criarKpi(
+                        "Horas disponíveis",
+                        Array.isArray(item.horas)
+                            ? String(item.horas.length)
+                            : "0"
+                    )}
+                </div>
+
+                <div class="painel-grafico">
+                    <h4>
+                        Geração, curtailment e geração esperada
+                    </h4>
+
+                    <div class="painel-grafico-canvas">
+                        <canvas
+                            id="grafico-perfil-principal"
+                        ></canvas>
+                    </div>
+                </div>
+
+                ${
+                    possuiDecomposicao
+                    ? `
+                        <div class="painel-grafico">
+                            <h4>
+                                Curtailment por código
+                            </h4>
+
+                            <div class="painel-grafico-canvas">
+                                <canvas
+                                    id="grafico-curtailment-codigo"
+                                ></canvas>
+                            </div>
+                        </div>
+                    `
+                    : `
+                        <div class="painel-sem-grafico">
+                            Não há decomposição por código
+                            disponível para este item.
+                        </div>
+                    `
+                }
+            `;
+        }
+
+        function renderizarGraficosItem(item) {
+            destruirGraficosPainel();
+
+            const horas = (
+                Array.isArray(item.horas)
+                && item.horas.length > 0
+            )
+                ? item.horas
+                : Array.from(
+                    {length: 24},
+                    function(_, indice) {
+                        return indice;
+                    }
+                );
+
+            criarGraficoLinhas(
+                "grafico-perfil-principal",
+                horas,
+                [
+                    {
+                        label: "Geração",
+                        data: normalizarSerie(
+                            item.avg_geracao
+                        ),
+                        borderColor: "#1f77b4",
+                        backgroundColor: "#1f77b4",
+                        borderWidth: 2,
+                        pointRadius: 1.5,
+                        pointHoverRadius: 4,
+                        tension: 0.2,
+                        spanGaps: false
+                    },
+                    {
+                        label: "Curtailment",
+                        data: normalizarSerie(
+                            item.avg_curtailment
+                        ),
+                        borderColor: "#d62728",
+                        backgroundColor: "#d62728",
+                        borderWidth: 2,
+                        pointRadius: 1.5,
+                        pointHoverRadius: 4,
+                        tension: 0.2,
+                        spanGaps: false
+                    },
+                    {
+                        label: "Geração esperada",
+                        data: normalizarSerie(
+                            item.avg_geracao_esperada
+                        ),
+                        borderColor: "#2ca02c",
+                        backgroundColor: "#2ca02c",
+                        borderWidth: 2,
+                        pointRadius: 1.5,
+                        pointHoverRadius: 4,
+                        tension: 0.2,
+                        spanGaps: false
+                    }
+                ]
+            );
+
+            if (
+                document.getElementById(
+                    "grafico-curtailment-codigo"
+                )
+            ) {
+                criarGraficoCurtailment(
+                    "grafico-curtailment-codigo",
+                    horas,
+                    item.curt_by_code || {}
+                );
+            }
+        }
+
+        function renderizarResumoUsina(indice) {
+            const chave = window.CHAVE_SELECIONADA;
+
+            if (!chave) {
+                return;
+            }
+
+            const itens = (
+                window.USINA_SERIES[chave] || []
+            );
+
+            const item = itens[indice];
+
+            if (!item) {
+                return;
+            }
+
+            const html = montarConteudoDetalhes(
+                "Usina",
+                item.nome_usina || "Usina",
+                item.ponto || "",
+                item
+            );
+
+            abrirPainelComConteudo(
+                "Detalhes da usina",
+                html
+            );
+
+            setTimeout(
+                function() {
+                    renderizarGraficosItem(
+                        item
+                    );
+                },
+                50
+            );
+        }
+
+        function renderizarResumoPonto(indice) {
+            const chave = window.CHAVE_SELECIONADA;
+
+            if (!chave) {
+                return;
+            }
+
+            const itens = (
+                window.PONTO_SERIES_BY_LATLON[chave] || []
+            );
+
+            const item = itens[indice];
+
+            if (!item) {
+                return;
+            }
+
+            const html = montarConteudoDetalhes(
+                "Ponto de conexão",
+                (
+                    item.nome_ponto
+                    || "Ponto de conexão"
+                ),
+                "",
+                item
+            );
+
+            abrirPainelComConteudo(
+                "Detalhes do ponto",
+                html
+            );
+
+            setTimeout(
+                function() {
+                    renderizarGraficosItem(
+                        item
+                    );
+                },
+                50
+            );
+        }
+    </script>
+    """
+
+    mapa.get_root().html.add_child(
+        Element(
+            script
+        )
+    )
+
+    return mapa
+
+
+def criar_mapa_interativo(
+    gdf_ufs,
+    gdf_usinas,
+    gdf_pontos,
+    gdf_linhas_desenhaveis,
+    gdf_busca,
+    usina_series_map,
+    ponto_series_by_latlon,
+    tolerancia_selecao=0.0005,
+):
+    """
+    Cria o mapa completo com painel, busca, indicadores
+    e gráficos de séries horárias.
+
+    Parâmetros
+    ----------
+    gdf_ufs : geopandas.GeoDataFrame
+        Malha simplificada das UFs.
+    gdf_usinas : geopandas.GeoDataFrame
+        Usinas georreferenciadas.
+    gdf_pontos : geopandas.GeoDataFrame
+        Pontos de conexão georreferenciados.
+    gdf_linhas_desenhaveis : geopandas.GeoDataFrame
+        Linhas de transmissão desenháveis.
+    gdf_busca : geopandas.GeoDataFrame
+        Índice geográfico de busca.
+    usina_series_map : dict
+        Séries das usinas agrupadas por coordenada.
+    ponto_series_by_latlon : dict
+        Séries dos pontos agrupadas por coordenada.
+    tolerancia_selecao : float, opcional
+        Tolerância geográfica utilizada na seleção.
+
+    Retorno
+    -------
+    tuple
+        Mapa interativo e relatório da construção.
+    """
+
+    (
+        json_usinas,
+        json_pontos,
+        relatorio_serializacao,
+    ) = serializar_series_mapa(
+        usina_series_map=(
+            usina_series_map
+        ),
+        ponto_series_by_latlon=(
+            ponto_series_by_latlon
+        ),
+    )
+
+    mapa, relatorio_mapa = criar_mapa_basico(
+        gdf_ufs=gdf_ufs,
+        gdf_usinas=gdf_usinas,
+        gdf_pontos=gdf_pontos,
+        gdf_linhas_desenhaveis=(
+            gdf_linhas_desenhaveis
+        ),
+        gdf_busca=gdf_busca,
+    )
+
+    adicionar_estrutura_painel(
+        mapa
+    )
+
+    adicionar_estilos_selecao_painel(
+        mapa
+    )
+
+    adicionar_estilos_graficos_painel(
+        mapa
+    )
+
+    adicionar_chartjs(
+        mapa
+    )
+
+    adicionar_series_ao_mapa(
+        mapa=mapa,
+        json_usinas=json_usinas,
+        json_pontos=json_pontos,
+    )
+
+    camada_busca = localizar_camada_busca(
+        mapa
+    )
+
+    adicionar_eventos_selecao_painel(
+        mapa=mapa,
+        camada_busca=camada_busca,
+        tolerancia=tolerancia_selecao,
+    )
+
+    adicionar_graficos_series_painel(
+        mapa
+    )
+
+    relatorio = {
+        **relatorio_mapa,
+        **relatorio_serializacao,
+        "painel_lateral": True,
+        "painel_lado": "esquerdo",
+        "chartjs": True,
+        "graficos_series": True,
+        "selecao_por_busca": True,
+        "selecao_por_coordenada": True,
+        "tolerancia_selecao": float(
+            tolerancia_selecao
         ),
     }
 
