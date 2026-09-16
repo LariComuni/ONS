@@ -1,8 +1,10 @@
+branca
+folium
+geopandas
 numpy
 openpyxl
 pandas
-requests
-streamlit
-geopandas
 pyogrio
+requests
 shapely
+streamlit
