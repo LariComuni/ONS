@@ -276,4 +276,124 @@ def enriquecer_curtailment(
 
         diferenca = total_depois - total_antes
 
-        # Converte para float nativo para
+        # Converte para float nativo para facilitar a futura exibição e serialização no Streamlit.
+        diferencas_totais[coluna] = float(diferenca)
+
+        if not math.isclose(
+            total_antes,
+            total_depois,
+            rel_tol=1e-12,
+            abs_tol=1e-6,
+        ):
+            raise RuntimeError(
+                f"O total de '{coluna}' foi alterado durante "
+                f"o enriquecimento. Diferença: {diferenca}."
+            )
+
+    resumo_usinas = (
+        enriquecido[
+            [
+                "nom_usina",
+                "nom_usina_lc",
+                "nom_usina_conjunto_lc",
+                "val_latitudepontoconexao",
+                "val_longitudepontoconexao",
+            ]
+        ]
+        .drop_duplicates(
+            subset=["nom_usina_lc"]
+        )
+    )
+
+    usinas_sem_cadastro = (
+        resumo_usinas.loc[
+            resumo_usinas[
+                "nom_usina_conjunto_lc"
+            ].isna(),
+            "nom_usina",
+        ]
+        .dropna()
+        .sort_values()
+        .tolist()
+    )
+
+    usinas_sem_coordenadas = (
+        resumo_usinas.loc[
+            resumo_usinas[
+                "nom_usina_conjunto_lc"
+            ].notna()
+            & (
+                resumo_usinas[
+                    "val_latitudepontoconexao"
+                ].isna()
+                | resumo_usinas[
+                    "val_longitudepontoconexao"
+                ].isna()
+            ),
+            "nom_usina",
+        ]
+        .dropna()
+        .sort_values()
+        .tolist()
+    )
+
+    relatorio = {
+        "linhas_antes": linhas_antes,
+        "linhas_depois": linhas_depois,
+        "linhas_com_cadastro": int(
+            encontrou_cadastro.sum()
+        ),
+        "linhas_sem_cadastro": int(
+            (~encontrou_cadastro).sum()
+        ),
+        "percentual_com_cadastro": round(
+            encontrou_cadastro.mean() * 100,
+            2,
+        ),
+        "linhas_com_coordenadas": int(
+            possui_coordenadas.sum()
+        ),
+        "linhas_sem_coordenadas": int(
+            (~possui_coordenadas).sum()
+        ),
+        "percentual_georreferenciado": round(
+            possui_coordenadas.mean() * 100,
+            2,
+        ),
+        "usinas_total": int(
+            resumo_usinas[
+                "nom_usina_lc"
+            ].nunique()
+        ),
+        "usinas_com_cadastro": int(
+            resumo_usinas[
+                "nom_usina_conjunto_lc"
+            ].notna().sum()
+        ),
+        "usinas_com_coordenadas": int(
+            (
+                resumo_usinas[
+                    "val_latitudepontoconexao"
+                ].notna()
+                & resumo_usinas[
+                    "val_longitudepontoconexao"
+                ].notna()
+            ).sum()
+        ),
+        "usinas_sem_cadastro": usinas_sem_cadastro,
+        "usinas_sem_coordenadas": (
+            usinas_sem_coordenadas
+        ),
+        "diferencas_totais": diferencas_totais,
+    }
+
+    enriquecido = enriquecido.drop(
+        columns=[
+            "nom_usina_lc",
+            "nom_usina_conjunto_lc",
+        ],
+        errors="ignore",
+    )
+
+    return enriquecido, relatorio
+
