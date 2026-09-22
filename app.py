@@ -28,7 +28,7 @@ st.set_page_config(
 )
 
 
-ANO_MINIMO = 2025
+ANO_MINIMO = 2024
 
 NOMES_MESES = {
     1: "Janeiro",
