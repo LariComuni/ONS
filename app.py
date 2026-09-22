@@ -244,7 +244,7 @@ with st.sidebar:
     with st.form(
         "formulario_periodo"
     ):
-        mes_inicial = st.selectbox(
+         = st.selectbox(
             "Mês inicial",
             options=meses_disponiveis,
             index=0,
@@ -336,23 +336,23 @@ else:
     )
 
     with coluna_inicio:
-        st.metric(
-            "Início do período",
-            (
-                f"{periodo_selecionado['mes_inicial'\]:02d}/"
-                f"{periodo_selecionado['ano']}"
-            ),
-        )
+    st.metric(
+        "Início do período",
+        (
+            f"{periodo_selecionado['mes_inicial']:02d}/"
+            f"{periodo_selecionado['ano']}"
+        ),
+    )
 
     with coluna_fim:
         st.metric(
             "Fim do período",
             (
-                f"{periodo_selecionado['mes_final'\]:02d}/"
+                f"{periodo_selecionado['mes_final']:02d}/"
                 f"{periodo_selecionado['ano']}"
             ),
         )
-
+    
     with coluna_cadastro:
         st.metric(
             "Último mês completo",
