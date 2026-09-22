@@ -61,54 +61,50 @@ FONTES_CURTAILMENT = (
 
 
 def validar_periodo(
-    ano,
+    ano_inicial,
     mes_inicial,
+    ano_final,
     mes_final,
 ):
     """
-    Valida o período mensal solicitado ao pipeline.
+    Valida um período mensal que pode abranger vários anos.
 
     Parâmetros
     ----------
-    ano : int
-        Ano da coleta.
+    ano_inicial : int
+        Ano da primeira competência.
     mes_inicial : int
-        Primeiro mês da coleta.
+        Mês da primeira competência.
+    ano_final : int
+        Ano da última competência.
     mes_final : int
-        Último mês da coleta.
+        Mês da última competência.
 
     Raises
     ------
     TypeError
-        Quando os parâmetros não são inteiros.
+        Quando algum parâmetro não é inteiro.
     ValueError
-        Quando os meses não estão entre 1 e 12 ou quando
-        o mês inicial é posterior ao mês final.
+        Quando os meses são inválidos ou a competência
+        inicial é posterior à competência final.
     """
 
-    if not isinstance(
-        ano,
-        int,
-    ):
-        raise TypeError(
-            "O ano deve ser informado como número inteiro."
-        )
+    parametros = {
+        "ano inicial": ano_inicial,
+        "mês inicial": mes_inicial,
+        "ano final": ano_final,
+        "mês final": mes_final,
+    }
 
-    if not isinstance(
-        mes_inicial,
-        int,
-    ):
-        raise TypeError(
-            "O mês inicial deve ser informado como inteiro."
-        )
-
-    if not isinstance(
-        mes_final,
-        int,
-    ):
-        raise TypeError(
-            "O mês final deve ser informado como inteiro."
-        )
+    for nome, valor in parametros.items():
+        if not isinstance(
+            valor,
+            int,
+        ):
+            raise TypeError(
+                f"O {nome} deve ser informado "
+                "como número inteiro."
+            )
 
     if not 1 <= mes_inicial <= 12:
         raise ValueError(
@@ -120,11 +116,73 @@ def validar_periodo(
             "O mês final deve estar entre 1 e 12."
         )
 
-    if mes_inicial > mes_final:
+    competencia_inicial = (
+        ano_inicial,
+        mes_inicial,
+    )
+
+    competencia_final = (
+        ano_final,
+        mes_final,
+    )
+
+    if competencia_inicial > competencia_final:
         raise ValueError(
-            "O mês inicial não pode ser posterior "
-            "ao mês final."
+            "A competência inicial não pode ser posterior "
+            "à competência final."
         )
+
+
+def dividir_periodo_por_ano(
+    ano_inicial,
+    mes_inicial,
+    ano_final,
+    mes_final,
+):
+    """
+    Divide um período de múltiplos anos em intervalos anuais.
+
+    A divisão é necessária porque carregar_periodo_ons()
+    recebe apenas um ano por chamada.
+
+    Retorno
+    -------
+    list
+        Lista de dicionários com ano, mês inicial e mês final.
+    """
+
+    validar_periodo(
+        ano_inicial=ano_inicial,
+        mes_inicial=mes_inicial,
+        ano_final=ano_final,
+        mes_final=mes_final,
+    )
+
+    periodos = []
+
+    for ano in range(
+        ano_inicial,
+        ano_final + 1,
+    ):
+        if ano == ano_inicial:
+            primeiro_mes = mes_inicial
+        else:
+            primeiro_mes = 1
+
+        if ano == ano_final:
+            ultimo_mes = mes_final
+        else:
+            ultimo_mes = 12
+
+        periodos.append(
+            {
+                "ano": ano,
+                "mes_inicial": primeiro_mes,
+                "mes_final": ultimo_mes,
+            }
+        )
+
+    return periodos
 
 
 def validar_timeout(
@@ -252,12 +310,17 @@ def validar_resultados_finais(
 
 
 def coletar_e_calcular_curtailment(
-    ano,
+    ano_inicial,
     mes_inicial,
+    ano_final,
     mes_final,
 ):
     """
     Coleta e calcula o curtailment das fontes EOL e UFV.
+
+    O período pode abranger vários anos. Cada intervalo
+    anual é coletado separadamente e posteriormente
+    consolidado.
 
     Retorno
     -------
@@ -266,37 +329,101 @@ def coletar_e_calcular_curtailment(
         dos cálculos.
     """
 
+    periodos_anuais = dividir_periodo_por_ano(
+        ano_inicial=ano_inicial,
+        mes_inicial=mes_inicial,
+        ano_final=ano_final,
+        mes_final=mes_final,
+    )
+
     dados_curtailment = []
     relatorios = {}
 
     for fonte in FONTES_CURTAILMENT:
-        (
-            df_bruto,
-            relatorio_coleta,
-        ) = carregar_periodo_ons(
-            fonte=fonte,
-            ano=ano,
-            mes_inicial=mes_inicial,
-            mes_final=mes_final,
-        )
+        dados_fonte = []
+        relatorios_periodos = {}
 
-        validar_dataframe(
-            dataframe=df_bruto,
-            nome=(
-                "os dados brutos de curtailment "
-                f"da fonte {fonte}"
-            ),
-        )
+        for periodo in periodos_anuais:
+            ano_periodo = periodo[
+                "ano"
+            ]
 
-        df_fonte = calcular_curtailment(
-            df=df_bruto,
-            fonte=fonte,
+            mes_inicial_periodo = periodo[
+                "mes_inicial"
+            ]
+
+            mes_final_periodo = periodo[
+                "mes_final"
+            ]
+
+            (
+                df_bruto,
+                relatorio_coleta,
+            ) = carregar_periodo_ons(
+                fonte=fonte,
+                ano=ano_periodo,
+                mes_inicial=mes_inicial_periodo,
+                mes_final=mes_final_periodo,
+            )
+
+            validar_dataframe(
+                dataframe=df_bruto,
+                nome=(
+                    "os dados brutos de curtailment "
+                    f"da fonte {fonte} para "
+                    f"{mes_inicial_periodo:02d}/"
+                    f"{ano_periodo} a "
+                    f"{mes_final_periodo:02d}/"
+                    f"{ano_periodo}"
+                ),
+            )
+
+            df_fonte_periodo = calcular_curtailment(
+                df=df_bruto,
+                fonte=fonte,
+            )
+
+            validar_dataframe(
+                dataframe=df_fonte_periodo,
+                nome=(
+                    "o curtailment calculado "
+                    f"da fonte {fonte} para "
+                    f"{ano_periodo}"
+                ),
+            )
+
+            dados_fonte.append(
+                df_fonte_periodo
+            )
+
+            relatorios_periodos[
+                str(ano_periodo)
+            ] = {
+                "ano": ano_periodo,
+                "mes_inicial": (
+                    mes_inicial_periodo
+                ),
+                "mes_final": (
+                    mes_final_periodo
+                ),
+                "registros_entrada": len(
+                    df_bruto
+                ),
+                "registros_saida": len(
+                    df_fonte_periodo
+                ),
+                "coleta": relatorio_coleta,
+            }
+
+        df_fonte = pd.concat(
+            dados_fonte,
+            ignore_index=True,
         )
 
         validar_dataframe(
             dataframe=df_fonte,
             nome=(
-                "o curtailment calculado "
+                "o curtailment consolidado "
                 f"da fonte {fonte}"
             ),
         )
@@ -306,17 +433,14 @@ def coletar_e_calcular_curtailment(
         )
 
         relatorios[
-            f"coleta_{fonte.lower()}"
-        ] = relatorio_coleta
-
-        relatorios[
-            f"calculo_{fonte.lower()}"
+            f"fonte_{fonte.lower()}"
         ] = {
-            "registros_entrada": len(
-                df_bruto
-            ),
-            "registros_saida": len(
+            "fonte": fonte,
+            "registros": len(
                 df_fonte
+            ),
+            "periodos": (
+                relatorios_periodos
             ),
         }
 
@@ -335,6 +459,22 @@ def coletar_e_calcular_curtailment(
     ] = {
         "fontes": list(
             FONTES_CURTAILMENT
+        ),
+        "ano_inicial": ano_inicial,
+        "mes_inicial": mes_inicial,
+        "ano_final": ano_final,
+        "mes_final": mes_final,
+        "periodo_inicial": (
+            f"{mes_inicial:02d}/{ano_inicial}"
+        ),
+        "periodo_final": (
+            f"{mes_final:02d}/{ano_final}"
+        ),
+        "quantidade_anos": len(
+            periodos_anuais
+        ),
+        "periodos_anuais": (
+            periodos_anuais
         ),
         "registros": len(
             df_curtailment
@@ -808,8 +948,9 @@ def preparar_series_interativas(
 
 
 def preparar_dados_aplicacao(
-    ano,
+    ano_inicial,
     mes_inicial,
+    ano_final,
     mes_final,
     data_referencia=None,
     timeout=120,
@@ -819,12 +960,14 @@ def preparar_dados_aplicacao(
 
     Parâmetros
     ----------
-    ano : int
-        Ano dos arquivos mensais de restrição do ONS.
+    ano_inicial : int
+        Ano da primeira competência do curtailment.
     mes_inicial : int
-        Primeiro mês do período.
+        Mês da primeira competência do curtailment.
+    ano_final : int
+        Ano da última competência do curtailment.
     mes_final : int
-        Último mês do período.
+        Mês da última competência do curtailment.
     data_referencia : datetime.date, opcional
         Data usada para determinar a última competência
         completa do fator de capacidade. Quando ausente,
@@ -840,8 +983,9 @@ def preparar_dados_aplicacao(
     """
 
     validar_periodo(
-        ano=ano,
+        ano_inicial=ano_inicial,
         mes_inicial=mes_inicial,
+        ano_final=ano_final,
         mes_final=mes_final,
     )
 
@@ -867,8 +1011,9 @@ def preparar_dados_aplicacao(
         df_curtailment,
         relatorios_curtailment,
     ) = coletar_e_calcular_curtailment(
-        ano=ano,
+        ano_inicial=ano_inicial,
         mes_inicial=mes_inicial,
+        ano_final=ano_final,
         mes_final=mes_final,
     )
 
@@ -995,13 +1140,33 @@ def preparar_dados_aplicacao(
             df_agregado_ponto
         ),
     )
-
+    
+    periodos_anuais = dividir_periodo_por_ano(
+        ano_inicial=ano_inicial,
+        mes_inicial=mes_inicial,
+        ano_final=ano_final,
+        mes_final=mes_final,
+    )
+    
     relatorios[
         "resumo_pipeline"
     ] = {
-        "ano": ano,
+        "ano_inicial": ano_inicial,
         "mes_inicial": mes_inicial,
+        "ano_final": ano_final,
         "mes_final": mes_final,
+        "periodo_inicial": (
+            f"{mes_inicial:02d}/{ano_inicial}"
+        ),
+        "periodo_final": (
+            f"{mes_final:02d}/{ano_final}"
+        ),
+        "quantidade_anos": len(
+            periodos_anuais
+        ),
+        "periodos_anuais": (
+            periodos_anuais
+        ),
         "data_referencia": (
             data_referencia.isoformat()
         ),
