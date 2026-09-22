@@ -330,28 +330,32 @@ else:
         "Configuração selecionada"
     )
 
-    coluna_inicio, coluna_fim, coluna_cadastro = (
-        st.columns(3)
+    (
+        coluna_inicio,
+        coluna_fim,
+        coluna_cadastro,
+    ) = st.columns(
+        3
     )
 
     with coluna_inicio:
-    st.metric(
-        "Início do período",
-        (
-            f"{periodo_selecionado['mes_inicial']:02d}/"
-            f"{periodo_selecionado['ano']}"
-        ),
-    )
+        st.metric(
+            "Início do período",
+            (
+                f"{periodo_selecionado['mes_inicial'\]:02d}/"
+                f"{periodo_selecionado['ano']}"
+            ),
+        )
 
     with coluna_fim:
         st.metric(
             "Fim do período",
             (
-                f"{periodo_selecionado['mes_final']:02d}/"
+                f"{periodo_selecionado['mes_final'\]:02d}/"
                 f"{periodo_selecionado['ano']}"
             ),
         )
-    
+
     with coluna_cadastro:
         st.metric(
             "Último mês completo",
@@ -360,6 +364,4 @@ else:
                 f"{ultimo_ano_completo}"
             ),
         )
-
-
 # ===========================================
