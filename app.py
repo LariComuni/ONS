@@ -242,15 +242,14 @@ with st.sidebar:
         st.stop()
 
     with st.form(
-        "formulario_periodo"
-    ):
-         = st.selectbox(
+    "formulario_periodo"):
+        mes_inicial = st.selectbox(
             "Mês inicial",
             options=meses_disponiveis,
             index=0,
             format_func=formatar_mes,
         )
-
+    
         mes_final = st.selectbox(
             "Mês final",
             options=meses_disponiveis,
@@ -259,7 +258,7 @@ with st.sidebar:
             ) - 1,
             format_func=formatar_mes,
         )
-
+    
         carregar_periodo = st.form_submit_button(
             "Aplicar período",
             use_container_width=True,
