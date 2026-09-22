@@ -342,7 +342,7 @@ else:
         st.metric(
             "Início do período",
             (
-                f"{periodo_selecionado['mes_inicial'\]:02d}/"
+                f"{periodo_selecionado['mes_inicial']:02d}/"
                 f"{periodo_selecionado['ano']}"
             ),
         )
@@ -351,7 +351,7 @@ else:
         st.metric(
             "Fim do período",
             (
-                f"{periodo_selecionado['mes_final'\]:02d}/"
+                f"{periodo_selecionado['mes_final']:02d}/"
                 f"{periodo_selecionado['ano']}"
             ),
         )
