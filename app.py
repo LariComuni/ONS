@@ -123,41 +123,42 @@ def formatar_mes(
 
 
 def validar_periodo_interface(
-    ano,
+    ano_inicial,
     mes_inicial,
+    ano_final,
     mes_final,
     ultimo_ano_completo,
     ultimo_mes_completo,
 ):
     """
-    Valida o período selecionado na interface.
-
-    Raises
-    ------
-    ValueError
-        Quando o período é inválido ou ainda não está
-        mensalmente completo.
+    Valida um período que pode abranger mais de um ano.
     """
 
-    if mes_inicial > mes_final:
+    competencia_inicial = (
+        ano_inicial,
+        mes_inicial,
+    )
+
+    competencia_final = (
+        ano_final,
+        mes_final,
+    )
+
+    ultima_competencia_completa = (
+        ultimo_ano_completo,
+        ultimo_mes_completo,
+    )
+
+    if competencia_inicial > competencia_final:
         raise ValueError(
-            "O mês inicial não pode ser posterior "
-            "ao mês final."
+            "A competência inicial não pode ser posterior "
+            "à competência final."
         )
 
-    if ano > ultimo_ano_completo:
+    if competencia_final > ultima_competencia_completa:
         raise ValueError(
-            "O ano selecionado ainda não possui uma "
-            "competência mensal completa disponível."
-        )
-
-    if (
-        ano == ultimo_ano_completo
-        and mes_final > ultimo_mes_completo
-    ):
-        raise ValueError(
-            "O mês final selecionado ainda não está "
-            "completo."
+            "A competência final selecionada ainda não "
+            "está completamente disponível."
         )
 
 
@@ -185,12 +186,11 @@ st.title(
 
 st.markdown(
     """
-    Selecione o período dos dados de restrição que será
-    analisado. Nesta primeira etapa, a aplicação apenas
-    valida o período, sem executar o pipeline.
+    Selecione as competências inicial e final dos dados de
+    restrição que serão analisados. O período pode abranger
+    mais de um ano.
     """
 )
-
 
 # ============================================================
 # BARRA LATERAL
@@ -213,56 +213,77 @@ with st.sidebar:
         )
     )
 
-    ano_padrao = ultimo_ano_completo
+    st.markdown(
+        "**Competência inicial**"
+    )
 
-    ano = st.selectbox(
-        "Ano",
+    ano_inicial = st.selectbox(
+        "Ano inicial",
         options=anos_disponiveis,
-        index=anos_disponiveis.index(
-            ano_padrao
-        ),
+        index=0,
+        key="ano_inicial",
     )
 
-    meses_disponiveis = obter_meses_disponiveis(
-        ano=ano,
-        ultimo_ano_completo=(
-            ultimo_ano_completo
-        ),
-        ultimo_mes_completo=(
-            ultimo_mes_completo
-        ),
+    meses_iniciais_disponiveis = (
+        obter_meses_disponiveis(
+            ano=ano_inicial,
+            ultimo_ano_completo=(
+                ultimo_ano_completo
+            ),
+            ultimo_mes_completo=(
+                ultimo_mes_completo
+            ),
+        )
     )
 
-    if not meses_disponiveis:
-        st.error(
-            "Não existem meses completos disponíveis "
-            "para o ano selecionado."
-        )
+    mes_inicial = st.selectbox(
+        "Mês inicial",
+        options=meses_iniciais_disponiveis,
+        index=0,
+        format_func=formatar_mes,
+        key="mes_inicial",
+    )
 
-        st.stop()
+    st.markdown(
+        "**Competência final**"
+    )
 
-    with st.form(
-    "formulario_periodo"):
-        mes_inicial = st.selectbox(
-            "Mês inicial",
-            options=meses_disponiveis,
-            index=0,
-            format_func=formatar_mes,
+    ano_final = st.selectbox(
+        "Ano final",
+        options=anos_disponiveis,
+        index=len(
+            anos_disponiveis
+        ) - 1,
+        key="ano_final",
+    )
+
+    meses_finais_disponiveis = (
+        obter_meses_disponiveis(
+            ano=ano_final,
+            ultimo_ano_completo=(
+                ultimo_ano_completo
+            ),
+            ultimo_mes_completo=(
+                ultimo_mes_completo
+            ),
         )
-    
-        mes_final = st.selectbox(
-            "Mês final",
-            options=meses_disponiveis,
-            index=len(
-                meses_disponiveis
-            ) - 1,
-            format_func=formatar_mes,
-        )
-    
-        carregar_periodo = st.form_submit_button(
-            "Aplicar período",
-            use_container_width=True,
-        )
+    )
+
+    mes_final = st.selectbox(
+        "Mês final",
+        options=meses_finais_disponiveis,
+        index=len(
+            meses_finais_disponiveis
+        ) - 1,
+        format_func=formatar_mes,
+        key="mes_final",
+    )
+
+    carregar_periodo = st.button(
+        "Aplicar período",
+        use_container_width=True,
+        type="primary",
+    )
 
     st.divider()
 
@@ -272,7 +293,6 @@ with st.sidebar:
         f"{ultimo_ano_completo}"
     )
 
-
 # ============================================================
 # VALIDAÇÃO DO PERÍODO
 # ============================================================
@@ -280,8 +300,9 @@ with st.sidebar:
 if carregar_periodo:
     try:
         validar_periodo_interface(
-            ano=ano,
+            ano_inicial=ano_inicial,
             mes_inicial=mes_inicial,
+            ano_final=ano_final,
             mes_final=mes_final,
             ultimo_ano_completo=(
                 ultimo_ano_completo
@@ -294,21 +315,28 @@ if carregar_periodo:
         st.session_state[
             "periodo_selecionado"
         ] = {
-            "ano": ano,
+            "ano_inicial": ano_inicial,
             "mes_inicial": mes_inicial,
+            "ano_final": ano_final,
             "mes_final": mes_final,
         }
 
         st.success(
             "Período selecionado com sucesso: "
-            f"{mes_inicial:02d}/{ano} a "
-            f"{mes_final:02d}/{ano}."
+            f"{mes_inicial:02d}/{ano_inicial} a "
+            f"{mes_final:02d}/{ano_final}."
         )
 
     except ValueError as erro:
         st.error(
             str(erro)
         )
+
+        if "periodo_selecionado" in st.session_state:
+            st.info(
+                "O período anterior continuará ativo até que "
+                "uma nova seleção válida seja aplicada."
+            )
 
 
 # ============================================================
@@ -343,7 +371,7 @@ else:
             "Início do período",
             (
                 f"{periodo_selecionado['mes_inicial']:02d}/"
-                f"{periodo_selecionado['ano']}"
+                f"{periodo_selecionado['ano_inicial']}"
             ),
         )
 
@@ -352,7 +380,7 @@ else:
             "Fim do período",
             (
                 f"{periodo_selecionado['mes_final']:02d}/"
-                f"{periodo_selecionado['ano']}"
+                f"{periodo_selecionado['ano_final']}"
             ),
         )
 
@@ -364,4 +392,26 @@ else:
                 f"{ultimo_ano_completo}"
             ),
         )
-# ===========================================
+
+
+# ============================================================
+# REGRAS DAS BASES
+# ============================================================
+
+st.subheader(
+    "Regras de atualização das bases"
+)
+
+st.markdown(
+    f"""
+    - **dados EOL e UFV:** período escolhido pelo
+      usuário, podendo abranger mais de um ano.
+    - **Fator de capacidade:** última competência mensal
+      completa, atualmente
+      **{ultimo_mes_completo:02d}/{ultimo_ano_completo}**.
+    - **Subestações:** cadastro mais atual disponibilizado
+      pelo ONS.
+    - **Linhas de transmissão:** cadastro mais atual
+      disponibilizado pelo ONS.
+    """
+)
