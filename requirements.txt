@@ -8,3 +8,4 @@ pyogrio
 requests
 shapely
 streamlit
+streamlit-folium
