@@ -15,6 +15,7 @@ from datetime import date
 
 import streamlit as st
 
+from src.pipeline import preparar_dados_aplicacao
 
 # ============================================================
 # CONFIGURAÇÃO
@@ -29,6 +30,8 @@ st.set_page_config(
 
 
 ANO_MINIMO = 2024
+
+TIMEOUT_PIPELINE = 180
 
 NOMES_MESES = {
     1: "Janeiro",
@@ -122,6 +125,17 @@ def formatar_mes(
     )
 
 
+def formatar_competencia(
+    ano,
+    mes,
+):
+    """
+    Formata uma competência no padrão MM/AAAA.
+    """
+
+    return f"{mes:02d}/{ano}"
+
+
 def validar_periodo_interface(
     ano_inicial,
     mes_inicial,
@@ -161,6 +175,32 @@ def validar_periodo_interface(
             "está completamente disponível."
         )
 
+@st.cache_resource(
+    show_spinner=False,
+)
+def executar_pipeline_aplicacao(
+    ano_inicial,
+    mes_inicial,
+    ano_final,
+    mes_final,
+    data_referencia,
+    timeout,
+):
+    """
+    Executa o pipeline e mantém os resultados em cache.
+
+    O cache evita que as coletas e os cálculos sejam
+    repetidos a cada atualização da interface.
+    """
+
+    return preparar_dados_aplicacao(
+        ano_inicial=ano_inicial,
+        mes_inicial=mes_inicial,
+        ano_final=ano_final,
+        mes_final=mes_final,
+        data_referencia=data_referencia,
+        timeout=timeout,
+    )
 
 # ============================================================
 # COMPETÊNCIA MAIS RECENTE
@@ -220,7 +260,7 @@ with st.sidebar:
     ano_inicial = st.selectbox(
         "Ano inicial",
         options=anos_disponiveis,
-        index=0,
+        index=len(anos_disponiveis) - 1,
         key="ano_inicial",
     )
 
@@ -320,7 +360,11 @@ if carregar_periodo:
             "ano_final": ano_final,
             "mes_final": mes_final,
         }
-
+        
+        st.session_state[
+            "processar_periodo"
+        ] = True
+        
         st.success(
             "Período selecionado com sucesso: "
             f"{mes_inicial:02d}/{ano_inicial} a "
@@ -369,28 +413,263 @@ else:
     with coluna_inicio:
         st.metric(
             "Início do período",
-            (
-                f"{periodo_selecionado['mes_inicial']:02d}/"
-                f"{periodo_selecionado['ano_inicial']}"
+            formatar_competencia(
+                ano=periodo_selecionado[
+                    "ano_inicial"
+                ],
+                mes=periodo_selecionado[
+                    "mes_inicial"
+                ],
             ),
         )
-
+    
     with coluna_fim:
         st.metric(
             "Fim do período",
-            (
-                f"{periodo_selecionado['mes_final']:02d}/"
-                f"{periodo_selecionado['ano_final']}"
+            formatar_competencia(
+                ano=periodo_selecionado[
+                    "ano_final"
+                ],
+                mes=periodo_selecionado[
+                    "mes_final"
+                ],
             ),
         )
-
+    
     with coluna_cadastro:
         st.metric(
             "Último mês completo",
-            (
-                f"{ultimo_mes_completo:02d}/"
-                f"{ultimo_ano_completo}"
+            formatar_competencia(
+                ano=ultimo_ano_completo,
+                mes=ultimo_mes_completo,
             ),
+        )
+
+
+# ============================================================
+# EXECUÇÃO DO PIPELINE
+# ============================================================
+
+if (
+    periodo_selecionado is not None
+    and st.session_state.get(
+        "processar_periodo",
+        False,
+    )
+):
+    try:
+        competencia_inicial = formatar_competencia(
+            ano=periodo_selecionado[
+                "ano_inicial"
+            ],
+            mes=periodo_selecionado[
+                "mes_inicial"
+            ],
+        )
+        
+        competencia_final = formatar_competencia(
+            ano=periodo_selecionado[
+                "ano_final"
+            ],
+            mes=periodo_selecionado[
+                "mes_final"
+            ],
+        )
+
+        mensagem_processamento = (
+            "Coletando e processando os dados do período "
+            f"{competencia_inicial} a {competencia_final}. "
+            "A primeira execução pode levar alguns minutos."
+        )
+        
+        with st.spinner(
+            mensagem_processamento
+        ):
+            dados_pipeline = (
+                executar_pipeline_aplicacao(
+                    ano_inicial=(
+                        periodo_selecionado[
+                            "ano_inicial"
+                        ]
+                    ),
+                    mes_inicial=(
+                        periodo_selecionado[
+                            "mes_inicial"
+                        ]
+                    ),
+                    ano_final=(
+                        periodo_selecionado[
+                            "ano_final"
+                        ]
+                    ),
+                    mes_final=(
+                        periodo_selecionado[
+                            "mes_final"
+                        ]
+                    ),
+                    data_referencia=hoje,
+                    timeout=TIMEOUT_PIPELINE,
+                )
+            )
+
+        st.session_state[
+            "dados_pipeline"
+        ] = dados_pipeline
+
+        st.session_state[
+            "periodo_processado"
+        ] = periodo_selecionado.copy()
+
+        st.session_state[
+            "processar_periodo"
+        ] = False
+
+        st.success(
+            "Processamento concluído com sucesso."
+        )
+
+    except Exception as erro:
+        st.session_state[
+            "processar_periodo"
+        ] = False
+
+        st.error(
+            "Não foi possível concluir o processamento "
+            "do período selecionado."
+        )
+
+        if "dados_pipeline" in st.session_state:
+            st.info(
+                "O último processamento concluído com sucesso "
+                "continuará disponível abaixo."
+            )
+        
+        st.exception(
+            erro
+        )
+
+
+# ============================================================
+# RESUMO DO PIPELINE
+# ============================================================
+
+dados_pipeline = st.session_state.get(
+    "dados_pipeline"
+)
+
+periodo_processado = st.session_state.get(
+    "periodo_processado"
+)
+
+if (
+    dados_pipeline is not None
+    and periodo_processado is not None
+):
+    resumo_pipeline = dados_pipeline[
+        "relatorios"
+    ][
+        "resumo_pipeline"
+    ]
+
+    st.subheader(
+        "Resumo do processamento"
+    )
+
+    (
+        coluna_registros,
+        coluna_agregados,
+        coluna_usinas,
+        coluna_pontos,
+    ) = st.columns(
+        4
+    )
+
+    with coluna_registros:
+        st.metric(
+            "Registros de curtailment",
+            f"{resumo_pipeline['registros_curtailment']:,}".replace(
+                ",",
+                ".",
+            ),
+        )
+
+    with coluna_agregados:
+        st.metric(
+            "Registros agregados",
+            f"{resumo_pipeline['registros_agregados_ponto']:,}".replace(
+                ",",
+                ".",
+            ),
+        )
+
+    with coluna_usinas:
+        st.metric(
+            "Usinas",
+            resumo_pipeline[
+                "usinas"
+            ],
+        )
+
+    with coluna_pontos:
+        st.metric(
+            "Pontos de conexão",
+            resumo_pipeline[
+                "pontos"
+            ],
+        )
+
+    (
+        coluna_linhas,
+        coluna_busca,
+        coluna_coord_usinas,
+        coluna_coord_pontos,
+    ) = st.columns(
+        4
+    )
+
+    with coluna_linhas:
+        st.metric(
+            "Linhas desenháveis",
+            resumo_pipeline[
+                "linhas_desenhaveis"
+            ],
+        )
+
+    with coluna_busca:
+        st.metric(
+            "Itens pesquisáveis",
+            resumo_pipeline[
+                "registros_busca"
+            ],
+        )
+
+    with coluna_coord_usinas:
+        st.metric(
+            "Coordenadas de usinas",
+            resumo_pipeline[
+                "coordenadas_usinas"
+            ],
+        )
+
+    with coluna_coord_pontos:
+        st.metric(
+            "Coordenadas de pontos",
+            resumo_pipeline[
+                "coordenadas_pontos"
+            ],
+        )
+
+    st.caption(
+        "Período efetivamente processado: "
+        f"{resumo_pipeline['periodo_inicial']} a "
+        f"{resumo_pipeline['periodo_final']}."
+    )
+
+    with st.expander(
+        "Ver relatório completo do pipeline"
+    ):
+        st.json(
+            resumo_pipeline
         )
 
 
@@ -415,3 +694,20 @@ st.markdown(
       disponibilizado pelo ONS.
     """
 )
+
+
+# ============================================================
+# AVISO DA ETAPA
+# ============================================================
+
+if dados_pipeline is None:
+    st.info(
+        "Selecione um período e clique em "
+        "Aplicar período para executar "
+        "o pipeline."
+    )
+else:
+    st.info(
+        "O pipeline foi executado e validado. "
+        "O mapa será adicionado na próxima etapa."
+    )
