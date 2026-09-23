@@ -12,7 +12,7 @@ from datetime import date
 from pathlib import Path
 
 import streamlit as st
-from streamlit_folium import folium_static
+import streamlit.components.v1 as components
 
 from src.mapa import (
     carregar_malha_ufs,
@@ -784,10 +784,16 @@ if dados_pipeline is not None:
             "apresenta indicadores e gráficos."
         )
 
-        folium_static(
-            mapa_interativo,
-            width=LARGURA_MAPA,
+        html_mapa = (
+            mapa_interativo
+            .get_root()
+            .render()
+        )
+        
+        components.html(
+            html_mapa,
             height=ALTURA_MAPA,
+            scrolling=False,
         )
 
         with st.expander(
