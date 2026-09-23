@@ -36,37 +36,109 @@ st.markdown(
     <style>
         .block-container {
             max-width: 1280px;
-            padding-top: 0.8rem;
+            padding-top: 0.6rem;
             padding-bottom: 2rem;
         }
 
-        .sinmulator-cabecalho {
+        .sin-navbar {
+            position: sticky;
+            top: 0.5rem;
+            z-index: 1000;
+
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+
+            min-height: 64px;
             margin: 0 0 1rem;
-            text-align: center;
+            padding: 0.65rem 0.85rem 0.65rem 1.1rem;
+
+            background:
+                linear-gradient(
+                    90deg,
+                    #071b35 0%,
+                    #0a2446 100%
+                );
+
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 10px;
+            box-shadow:
+                0 4px 14px rgba(7, 27, 53, 0.18);
+
+            box-sizing: border-box;
         }
 
-        .sinmulator-titulo {
-            margin: 0;
-            color: #111111;
-            font-family: "Trebuchet MS", "Segoe UI", sans-serif;
-            font-size: 3.2rem;
+        .sin-navbar-marca {
+            display: flex;
+            align-items: center;
+            gap: 0.7rem;
+        }
+
+        .sin-navbar-icone {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        
+            width: 32px;
+            height: 32px;
+        
+            color: #ffffff;
+            font-size: 1.55rem;
+            line-height: 1;
+        }
+
+        .sin-navbar-nome {
+            color: #ffffff;
+            font-family:
+                "Trebuchet MS",
+                "Segoe UI",
+                sans-serif;
+            font-size: 1.65rem;
             font-weight: 800;
-            letter-spacing: -0.06rem;
-            line-height: 1.05;
+            letter-spacing: -0.03rem;
+            line-height: 1;
         }
 
-        .sinmulator-subtitulo {
-            margin: 0.4rem 0 0;
-            color: #60656f;
+        .sin-navbar-link {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.55rem;
+
+            min-width: 108px;
+            padding: 0.65rem 1rem;
+
+            color: #ffffff !important;
+            background: #173a68;
+
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 8px;
+
             font-family: "Segoe UI", sans-serif;
-            font-size: 0.95rem;
-            font-weight: 400;
+            font-size: 0.9rem;
+            font-weight: 600;
+            text-decoration: none !important;
+
+            transition:
+                background-color 0.15s ease,
+                transform 0.15s ease;
+        }
+
+        .sin-navbar-link:hover {
+            color: #ffffff !important;
+            background: #24528a;
+            transform: translateY(-1px);
+        }
+
+        .sin-navbar-link-icone {
+            font-size: 1rem;
+            line-height: 1;
         }
 
         .filtros-titulo {
             margin: 0 0 0.2rem;
             color: #111827;
-            font-size: 1.1rem;
+            font-size: 1.05rem;
             font-weight: 700;
         }
 
@@ -85,13 +157,33 @@ st.markdown(
             border-radius: 9px;
         }
 
-        @media (max-width: 800px) {
+        @media (max-width: 700px) {
             .block-container {
-                padding-top: 0.5rem;
+                padding-top: 0.4rem;
             }
 
-            .sinmulator-titulo {
-                font-size: 2.4rem;
+            .sin-navbar {
+                min-height: 56px;
+                padding:
+                    0.55rem
+                    0.65rem
+                    0.55rem
+                    0.85rem;
+            }
+
+            .sin-navbar-icone {
+                width: 26px;
+                height: 26px;
+                font-size: 1.4rem;
+            }
+
+            .sin-navbar-nome {
+                font-size: 1.3rem;
+            }
+
+            .sin-navbar-link {
+                min-width: auto;
+                padding: 0.55rem 0.75rem;
             }
         }
     </style>
@@ -386,22 +478,35 @@ hoje = date.today()
 
 
 # ============================================================
-# CABEÇALHO
+# BARRA DE NAVEGAÇÃO
 # ============================================================
 
 st.markdown(
     """
-    <div class="sinmulator-cabecalho">
-        <h1 class="sinmulator-titulo">SINmulator</h1>
-        <p class="sinmulator-subtitulo">
-            Explore dados, indicadores e ativos do Sistema Interligado Nacional
-        </p>
-    </div>
+    <nav class="sin-navbar">
+        <div class="sin-navbar-marca">
+            <span class="sin-navbar-icone">
+                ⚡
+            </span>
+
+            <span class="sin-navbar-nome">
+                SINmulator
+            </span>
+        </div>
+
+        #mapa-interativo
+            <span class="sin-navbar-link-icone">
+                🗺️
+            </span>
+
+            <span>
+                Mapa
+            </span>
+        </a>
+    </nav>
     """,
     unsafe_allow_html=True,
 )
-
-
 # ============================================================
 # FILTROS
 # ============================================================
@@ -424,7 +529,7 @@ with st.container(
 
         <p class="filtros-descricao">
             Selecione as competências inicial e final e o tipo
-            de fonte. O período pode abranger mais de um ano.
+            de fonte.
         </p>
         """,
         unsafe_allow_html=True,
@@ -935,8 +1040,13 @@ if dados_pipeline is not None:
                 dados_pipeline
             )
 
+        st.markdown(
+            '<div id="mapa-interativo"></div>',
+            unsafe_allow_html=True,
+        )
+        
         st.subheader(
-            "Mapa interativo"
+            "Mapa"
         )
 
         st.caption(
