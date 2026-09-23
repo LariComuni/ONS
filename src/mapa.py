@@ -739,6 +739,104 @@ def adicionar_busca(
         controle_busca,
     )
 
+def criar_mapa_inicial(
+    gdf_ufs,
+):
+    """
+    Cria o mapa apresentado antes da execução do pipeline.
+
+    O mapa inicial contém a camada-base e os limites das UFs,
+    sem usinas, pontos de conexão, linhas de transmissão,
+    busca ou painel de gráficos.
+
+    Parâmetros
+    ----------
+    gdf_ufs : geopandas.GeoDataFrame
+        Malha geográfica das UFs.
+
+    Retorno
+    -------
+    tuple
+        Mapa inicial e relatório da construção.
+    """
+
+    if gdf_ufs is None:
+        raise ValueError(
+            "A camada das UFs não foi informada."
+        )
+
+    if not isinstance(
+        gdf_ufs,
+        gpd.GeoDataFrame,
+    ):
+        raise TypeError(
+            "A camada das UFs deve ser um GeoDataFrame."
+        )
+
+    if gdf_ufs.empty:
+        raise ValueError(
+            "A camada das UFs está vazia."
+        )
+
+    if gdf_ufs.crs is None:
+        raise ValueError(
+            "A camada das UFs não possui CRS definido."
+        )
+
+    geometrias_invalidas = (
+        gdf_ufs.geometry.isna()
+        | gdf_ufs.geometry.is_empty
+        | ~gdf_ufs.geometry.is_valid
+    )
+
+    if geometrias_invalidas.any():
+        raise ValueError(
+            "A camada das UFs possui "
+            f"{int(geometrias_invalidas.sum())} "
+            "geometrias inválidas."
+        )
+
+    mapa = folium.Map(
+        location=CENTRO_MAPA_BRASIL,
+        zoom_start=ZOOM_INICIAL,
+        tiles="CartoDB positron",
+        control_scale=True,
+        zoom_control=True,
+        prefer_canvas=True,
+    )
+
+    camada_ufs = adicionar_camadas_ufs(
+        mapa=mapa,
+        gdf_ufs=gdf_ufs,
+    )
+
+    relatorio = {
+        "tipo_mapa": "inicial",
+        "ufs": len(
+            gdf_ufs
+        ),
+        "crs_ufs": str(
+            gdf_ufs.crs
+        ),
+        "geometrias_ufs_invalidas": int(
+            geometrias_invalidas.sum()
+        ),
+        "centro_mapa": (
+            CENTRO_MAPA_BRASIL.copy()
+        ),
+        "zoom_inicial": ZOOM_INICIAL,
+        "mapa_base": "CartoDB positron",
+        "camada_ufs": (
+            camada_ufs.get_name()
+        ),
+        "usinas": 0,
+        "pontos": 0,
+        "linhas": 0,
+        "painel_lateral": False,
+        "graficos_series": False,
+    }
+
+    return mapa, relatorio
 
 def criar_mapa_basico(
     gdf_ufs,
