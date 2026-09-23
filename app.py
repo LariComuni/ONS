@@ -31,6 +31,79 @@ st.set_page_config(
     initial_sidebar_state="collapsed",
 )
 
+st.markdown(
+    """
+    <style>
+        .block-container {
+            max-width: 1280px;
+            padding-top: 1.2rem;
+            padding-bottom: 2rem;
+        }
+
+        .sinmulator-cabecalho {
+            margin: 0 0 1.25rem;
+            text-align: center;
+        }
+
+        .sinmulator-titulo {
+            margin: 0;
+            color: #1f2937;
+            font-family:
+                "Trebuchet MS",
+                "Segoe UI",
+                sans-serif;
+            font-size: 3.2rem;
+            font-weight: 800;
+            letter-spacing: -0.08rem;
+            line-height: 1.05;
+        }
+
+        .sinmulator-titulo-destaque {
+            color: #ff4b4b;
+        }
+
+        .sinmulator-subtitulo {
+            margin: 0.45rem 0 0;
+            color: #6b7280;
+            font-size: 0.95rem;
+        }
+
+        .filtros-titulo {
+            margin: 0 0 0.2rem;
+            color: #1f2937;
+            font-size: 1.15rem;
+            font-weight: 700;
+        }
+
+        .filtros-descricao {
+            margin: 0 0 1rem;
+            color: #6b7280;
+            font-size: 0.88rem;
+        }
+
+        div[data-testid="stVerticalBlockBorderWrapper"] {
+            border-color: #d9dde3;
+            border-radius: 10px;
+        }
+
+        div[data-testid="stAlert"] {
+            border-radius: 9px;
+        }
+
+        @media (max-width: 800px) {
+            .block-container {
+                padding-top: 0.8rem;
+            }
+
+            .sinmulator-titulo {
+                font-size: 2.4rem;
+            }
+        }
+    </style>
+    """,
+    unsafe_allow_html=True,
+)
+
 
 ANO_MINIMO = 2024
 
@@ -321,36 +394,44 @@ hoje = date.today()
 # CABEÇALHO
 # ============================================================
 
-st.title(
-    "SINmulator"
-)
-
 st.markdown(
     """
-    Selecione as competências inicial e final dos dados de
-    restrição que serão analisados. O período pode abranger
-    mais de um ano.
-    """
+    <div class="sinmulator-cabecalho">
+        <h1 class="sinmulator-titulo">
+            SIN<span class="sinmulator-titulo-destaque">mulator</span>
+        </h1>
+
+        <p class="sinmulator-subtitulo">
+            Curtailment e restrições operativas no
+            Sistema Interligado Nacional
+        </p>
+    </div>
+    """,
+    unsafe_allow_html=True,
 )
+
 
 # ============================================================
 # FILTROS
 # ============================================================
 
-st.subheader(
-    "Configuração da análise"
-)
-
-anos_disponiveis = list(
-    range(
-        ANO_MINIMO,
-        ultimo_ano_completo + 1,
-    )
-)
-
 with st.container(
     border=True
 ):
+    st.markdown(
+        """
+        <p class="filtros-titulo">
+            Filtros
+        </p>
+
+        <p class="filtros-descricao">
+            Selecione as competências inicial e final e o tipo
+            de fonte. O período pode abranger mais de um ano.
+        </p>
+        """,
+        unsafe_allow_html=True,
+    )
+
     (
         coluna_ano_inicial,
         coluna_mes_inicial,
