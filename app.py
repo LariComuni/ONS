@@ -468,7 +468,7 @@ with st.container(
 
     with coluna_botao:
         carregar_periodo = st.button(
-            "Aplicar período",
+            "Aplicar",
             use_container_width=True,
             type="primary",
         )
