@@ -36,38 +36,39 @@ st.markdown(
     <style>
         .block-container {
             max-width: 1280px;
-            padding-top: 0.6rem;
+            padding-top: 0;
             padding-bottom: 2rem;
         }
 
         .sin-navbar {
             position: sticky;
-            top: 0.5rem;
+            top: 0;
             z-index: 1000;
-
+        
             display: flex;
             align-items: center;
             justify-content: space-between;
-
+        
+            width: 100vw;
             min-height: 64px;
-            margin: 0 0 1rem;
-            padding: 0.65rem 0.85rem 0.65rem 1.1rem;
-
-            background:
-                linear-gradient(
-                    90deg,
-                    #071b35 0%,
-                    #0a2446 100%
-                );
-
-            border: 1px solid rgba(255, 255, 255, 0.08);
-            border-radius: 10px;
+        
+            margin-top: 0;
+            margin-right: calc(50% - 50vw);
+            margin-bottom: 1rem;
+            margin-left: calc(50% - 50vw);
+        
+            padding: 0.65rem 2rem;
+        
+            background: #071f3d;
+        
+            border: 0;
+            border-radius: 0;
+        
             box-shadow:
-                0 4px 14px rgba(7, 27, 53, 0.18);
-
+                0 3px 12px rgba(7, 31, 61, 0.18);
+        
             box-sizing: border-box;
         }
-
         .sin-navbar-marca {
             display: flex;
             align-items: center;
@@ -161,8 +162,23 @@ st.markdown(
 
         @media (max-width: 700px) {
             .block-container {
-                padding-top: 0.4rem;
+                padding-top: 0;
             }
+        
+            .sin-navbar {
+                min-height: 56px;
+                padding: 0.55rem 1rem;
+            }
+        
+            .sin-navbar-nome {
+                font-size: 1.3rem;
+            }
+        
+            .sin-navbar-link {
+                min-width: auto;
+                padding: 0.55rem 0.75rem;
+            }
+        }
 
             .sin-navbar {
                 min-height: 56px;
@@ -483,34 +499,27 @@ hoje = date.today()
 # BARRA DE NAVEGAÇÃO
 # ============================================================
 
+html_navbar = (
+    '<div class="sin-navbar">'
+    '<div class="sin-navbar-marca">'
+    '<span class="sin-navbar-icone" aria-hidden="true">'
+    '&#9889;&#65038;'
+    '</span>'
+    '<span class="sin-navbar-nome">'
+    'SINmulator'
+    '</span>'
+    '</div>'
+    '#mapa-interativo'
+    '<span class="sin-navbar-link-icone" aria-hidden="true">'
+    '🗺️'
+    '</span>'
+    '<span>Mapa</span>'
+    '</a>'
+    '</div>'
+)
+
 st.markdown(
-    """
-    <nav class="sin-navbar">
-        <div class="sin-navbar-marca">
-            <span
-                class="sin-navbar-icone"
-                aria-hidden="true"
-            >&#9889;&#65038;</span>
-
-            <span class="sin-navbar-nome">
-                SINmulator
-            </span>
-        </div>
-
-        #mapa-interativo
-            <span
-                class="sin-navbar-link-icone"
-                aria-hidden="true"
-            >
-                🗺️
-            </span>
-
-            <span>
-                Mapa
-            </span>
-        </a>
-    </nav>
-    """,
+    html_navbar,
     unsafe_allow_html=True,
 )
 
