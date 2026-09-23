@@ -1,20 +1,23 @@
 """
 Aplicação Streamlit para visualização de curtailment.
 
-Nesta primeira etapa, a aplicação permite selecionar e
-validar o período dos dados de curtailment.
-
 Regras das bases:
-- curtailment EOL e UFV: período escolhido pelo usuário;
+- dados EOL e UFV: período escolhido pelo usuário;
 - fator de capacidade: última competência mensal completa;
 - subestações: cadastro mais atual disponível;
 - linhas de transmissão: cadastro mais atual disponível.
 """
 
 from datetime import date
+from pathlib import Path
 
 import streamlit as st
+from streamlit_folium import folium_static
 
+from src.mapa import (
+    carregar_malha_ufs,
+    criar_mapa_interativo,
+)
 from src.pipeline import preparar_dados_aplicacao
 
 # ============================================================
@@ -32,6 +35,22 @@ st.set_page_config(
 ANO_MINIMO = 2024
 
 TIMEOUT_PIPELINE = 180
+
+RAIZ_PROJETO = (
+    Path(__file__)
+    .resolve()
+    .parent
+)
+
+CAMINHO_UFS = (
+    RAIZ_PROJETO
+    / "assets"
+    / "geo"
+    / "estados_brasil.geojson"
+)
+
+ALTURA_MAPA = 850
+LARGURA_MAPA = 1400
 
 NOMES_MESES = {
     1: "Janeiro",
@@ -201,6 +220,71 @@ def executar_pipeline_aplicacao(
         data_referencia=data_referencia,
         timeout=timeout,
     )
+
+@st.cache_data(
+    show_spinner=False,
+)
+
+def carregar_ufs_aplicacao(
+    caminho_geojson,
+):
+    """
+    Carrega e valida a malha das UFs utilizada pelo mapa.
+    """
+
+    return carregar_malha_ufs(caminho_geojson)
+
+def construir_mapa_aplicacao(
+    dados_pipeline,
+):
+    """
+    Constrói o mapa interativo a partir dos resultados
+    produzidos pelo pipeline.
+
+    Retorno
+    -------
+    tuple
+        Mapa Folium, relatório do mapa e relatório das UFs.
+    """
+
+    if not CAMINHO_UFS.exists():
+        raise FileNotFoundError(
+            "A malha das UFs não foi encontrada em: "
+            f"{CAMINHO_UFS}")
+
+    (
+        gdf_ufs,
+        relatorio_ufs,
+    ) = carregar_ufs_aplicacao(
+        CAMINHO_UFS
+    )
+
+    (
+        mapa_interativo,
+        relatorio_mapa,
+    ) = criar_mapa_interativo(
+        gdf_ufs=gdf_ufs,
+        gdf_usinas=dados_pipeline[
+            "gdf_usinas"
+        ],
+        gdf_pontos=dados_pipeline[
+            "gdf_pontos"
+        ],
+        gdf_linhas_desenhaveis=dados_pipeline[
+            "gdf_linhas_desenhaveis"
+        ],
+        gdf_busca=dados_pipeline[
+            "gdf_busca"
+        ],
+        usina_series_map=dados_pipeline[
+            "usina_series_map"
+        ],
+        ponto_series_by_latlon=dados_pipeline[
+            "ponto_series_by_latlon"
+        ],
+    )
+
+    return (mapa_interativo,relatorio_mapa,relatorio_ufs)
 
 # ============================================================
 # COMPETÊNCIA MAIS RECENTE
@@ -674,6 +758,68 @@ if (
 
 
 # ============================================================
+# MAPA INTERATIVO
+# ============================================================
+
+if dados_pipeline is not None:
+    try:
+        with st.spinner(
+            "Construindo o mapa interativo..."
+        ):
+            (
+                mapa_interativo,
+                relatorio_mapa,
+                relatorio_ufs,
+            ) = construir_mapa_aplicacao(
+                dados_pipeline
+            )
+
+        st.subheader(
+            "Mapa interativo"
+        )
+
+        st.caption(
+            "Utilize a barra de pesquisa para localizar "
+            "uma usina ou ponto de conexão. O painel lateral "
+            "apresenta indicadores e gráficos."
+        )
+
+        folium_static(
+            mapa_interativo,
+            width=LARGURA_MAPA,
+            height=ALTURA_MAPA,
+        )
+
+        with st.expander(
+            "Ver relatório técnico do mapa"
+        ):
+            st.markdown(
+                "**Construção do mapa**"
+            )
+
+            st.json(
+                relatorio_mapa
+            )
+
+            st.markdown(
+                "**Malha das UFs**"
+            )
+
+            st.json(
+                relatorio_ufs
+            )
+
+    except (
+        FileNotFoundError,
+        TypeError,
+        ValueError,
+        RuntimeError,
+    ) as erro:
+        st.error("Não foi possível construir o mapa interativo.")
+
+        st.exception(erro)
+
+# ============================================================
 # REGRAS DAS BASES
 # ============================================================
 
@@ -703,11 +849,6 @@ st.markdown(
 if dados_pipeline is None:
     st.info(
         "Selecione um período e clique em "
-        "Aplicar período para executar "
-        "o pipeline."
-    )
-else:
-    st.info(
-        "O pipeline foi executado e validado. "
-        "O mapa será adicionado na próxima etapa."
+        "Aplicar período para executar o pipeline"
+        "e construir o mapa."
     )
