@@ -34,16 +34,20 @@ st.set_page_config(
 st.markdown(
     """
     <style>
+        header[data-testid="stHeader"] {
+            display: none;
+        }
+        
         .block-container {
             max-width: 1280px;
-            padding-top: 0;
+            padding-top: 0 !important;
             padding-bottom: 2rem;
         }
-
+        
         .sin-navbar {
             position: sticky;
             top: 0;
-            z-index: 1000;
+            z-index: 9999;
         
             display: flex;
             align-items: center;
@@ -52,29 +56,24 @@ st.markdown(
             width: 100vw;
             min-height: 64px;
         
-            margin-top: 0;
-            margin-right: calc(50% - 50vw);
+            position: relative;
+            left: 50%;
+            margin-left: -50vw;
             margin-bottom: 1rem;
-            margin-left: calc(50% - 50vw);
         
             padding: 0.65rem 2rem;
         
-            background: #071f3d;
-        
-            border: 0;
-            border-radius: 0;
-        
-            box-shadow:
-                0 3px 12px rgba(7, 31, 61, 0.18);
-        
+            background-color: #071f3d;
             box-sizing: border-box;
+            box-shadow: 0 2px 8px rgba(7, 31, 61, 0.2);
         }
+        
         .sin-navbar-marca {
             display: flex;
             align-items: center;
-            gap: 0.7rem;
+            gap: 0.65rem;
         }
-
+        
         .sin-navbar-icone {
             display: inline-flex;
             align-items: center;
@@ -89,82 +88,58 @@ st.markdown(
             font-weight: 700;
             line-height: 1;
         }
-
+        
         .sin-navbar-nome {
             color: #ffffff;
-            font-family:
-                "Trebuchet MS",
-                "Segoe UI",
-                sans-serif;
-            font-size: 1.65rem;
+            font-family: "Trebuchet MS", "Segoe UI", sans-serif;
+            font-size: 1.55rem;
             font-weight: 800;
-            letter-spacing: -0.03rem;
+            letter-spacing: -0.025rem;
             line-height: 1;
         }
-
+        
         .sin-navbar-link {
             display: inline-flex;
             align-items: center;
             justify-content: center;
-            gap: 0.55rem;
-
-            min-width: 108px;
-            padding: 0.65rem 1rem;
-
+            gap: 0.5rem;
+        
+            min-width: 105px;
+            padding: 0.62rem 1rem;
+        
             color: #ffffff !important;
-            background: #173a68;
-
-            border: 1px solid rgba(255, 255, 255, 0.08);
-            border-radius: 8px;
-
+            background-color: #173f70;
+        
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            border-radius: 7px;
+        
             font-family: "Segoe UI", sans-serif;
             font-size: 0.9rem;
             font-weight: 600;
             text-decoration: none !important;
-
+        
             transition:
                 background-color 0.15s ease,
                 transform 0.15s ease;
         }
-
+        
         .sin-navbar-link:hover {
             color: #ffffff !important;
-            background: #24528a;
+            background-color: #24558d;
             transform: translateY(-1px);
         }
-
+        
         .sin-navbar-link-icone {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+        
+            color: #ffffff;
             font-size: 1rem;
             line-height: 1;
         }
-
-        .filtros-titulo {
-            margin: 0 0 0.2rem;
-            color: #111827;
-            font-size: 1.05rem;
-            font-weight: 700;
-        }
-
-        .filtros-descricao {
-            margin: 0 0 1rem;
-            color: #6b7280;
-            font-size: 0.88rem;
-        }
-
-        div[data-testid="stVerticalBlockBorderWrapper"] {
-            border-color: #d9dde3;
-            border-radius: 10px;
-        }
-
-        div[data-testid="stAlert"] {
-            border-radius: 9px;
-        }
-
-        @media (max-width: 700px) {
-            .block-container {
-                padding-top: 0;
-            }
         
+        @media (max-width: 700px) {
             .sin-navbar {
                 min-height: 56px;
                 padding: 0.55rem 1rem;
@@ -174,31 +149,6 @@ st.markdown(
                 font-size: 1.3rem;
             }
         
-            .sin-navbar-link {
-                min-width: auto;
-                padding: 0.55rem 0.75rem;
-            }
-        }
-
-            .sin-navbar {
-                min-height: 56px;
-                padding:
-                    0.55rem
-                    0.65rem
-                    0.55rem
-                    0.85rem;
-            }
-
-            .sin-navbar-icone {
-                width: 26px;
-                height: 26px;
-                font-size: 1.4rem;
-            }
-
-            .sin-navbar-nome {
-                font-size: 1.3rem;
-            }
-
             .sin-navbar-link {
                 min-width: auto;
                 padding: 0.55rem 0.75rem;
@@ -499,29 +449,41 @@ hoje = date.today()
 # BARRA DE NAVEGAÇÃO
 # ============================================================
 
-html_navbar = (
-    '<div class="sin-navbar">'
-    '<div class="sin-navbar-marca">'
-    '<span class="sin-navbar-icone" aria-hidden="true">'
-    '&#9889;&#65038;'
-    '</span>'
-    '<span class="sin-navbar-nome">'
-    'SINmulator'
-    '</span>'
-    '</div>'
-    '#mapa-interativo'
-    '<span class="sin-navbar-link-icone" aria-hidden="true">'
-    '🗺️'
-    '</span>'
-    '<span>Mapa</span>'
-    '</a>'
-    '</div>'
+# ============================================================
+# BARRA DE NAVEGAÇÃO
+# ============================================================
+
+html_navbar = """
+<div class="sin-navbar">
+    <div class="sin-navbar-marca">
+        <span
+            class="sin-navbar-icone"
+            aria-hidden="true"
+        >&#9889;&#65038;</span>
+
+        <span class="sin-navbar-nome">
+            SINmulator
+        </span>
+    </div>
+
+    <a
+        class="sin-navbar-link"
+        href="#mapa-interativo"
+    >
+        <span
+            class="sin-navbar-link-icone"
+            aria-hidden="true"
+        >&#128506;&#65039;</span>
+
+        <span>Mapa</span>
+    </a>
+</div>
+"""
+
+st.html(
+    html_navbar
 )
 
-st.markdown(
-    html_navbar,
-    unsafe_allow_html=True,
-)
 
 # ============================================================
 # FILTROS
@@ -1056,9 +1018,8 @@ if dados_pipeline is not None:
                 dados_pipeline
             )
 
-        st.markdown(
-            '<div id="mapa-interativo"></div>',
-            unsafe_allow_html=True,
+        st.html(
+            '<div id="mapa-interativo"></div>'
         )
         
         st.subheader(
