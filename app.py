@@ -25,10 +25,10 @@ from src.pipeline import preparar_dados_aplicacao
 # ============================================================
 
 st.set_page_config(
-    page_title="Curtailment ONS",
+    page_title="SINmulator",
     page_icon="⚡",
     layout="wide",
-    initial_sidebar_state="expanded",
+    initial_sidebar_state="collapsed",
 )
 
 
@@ -67,6 +67,18 @@ NOMES_MESES = {
     12: "Dezembro",
 }
 
+OPCOES_FONTES = {
+    "Eólica e solar fotovoltaica": (
+        "EOL",
+        "UFV",
+    ),
+    "Eólica": (
+        "EOL",
+    ),
+    "Solar fotovoltaica": (
+        "UFV",
+    ),
+}
 
 # ============================================================
 # FUNÇÕES
@@ -202,14 +214,12 @@ def executar_pipeline_aplicacao(
     mes_inicial,
     ano_final,
     mes_final,
+    fontes,
     data_referencia,
     timeout,
 ):
     """
     Executa o pipeline e mantém os resultados em cache.
-
-    O cache evita que as coletas e os cálculos sejam
-    repetidos a cada atualização da interface.
     """
 
     return preparar_dados_aplicacao(
@@ -217,6 +227,7 @@ def executar_pipeline_aplicacao(
         mes_inicial=mes_inicial,
         ano_final=ano_final,
         mes_final=mes_final,
+        fontes=fontes,
         data_referencia=data_referencia,
         timeout=timeout,
     )
@@ -305,7 +316,7 @@ hoje = date.today()
 # ============================================================
 
 st.title(
-    "Curtailment no Sistema Elétrico Brasileiro"
+    "SINmulator"
 )
 
 st.markdown(
@@ -317,36 +328,48 @@ st.markdown(
 )
 
 # ============================================================
-# BARRA LATERAL
+# FILTROS
 # ============================================================
 
-with st.sidebar:
-    st.header(
-        "Período de análise"
+st.subheader(
+    "Configuração da análise"
+)
+
+anos_disponiveis = list(
+    range(
+        ANO_MINIMO,
+        ultimo_ano_completo + 1,
+    )
+)
+
+with st.container(
+    border=True
+):
+    (
+        coluna_ano_inicial,
+        coluna_mes_inicial,
+        coluna_ano_final,
+        coluna_mes_final,
+        coluna_fonte,
+    ) = st.columns(
+        [
+            1,
+            1.4,
+            1,
+            1.4,
+            2,
+        ]
     )
 
-    st.caption(
-        "O período selecionado será aplicado aos dados "
-        "de curtailment EOL e UFV."
-    )
-
-    anos_disponiveis = list(
-        range(
-            ANO_MINIMO,
-            ultimo_ano_completo + 1,
+    with coluna_ano_inicial:
+        ano_inicial = st.selectbox(
+            "Ano inicial",
+            options=anos_disponiveis,
+            index=len(
+                anos_disponiveis
+            ) - 1,
+            key="ano_inicial",
         )
-    )
-
-    st.markdown(
-        "**Competência inicial**"
-    )
-
-    ano_inicial = st.selectbox(
-        "Ano inicial",
-        options=anos_disponiveis,
-        index=len(anos_disponiveis) - 1,
-        key="ano_inicial",
-    )
 
     meses_iniciais_disponiveis = (
         obter_meses_disponiveis(
@@ -360,26 +383,24 @@ with st.sidebar:
         )
     )
 
-    mes_inicial = st.selectbox(
-        "Mês inicial",
-        options=meses_iniciais_disponiveis,
-        index=0,
-        format_func=formatar_mes,
-        key="mes_inicial",
-    )
+    with coluna_mes_inicial:
+        mes_inicial = st.selectbox(
+            "Mês inicial",
+            options=meses_iniciais_disponiveis,
+            index=0,
+            format_func=formatar_mes,
+            key="mes_inicial",
+        )
 
-    st.markdown(
-        "**Competência final**"
-    )
-
-    ano_final = st.selectbox(
-        "Ano final",
-        options=anos_disponiveis,
-        index=len(
-            anos_disponiveis
-        ) - 1,
-        key="ano_final",
-    )
+    with coluna_ano_final:
+        ano_final = st.selectbox(
+            "Ano final",
+            options=anos_disponiveis,
+            index=len(
+                anos_disponiveis
+            ) - 1,
+            key="ano_final",
+        )
 
     meses_finais_disponiveis = (
         obter_meses_disponiveis(
@@ -393,29 +414,59 @@ with st.sidebar:
         )
     )
 
-    mes_final = st.selectbox(
-        "Mês final",
-        options=meses_finais_disponiveis,
-        index=len(
-            meses_finais_disponiveis
-        ) - 1,
-        format_func=formatar_mes,
-        key="mes_final",
+    with coluna_mes_final:
+        mes_final = st.selectbox(
+            "Mês final",
+            options=meses_finais_disponiveis,
+            index=len(
+                meses_finais_disponiveis
+            ) - 1,
+            format_func=formatar_mes,
+            key="mes_final",
+        )
+
+    with coluna_fonte:
+        opcao_fonte = st.selectbox(
+            "Tipo de fonte",
+            options=list(
+                OPCOES_FONTES
+            ),
+            index=0,
+            key="opcao_fonte",
+        )
+
+    fontes_selecionadas = (
+        OPCOES_FONTES[
+            opcao_fonte
+        ]
     )
 
-    carregar_periodo = st.button(
-        "Aplicar período",
-        use_container_width=True,
-        type="primary",
+    (
+        coluna_competencia,
+        coluna_espaco,
+        coluna_botao,
+    ) = st.columns(
+        [
+            3,
+            2,
+            1.5,
+        ]
     )
 
-    st.divider()
+    with coluna_competencia:
+        st.caption(
+            "Última competência mensal completa: "
+            f"{ultimo_mes_completo:02d}/"
+            f"{ultimo_ano_completo}"
+        )
 
-    st.caption(
-        "Última competência mensal completa: "
-        f"{ultimo_mes_completo:02d}/"
-        f"{ultimo_ano_completo}"
-    )
+    with coluna_botao:
+        carregar_periodo = st.button(
+            "Aplicar período",
+            use_container_width=True,
+            type="primary",
+        )
+
 
 # ============================================================
 # VALIDAÇÃO DO PERÍODO
@@ -443,6 +494,10 @@ if carregar_periodo:
             "mes_inicial": mes_inicial,
             "ano_final": ano_final,
             "mes_final": mes_final,
+            "fontes": list(
+                fontes_selecionadas
+            ),
+            "rotulo_fonte": opcao_fonte,
         }
         
         st.session_state[
@@ -450,9 +505,10 @@ if carregar_periodo:
         ] = True
         
         st.success(
-            "Período selecionado com sucesso: "
+            "Configuração aplicada com sucesso: "
             f"{mes_inicial:02d}/{ano_inicial} a "
-            f"{mes_final:02d}/{ano_final}."
+            f"{mes_final:02d}/{ano_final}, "
+            f"fonte: {opcao_fonte}."
         )
 
     except ValueError as erro:
@@ -489,9 +545,10 @@ else:
     (
         coluna_inicio,
         coluna_fim,
+        coluna_fonte,
         coluna_cadastro,
     ) = st.columns(
-        3
+        4
     )
 
     with coluna_inicio:
@@ -518,6 +575,14 @@ else:
                     "mes_final"
                 ],
             ),
+        )
+
+    with coluna_fonte:
+        st.metric(
+            "Fonte",
+            periodo_selecionado[
+                "rotulo_fonte"
+            ],
         )
     
     with coluna_cadastro:
@@ -589,6 +654,11 @@ if (
                     mes_final=(
                         periodo_selecionado[
                             "mes_final"
+                        ]
+                    ),
+                    fontes=tuple(
+                        periodo_selecionado[
+                            "fontes"
                         ]
                     ),
                     data_referencia=hoje,
