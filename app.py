@@ -16,6 +16,7 @@ import streamlit.components.v1 as components
 
 from src.mapa import (
     carregar_malha_ufs,
+    criar_mapa_inicial,
     criar_mapa_interativo,
 )
 from src.pipeline import preparar_dados_aplicacao
@@ -383,28 +384,16 @@ def carregar_ufs_aplicacao(
 
 def construir_mapa_aplicacao(
     dados_pipeline,
+    gdf_ufs,
 ):
     """
-    Constrói o mapa interativo a partir dos resultados
-    produzidos pelo pipeline.
+    Constrói o mapa interativo com os resultados do pipeline.
 
     Retorno
     -------
     tuple
-        Mapa Folium, relatório do mapa e relatório das UFs.
+        Mapa interativo e relatório da construção.
     """
-
-    if not CAMINHO_UFS.exists():
-        raise FileNotFoundError(
-            "A malha das UFs não foi encontrada em: "
-            f"{CAMINHO_UFS}")
-
-    (
-        gdf_ufs,
-        relatorio_ufs,
-    ) = carregar_ufs_aplicacao(
-        CAMINHO_UFS
-    )
 
     (
         mapa_interativo,
@@ -431,7 +420,10 @@ def construir_mapa_aplicacao(
         ],
     )
 
-    return (mapa_interativo,relatorio_mapa,relatorio_ufs)
+    return (
+        mapa_interativo,
+        relatorio_mapa,
+    )
 
 # ============================================================
 # COMPETÊNCIA MAIS RECENTE
@@ -444,6 +436,25 @@ hoje = date.today()
     ultimo_mes_completo,
 ) = obter_ultima_competencia_completa(
     data_referencia=hoje
+)
+
+if not CAMINHO_UFS.exists():
+    st.error(
+        "A malha das UFs não foi encontrada."
+    )
+
+    st.code(
+        str(CAMINHO_UFS)
+    )
+
+    st.stop()
+
+
+(
+    gdf_ufs,
+    relatorio_ufs,
+) = carregar_ufs_aplicacao(
+    CAMINHO_UFS
 )
 
 # ============================================================
@@ -1000,73 +1011,66 @@ if (
 # MAPA INTERATIVO
 # ============================================================
 
-if dados_pipeline is not None:
-    try:
-        with st.spinner(
-            "Construindo o mapa interativo..."
-        ):
+dados_pipeline = st.session_state.get(
+    "dados_pipeline"
+)
+
+relatorio_mapa = None
+
+with st.container(
+    key="area_mapa",
+):
+    if dados_pipeline is None:
+        (
+            mapa_exibido,
+            relatorio_mapa,
+        ) = criar_mapa_inicial(
+            gdf_ufs=gdf_ufs,
+        )
+
+    else:
+        try:
             (
-                mapa_interativo,
+                mapa_exibido,
                 relatorio_mapa,
-                relatorio_ufs,
             ) = construir_mapa_aplicacao(
-                dados_pipeline
+                dados_pipeline=dados_pipeline,
+                gdf_ufs=gdf_ufs,
             )
 
-        st.html(
-            '<div id="mapa-interativo"></div>'
-        )
-        
-        st.subheader(
-            "Mapa"
-        )
-
-        st.caption(
-            "Utilize a barra de pesquisa para localizar "
-            "uma usina ou ponto de conexão. O painel lateral "
-            "apresenta indicadores e gráficos."
-        )
-
-        html_mapa = (
-            mapa_interativo
-            .get_root()
-            .render()
-        )
-        
-        components.html(
-            html_mapa,
-            height=ALTURA_MAPA,
-            scrolling=False,
-        )
-
-        with st.expander(
-            "Ver relatório técnico do mapa"
-        ):
-            st.markdown(
-                "**Construção do mapa**"
+        except (
+            FileNotFoundError,
+            TypeError,
+            ValueError,
+            RuntimeError,
+        ) as erro:
+            st.error(
+                "Não foi possível construir o mapa "
+                "com os dados processados."
             )
 
-            st.json(
-                relatorio_mapa
+            st.exception(
+                erro
             )
 
-            st.markdown(
-                "**Malha das UFs**"
+            (
+                mapa_exibido,
+                relatorio_mapa,
+            ) = criar_mapa_inicial(
+                gdf_ufs=gdf_ufs,
             )
 
-            st.json(
-                relatorio_ufs
-            )
+    html_mapa = (
+        mapa_exibido
+        .get_root()
+        .render()
+    )
 
-    except (
-        FileNotFoundError,
-        TypeError,
-        ValueError,
-        RuntimeError,
-    ) as erro:
-        st.error("Não foi possível construir o mapa interativo.")
-
-        st.exception(erro)
+    components.html(
+        html_mapa,
+        height=ALTURA_MAPA,
+        scrolling=False,
+    )
 
 # ============================================================
 # REGRAS DAS BASES
