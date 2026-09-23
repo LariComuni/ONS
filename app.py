@@ -193,6 +193,20 @@ st.markdown(
             font-weight: 600;
         }
 
+        .st-key-filtros_mapa
+        div[data-testid="stStatusWidget"],
+        .st-key-filtros_mapa
+        div[data-testid="stSpinner"] {
+            margin-top: 0.45rem;
+            margin-bottom: 0;
+        }
+        
+        .st-key-filtros_mapa
+        div[data-testid="stSpinner"] p {
+            color: #475569;
+            font-size: 0.82rem;
+        }
+
         /* Área do mapa */
 
         .st-key-area_mapa {
@@ -696,7 +710,7 @@ with st.container(
             use_container_width=True,
             type="primary",
         )
-
+    status_processamento = st.empty()
 
 # ============================================================
 # VALIDAÇÃO DO PERÍODO
@@ -790,40 +804,41 @@ if (
             "A primeira execução pode levar alguns minutos."
         )
         
-        with st.spinner(
-            mensagem_processamento
-        ):
-            dados_pipeline = (
-                executar_pipeline_aplicacao(
-                    ano_inicial=(
-                        periodo_selecionado[
-                            "ano_inicial"
-                        ]
-                    ),
-                    mes_inicial=(
-                        periodo_selecionado[
-                            "mes_inicial"
-                        ]
-                    ),
-                    ano_final=(
-                        periodo_selecionado[
-                            "ano_final"
-                        ]
-                    ),
-                    mes_final=(
-                        periodo_selecionado[
-                            "mes_final"
-                        ]
-                    ),
-                    fontes=tuple(
-                        periodo_selecionado[
-                            "fontes"
-                        ]
-                    ),
-                    data_referencia=hoje,
-                    timeout=TIMEOUT_PIPELINE,
+        with status_processamento.container():
+            with st.spinner(
+                mensagem_processamento
+            ):
+                dados_pipeline = (
+                    executar_pipeline_aplicacao(
+                        ano_inicial=(
+                            periodo_selecionado[
+                                "ano_inicial"
+                            ]
+                        ),
+                        mes_inicial=(
+                            periodo_selecionado[
+                                "mes_inicial"
+                            ]
+                        ),
+                        ano_final=(
+                            periodo_selecionado[
+                                "ano_final"
+                            ]
+                        ),
+                        mes_final=(
+                            periodo_selecionado[
+                                "mes_final"
+                            ]
+                        ),
+                        fontes=tuple(
+                            periodo_selecionado[
+                                "fontes"
+                            ]
+                        ),
+                        data_referencia=hoje,
+                        timeout=TIMEOUT_PIPELINE,
+                    )
                 )
-            )
 
         st.session_state[
             "dados_pipeline"
@@ -836,7 +851,9 @@ if (
         st.session_state[
             "processar_periodo"
         ] = False
-
+        
+        status_processamento.empty()
+        
         st.toast(
             "Mapa atualizado com sucesso.",
             icon="✅",
@@ -846,21 +863,16 @@ if (
         st.session_state[
             "processar_periodo"
         ] = False
-
-        st.error(
+    
+        status_processamento.error(
             "Não foi possível concluir o processamento "
             "do período selecionado."
         )
-
-        if "dados_pipeline" in st.session_state:
-            st.info(
-                "O último processamento concluído com sucesso "
-                "continuará disponível abaixo."
-            )
-        
+    
         st.exception(
             erro
         )
+
 
 
 # ============================================================
