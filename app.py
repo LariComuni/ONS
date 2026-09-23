@@ -45,10 +45,6 @@ st.markdown(
         }
         
         .sin-navbar {
-            position: sticky;
-            top: 0;
-            z-index: 9999;
-        
             display: flex;
             align-items: center;
             justify-content: space-between;
@@ -59,7 +55,7 @@ st.markdown(
             position: relative;
             left: 50%;
             margin-left: -50vw;
-            margin-bottom: 1rem;
+            margin-bottom: 0;
         
             padding: 0.65rem 2rem;
         
@@ -91,45 +87,51 @@ st.markdown(
         
         .sin-navbar-nome {
             color: #ffffff;
-            font-family: "Trebuchet MS", "Segoe UI", sans-serif;
+            font-family:
+                "Trebuchet MS",
+                "Segoe UI",
+                sans-serif;
             font-size: 1.55rem;
             font-weight: 800;
             letter-spacing: -0.025rem;
             line-height: 1;
         }
         
-        .sin-navbar-link {
+        .sin-navbar-menu {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        
+        .sin-navbar-item {
             display: inline-flex;
             align-items: center;
             justify-content: center;
-            gap: 0.5rem;
+            gap: 0.55rem;
         
             min-width: 105px;
-            padding: 0.62rem 1rem;
+            padding: 0.65rem 1rem;
         
-            color: #ffffff !important;
-            background-color: #173f70;
+            color: rgba(255, 255, 255, 0.78);
+            border-radius: 8px;
         
-            border: 1px solid rgba(255, 255, 255, 0.12);
-            border-radius: 7px;
-        
-            font-family: "Segoe UI", sans-serif;
+            font-family:
+                "Segoe UI",
+                sans-serif;
             font-size: 0.9rem;
             font-weight: 600;
-            text-decoration: none !important;
-        
-            transition:
-                background-color 0.15s ease,
-                transform 0.15s ease;
+            line-height: 1;
         }
         
-        .sin-navbar-link:hover {
-            color: #ffffff !important;
-            background-color: #24558d;
-            transform: translateY(-1px);
+        .sin-navbar-item-ativo {
+            color: #ffffff;
+            background-color: #204777;
+            box-shadow:
+                inset 0 0 0 1px
+                rgba(255, 255, 255, 0.08);
         }
         
-        .sin-navbar-link-icone {
+        .sin-navbar-item-icone {
             display: inline-flex;
             align-items: center;
             justify-content: center;
@@ -149,7 +151,7 @@ st.markdown(
                 font-size: 1.3rem;
             }
         
-            .sin-navbar-link {
+            .sin-navbar-item {
                 min-width: auto;
                 padding: 0.55rem 0.75rem;
             }
@@ -444,11 +446,6 @@ hoje = date.today()
     data_referencia=hoje
 )
 
-
-# ============================================================
-# BARRA DE NAVEGAÇÃO
-# ============================================================
-
 # ============================================================
 # BARRA DE NAVEGAÇÃO
 # ============================================================
@@ -466,24 +463,22 @@ html_navbar = """
         </span>
     </div>
 
-    <a
-        class="sin-navbar-link"
-        href="#mapa-interativo"
-    >
-        <span
-            class="sin-navbar-link-icone"
-            aria-hidden="true"
-        >&#128506;&#65039;</span>
+    <div class="sin-navbar-menu">
+        <div class="sin-navbar-item sin-navbar-item-ativo">
+            <span
+                class="sin-navbar-item-icone"
+                aria-hidden="true"
+            >&#128506;&#65039;</span>
 
-        <span>Mapa</span>
-    </a>
+            <span>Mapa</span>
+        </div>
+    </div>
 </div>
 """
 
 st.html(
     html_navbar
 )
-
 
 # ============================================================
 # FILTROS
