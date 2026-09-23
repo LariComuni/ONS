@@ -394,8 +394,7 @@ st.markdown(
     <div class="sinmulator-cabecalho">
         <h1 class="sinmulator-titulo">SINmulator</h1>
         <p class="sinmulator-subtitulo">
-            Curtailment e restrições operativas no
-            Sistema Interligado Nacional
+            Explore dados, indicadores e ativos do Sistema Interligado Nacional
         </p>
     </div>
     """,
