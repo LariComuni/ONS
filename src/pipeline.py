@@ -54,7 +54,7 @@ from .series_mapa import (
 )
 
 
-FONTES_CURTAILMENT = (
+FONTES_CURTAILMENT_PERMITIDAS = (
     "EOL",
     "UFV",
 )
@@ -183,6 +183,66 @@ def dividir_periodo_por_ano(
         )
 
     return periodos
+
+
+def validar_fontes(
+    fontes,
+):
+    """
+    Valida as fontes selecionadas para o pipeline.
+
+    Parâmetros
+    ----------
+    fontes : list ou tuple
+        Fontes que serão coletadas. São aceitas EOL e UFV.
+
+    Retorno
+    -------
+    tuple
+        Fontes validadas, sem duplicidades.
+    """
+
+    if fontes is None:
+        return FONTES_CURTAILMENT_PERMITIDAS
+
+    if not isinstance(
+        fontes,
+        (list, tuple),
+    ):
+        raise TypeError(
+            "As fontes devem ser informadas como "
+            "lista ou tupla."
+        )
+
+    if not fontes:
+        raise ValueError(
+            "Pelo menos uma fonte deve ser selecionada."
+        )
+
+    fontes_normalizadas = tuple(
+        dict.fromkeys(
+            str(fonte)
+            .strip()
+            .upper()
+            for fonte in fontes
+        )
+    )
+
+    fontes_invalidas = [
+        fonte
+        for fonte in fontes_normalizadas
+        if fonte
+        not in FONTES_CURTAILMENT_PERMITIDAS
+    ]
+
+    if fontes_invalidas:
+        raise ValueError(
+            "Foram encontradas fontes inválidas: "
+            f"{fontes_invalidas}. "
+            "As fontes permitidas são EOL e UFV."
+        )
+
+    return fontes_normalizadas
 
 
 def validar_timeout(
@@ -314,6 +374,7 @@ def coletar_e_calcular_curtailment(
     mes_inicial,
     ano_final,
     mes_final,
+    fontes,
 ):
     """
     Coleta e calcula o curtailment das fontes EOL e UFV.
@@ -328,7 +389,9 @@ def coletar_e_calcular_curtailment(
         DataFrame consolidado e relatórios das coletas e
         dos cálculos.
     """
-
+    fontes_validadas = validar_fontes(
+        fontes
+    )
     periodos_anuais = dividir_periodo_por_ano(
         ano_inicial=ano_inicial,
         mes_inicial=mes_inicial,
@@ -339,7 +402,7 @@ def coletar_e_calcular_curtailment(
     dados_curtailment = []
     relatorios = {}
 
-    for fonte in FONTES_CURTAILMENT:
+    for fonte in fontes_validadas:
         dados_fonte = []
         relatorios_periodos = {}
 
@@ -458,7 +521,7 @@ def coletar_e_calcular_curtailment(
         "consolidacao_curtailment"
     ] = {
         "fontes": list(
-            FONTES_CURTAILMENT
+            fontes_validadas
         ),
         "ano_inicial": ano_inicial,
         "mes_inicial": mes_inicial,
@@ -952,6 +1015,7 @@ def preparar_dados_aplicacao(
     mes_inicial,
     ano_final,
     mes_final,
+    fontes=None,
     data_referencia=None,
     timeout=120,
 ):
@@ -968,6 +1032,8 @@ def preparar_dados_aplicacao(
         Ano da última competência do curtailment.
     mes_final : int
         Mês da última competência do curtailment.
+    fontes : list ou tuple, opcional
+        Fontes que serão processadas. São permitidas EOL e UFV. Quando não informada, utiliza ambas.
     data_referencia : datetime.date, opcional
         Data usada para determinar a última competência
         completa do fator de capacidade. Quando ausente,
@@ -989,6 +1055,10 @@ def preparar_dados_aplicacao(
         mes_final=mes_final,
     )
 
+    fontes_validadas = validar_fontes(
+        fontes
+    )
+    
     validar_timeout(
         timeout
     )
@@ -1015,6 +1085,7 @@ def preparar_dados_aplicacao(
         mes_inicial=mes_inicial,
         ano_final=ano_final,
         mes_final=mes_final,
+        fontes=fontes_validadas,
     )
 
     relatorios.update(
@@ -1160,6 +1231,9 @@ def preparar_dados_aplicacao(
         ),
         "periodo_final": (
             f"{mes_final:02d}/{ano_final}"
+        ),
+        "fontes": list(
+            fontes_validadas
         ),
         "quantidade_anos": len(
             periodos_anuais
