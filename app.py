@@ -75,15 +75,17 @@ st.markdown(
         }
 
         .sin-navbar-icone {
-            display: flex;
+            display: inline-flex;
             align-items: center;
             justify-content: center;
         
-            width: 32px;
-            height: 32px;
+            width: 30px;
+            height: 30px;
         
             color: #ffffff;
-            font-size: 1.55rem;
+            font-family: Arial, sans-serif;
+            font-size: 1.65rem;
+            font-weight: 700;
             line-height: 1;
         }
 
@@ -485,9 +487,10 @@ st.markdown(
     """
     <nav class="sin-navbar">
         <div class="sin-navbar-marca">
-            <span class="sin-navbar-icone">
-                ⚡
-            </span>
+            <span
+                class="sin-navbar-icone"
+                aria-hidden="true"
+            >&#9889;&#65038;</span>
 
             <span class="sin-navbar-nome">
                 SINmulator
@@ -495,7 +498,10 @@ st.markdown(
         </div>
 
         #mapa-interativo
-            <span class="sin-navbar-link-icone">
+            <span
+                class="sin-navbar-link-icone"
+                aria-hidden="true"
+            >
                 🗺️
             </span>
 
@@ -507,6 +513,7 @@ st.markdown(
     """,
     unsafe_allow_html=True,
 )
+
 # ============================================================
 # FILTROS
 # ============================================================
