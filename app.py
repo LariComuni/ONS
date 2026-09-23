@@ -747,70 +747,12 @@ if carregar_periodo:
 
 
 # ============================================================
-# RESUMO DA SELEÇÃO
+# PERÍODO SELECIONADO
 # ============================================================
 
 periodo_selecionado = st.session_state.get(
     "periodo_selecionado"
 )
-
-    (
-        coluna_inicio,
-        coluna_fim,
-        coluna_fonte,
-        coluna_cadastro,
-    ) = st.columns(
-        4
-    )
-
-    with coluna_inicio:
-        st.metric(
-            "Início do período",
-            formatar_competencia(
-                ano=periodo_selecionado[
-                    "ano_inicial"
-                ],
-                mes=periodo_selecionado[
-                    "mes_inicial"
-                ],
-            ),
-        )
-    
-    with coluna_fim:
-        st.metric(
-            "Fim do período",
-            formatar_competencia(
-                ano=periodo_selecionado[
-                    "ano_final"
-                ],
-                mes=periodo_selecionado[
-                    "mes_final"
-                ],
-            ),
-        )
-
-    with coluna_fonte:
-        rotulo_fonte = periodo_selecionado[
-            "rotulo_fonte"
-        ]
-    
-        st.metric(
-            "Fonte",
-            ROTULOS_FONTES_RESUMIDOS.get(
-                rotulo_fonte,
-                rotulo_fonte,
-            ),
-        )
-    
-    with coluna_cadastro:
-        st.metric(
-            "Último mês completo",
-            formatar_competencia(
-                ano=ultimo_ano_completo,
-                mes=ultimo_mes_completo,
-            ),
-        )
-
 
 # ============================================================
 # EXECUÇÃO DO PIPELINE
