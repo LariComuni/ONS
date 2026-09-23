@@ -42,33 +42,117 @@ st.markdown(
         .block-container {
             max-width: 100%;
             padding-top: 0 !important;
-            padding-right: 0;
-            padding-bottom: 0;
-            padding-left: 0;
+            padding-right: 0 !important;
+            padding-bottom: 0 !important;
+            padding-left: 0 !important;
         }
 
-        /* Estilos da barra azul do SINmulator */
+        /* Barra superior */
+
         .sin-navbar {
-            ...
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+
+            width: 100vw;
+            min-height: 64px;
+
+            margin: 0;
+            padding: 0.65rem 2rem;
+
+            background-color: #071f3d;
+            box-sizing: border-box;
+            box-shadow: 0 2px 8px rgba(7, 31, 61, 0.2);
         }
 
         .sin-navbar-marca {
-            ...
+            display: flex;
+            align-items: center;
+            gap: 0.65rem;
         }
 
-        /* Estilos da barra suspensa de filtros */
+        .sin-navbar-icone {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+
+            width: 30px;
+            height: 30px;
+
+            color: #ffffff;
+            font-family: Arial, sans-serif;
+            font-size: 1.65rem;
+            font-weight: 700;
+            line-height: 1;
+        }
+
+        .sin-navbar-nome {
+            color: #ffffff;
+            font-family:
+                "Trebuchet MS",
+                "Segoe UI",
+                sans-serif;
+            font-size: 1.55rem;
+            font-weight: 800;
+            letter-spacing: -0.025rem;
+            line-height: 1;
+        }
+
+        .sin-navbar-menu {
+            display: flex;
+            align-items: center;
+        }
+
+        .sin-navbar-item {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.55rem;
+
+            min-width: 105px;
+            padding: 0.65rem 1rem;
+
+            color: #ffffff;
+            background-color: #204777;
+
+            border-radius: 8px;
+
+            font-family:
+                "Segoe UI",
+                sans-serif;
+            font-size: 0.9rem;
+            font-weight: 600;
+            line-height: 1;
+
+            box-shadow:
+                inset 0 0 0 1px
+                rgba(255, 255, 255, 0.08);
+        }
+
+        .sin-navbar-item-icone {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+
+            color: #ffffff;
+            font-size: 1rem;
+            line-height: 1;
+        }
+
+        /* Barra suspensa de filtros */
+
         .st-key-filtros_mapa {
             position: relative;
             z-index: 50;
 
-            width: min(1080px, calc(100vw - 3rem));
+            width: min(1120px, calc(100vw - 3rem));
 
             margin-top: 14px;
             margin-right: auto;
-            margin-bottom: -84px;
+            margin-bottom: -72px;
             margin-left: auto;
 
-            padding: 0.65rem 0.85rem 0.75rem;
+            padding: 0.55rem 0.75rem 0.7rem;
 
             background-color: rgba(255, 255, 255, 0.97);
             backdrop-filter: blur(12px);
@@ -96,9 +180,7 @@ st.markdown(
         }
 
         .st-key-filtros_mapa
-        div[data-testid="stSelectbox"] label,
-        .st-key-filtros_mapa
-        div[data-testid="stButton"] label {
+        div[data-testid="stSelectbox"] label {
             color: #334155;
             font-size: 0.78rem;
             font-weight: 600;
@@ -111,7 +193,8 @@ st.markdown(
             font-weight: 600;
         }
 
-        /* Estilos da área do mapa */
+        /* Área do mapa */
+
         .st-key-area_mapa {
             position: relative;
             z-index: 1;
@@ -138,6 +221,20 @@ st.markdown(
         }
 
         @media (max-width: 900px) {
+            .sin-navbar {
+                min-height: 56px;
+                padding: 0.55rem 1rem;
+            }
+
+            .sin-navbar-nome {
+                font-size: 1.3rem;
+            }
+
+            .sin-navbar-item {
+                min-width: auto;
+                padding: 0.55rem 0.75rem;
+            }
+
             .st-key-filtros_mapa {
                 width: calc(100vw - 1rem);
                 margin-top: 8px;
@@ -463,7 +560,7 @@ html_navbar = """
     </div>
 
     <div class="sin-navbar-menu">
-        <div class="sin-navbar-item sin-navbar-item-ativo">
+        <div class="sin-navbar-item">
             <span
                 class="sin-navbar-item-icone"
                 aria-hidden="true"
@@ -480,7 +577,7 @@ st.html(
 )
 
 # ============================================================
-# FILTROS
+# FILTROS SUSPENSOS DO MAPA
 # ============================================================
 
 anos_disponiveis = list(
@@ -504,10 +601,10 @@ with st.container(
     ) = st.columns(
         [
             0.8,
-            1.25,
+            1.3,
             0.8,
-            1.25,
-            1.8,
+            1.3,
+            1.9,
             1,
         ],
         vertical_alignment="bottom",
@@ -593,25 +690,6 @@ with st.container(
         ]
     )
 
-    (
-        coluna_competencia,
-        coluna_espaco,
-        coluna_botao,
-    ) = st.columns(
-        [
-            3,
-            2,
-            1.5,
-        ]
-    )
-
-    with coluna_competencia:
-        st.caption(
-            "Última competência mensal completa: "
-            f"{ultimo_mes_completo:02d}/"
-            f"{ultimo_ano_completo}"
-        )
-
     with coluna_botao:
         carregar_periodo = st.button(
             "Aplicar",
@@ -675,17 +753,6 @@ if carregar_periodo:
 periodo_selecionado = st.session_state.get(
     "periodo_selecionado"
 )
-
-if periodo_selecionado is None:
-    st.info(
-        "Selecione o período na barra lateral e clique "
-        "em Aplicar período."
-    )
-
-else:
-    st.subheader(
-        "Configuração selecionada"
-    )
 
     (
         coluna_inicio,
@@ -1065,15 +1132,3 @@ st.markdown(
       disponibilizado pelo ONS.
     """
 )
-
-
-# ============================================================
-# AVISO DA ETAPA
-# ============================================================
-
-if dados_pipeline is None:
-    st.info(
-        "Selecione um período e clique em "
-        "Aplicar período para executar o pipeline"
-        "e construir o mapa."
-    )
