@@ -38,123 +38,111 @@ st.markdown(
         header[data-testid="stHeader"] {
             display: none;
         }
-        
+
         .block-container {
-            max-width: 1280px;
+            max-width: 100%;
             padding-top: 0 !important;
-            padding-bottom: 2rem;
+            padding-right: 0;
+            padding-bottom: 0;
+            padding-left: 0;
         }
-        
+
+        /* Estilos da barra azul do SINmulator */
         .sin-navbar {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-        
-            width: 100vw;
-            min-height: 64px;
-        
+            ...
+        }
+
+        .sin-navbar-marca {
+            ...
+        }
+
+        /* Estilos da barra suspensa de filtros */
+        .st-key-filtros_mapa {
             position: relative;
+            z-index: 50;
+
+            width: min(1080px, calc(100vw - 3rem));
+
+            margin-top: 14px;
+            margin-right: auto;
+            margin-bottom: -84px;
+            margin-left: auto;
+
+            padding: 0.65rem 0.85rem 0.75rem;
+
+            background-color: rgba(255, 255, 255, 0.97);
+            backdrop-filter: blur(12px);
+
+            border: 1px solid rgba(203, 213, 225, 0.95);
+            border-radius: 13px;
+
+            box-shadow:
+                0 10px 28px rgba(15, 23, 42, 0.2);
+
+            box-sizing: border-box;
+        }
+
+        .st-key-filtros_mapa
+        div[data-testid="stVerticalBlockBorderWrapper"] {
+            padding: 0;
+            background: transparent;
+            border: 0;
+            box-shadow: none;
+        }
+
+        .st-key-filtros_mapa
+        div[data-testid="stSelectbox"] {
+            min-width: 0;
+        }
+
+        .st-key-filtros_mapa
+        div[data-testid="stSelectbox"] label,
+        .st-key-filtros_mapa
+        div[data-testid="stButton"] label {
+            color: #334155;
+            font-size: 0.78rem;
+            font-weight: 600;
+        }
+
+        .st-key-filtros_mapa
+        div[data-testid="stButton"] button {
+            min-height: 40px;
+            border-radius: 9px;
+            font-weight: 600;
+        }
+
+        /* Estilos da área do mapa */
+        .st-key-area_mapa {
+            position: relative;
+            z-index: 1;
+
+            width: 100vw;
             left: 50%;
             margin-left: -50vw;
-            margin-bottom: 0;
-        
-            padding: 0.65rem 2rem;
-        
-            background-color: #071f3d;
-            box-sizing: border-box;
-            box-shadow: 0 2px 8px rgba(7, 31, 61, 0.2);
+
+            padding: 0;
+            overflow: hidden;
         }
-        
-        .sin-navbar-marca {
-            display: flex;
-            align-items: center;
-            gap: 0.65rem;
+
+        .st-key-area_mapa
+        div[data-testid="stVerticalBlock"] {
+            gap: 0;
         }
-        
-        .sin-navbar-icone {
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-        
-            width: 30px;
-            height: 30px;
-        
-            color: #ffffff;
-            font-family: Arial, sans-serif;
-            font-size: 1.65rem;
-            font-weight: 700;
-            line-height: 1;
+
+        .st-key-area_mapa iframe {
+            display: block;
+            width: 100% !important;
+            margin: 0;
+            padding: 0;
+            border: 0;
         }
-        
-        .sin-navbar-nome {
-            color: #ffffff;
-            font-family:
-                "Trebuchet MS",
-                "Segoe UI",
-                sans-serif;
-            font-size: 1.55rem;
-            font-weight: 800;
-            letter-spacing: -0.025rem;
-            line-height: 1;
-        }
-        
-        .sin-navbar-menu {
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
-        }
-        
-        .sin-navbar-item {
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            gap: 0.55rem;
-        
-            min-width: 105px;
-            padding: 0.65rem 1rem;
-        
-            color: rgba(255, 255, 255, 0.78);
-            border-radius: 8px;
-        
-            font-family:
-                "Segoe UI",
-                sans-serif;
-            font-size: 0.9rem;
-            font-weight: 600;
-            line-height: 1;
-        }
-        
-        .sin-navbar-item-ativo {
-            color: #ffffff;
-            background-color: #204777;
-            box-shadow:
-                inset 0 0 0 1px
-                rgba(255, 255, 255, 0.08);
-        }
-        
-        .sin-navbar-item-icone {
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-        
-            color: #ffffff;
-            font-size: 1rem;
-            line-height: 1;
-        }
-        
-        @media (max-width: 700px) {
-            .sin-navbar {
-                min-height: 56px;
-                padding: 0.55rem 1rem;
-            }
-        
-            .sin-navbar-nome {
-                font-size: 1.3rem;
-            }
-        
-            .sin-navbar-item {
-                min-width: auto;
-                padding: 0.55rem 0.75rem;
+
+        @media (max-width: 900px) {
+            .st-key-filtros_mapa {
+                width: calc(100vw - 1rem);
+                margin-top: 8px;
+                margin-bottom: 8px;
+                padding: 0.65rem;
             }
         }
     </style>
@@ -180,7 +168,7 @@ CAMINHO_UFS = (
     / "estados_brasil.geojson"
 )
 
-ALTURA_MAPA = 850
+ALTURA_MAPA = 860
 LARGURA_MAPA = 1400
 
 NOMES_MESES = {
@@ -503,36 +491,26 @@ anos_disponiveis = list(
 )
 
 with st.container(
-    border=True
+    border=True,
+    key="filtros_mapa",
 ):
-    st.markdown(
-        """
-        <p class="filtros-titulo">
-            Filtros
-        </p>
-
-        <p class="filtros-descricao">
-            Selecione as competências inicial e final e o tipo
-            de fonte.
-        </p>
-        """,
-        unsafe_allow_html=True,
-    )
-
     (
         coluna_ano_inicial,
         coluna_mes_inicial,
         coluna_ano_final,
         coluna_mes_final,
         coluna_fonte,
+        coluna_botao,
     ) = st.columns(
         [
+            0.8,
+            1.25,
+            0.8,
+            1.25,
+            1.8,
             1,
-            1.4,
-            1,
-            1.4,
-            2,
-        ]
+        ],
+        vertical_alignment="bottom",
     )
 
     with coluna_ano_inicial:
@@ -677,13 +655,6 @@ if carregar_periodo:
         st.session_state[
             "processar_periodo"
         ] = True
-        
-        st.success(
-            "Configuração aplicada com sucesso: "
-            f"{mes_inicial:02d}/{ano_inicial} a "
-            f"{mes_final:02d}/{ano_final}, "
-            f"fonte: {opcao_fonte}."
-        )
 
     except ValueError as erro:
         st.error(
@@ -857,8 +828,9 @@ if (
             "processar_periodo"
         ] = False
 
-        st.success(
-            "Processamento concluído com sucesso."
+        st.toast(
+            "Mapa atualizado com sucesso.",
+            icon="✅",
         )
 
     except Exception as erro:
