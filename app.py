@@ -784,9 +784,10 @@ if (
     with coluna_linhas:
         st.metric(
             "Linhas desenháveis",
-            resumo_pipeline[
-                "linhas_desenhaveis"
-            ],
+            f"{resumo_pipeline['linhas_desenhaveis']:,}".replace(
+                ",",
+                ".",
+            ),
         )
 
     with coluna_busca:
