@@ -80,6 +80,12 @@ OPCOES_FONTES = {
     ),
 }
 
+ROTULOS_FONTES_RESUMIDOS = {
+    "Eólica e solar fotovoltaica": "Eólica e solar",
+    "Eólica": "Eólica",
+    "Solar fotovoltaica": "Solar fotovoltaica",
+}
+
 # ============================================================
 # FUNÇÕES
 # ============================================================
@@ -578,11 +584,16 @@ else:
         )
 
     with coluna_fonte:
+        rotulo_fonte = periodo_selecionado[
+            "rotulo_fonte"
+        ]
+    
         st.metric(
             "Fonte",
-            periodo_selecionado[
-                "rotulo_fonte"
-            ],
+            ROTULOS_FONTES_RESUMIDOS.get(
+                rotulo_fonte,
+                rotulo_fonte,
+            ),
         )
     
     with coluna_cadastro:
