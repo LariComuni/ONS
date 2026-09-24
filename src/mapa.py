@@ -1526,7 +1526,10 @@ def adicionar_chartjs(
     mapa,
 ):
     """
-    Adiciona a biblioteca Chart.js ao HTML do mapa.
+    Adiciona Chart.js e SheetJS ao HTML do mapa.
+    Chart.js renderiza os gráficos do painel lateral.
+    SheetJS permite exportar os dados dos gráficos
+    para arquivos no formato XLSX.
     """
 
     if mapa is None:
@@ -1540,9 +1543,21 @@ def adicionar_chartjs(
         "chart.umd.min.js"
     )
 
+    url_sheetjs = (
+        "https://cdn.sheetjs.com/"
+        "xlsx-0.20.3/package/dist/"
+        "xlsx.full.min.js"
+    )
+
     mapa.get_root().header.add_child(
         JavascriptLink(
             url_chartjs
+        )
+    )
+
+    mapa.get_root().header.add_child(
+        JavascriptLink(
+            url_sheetjs
         )
     )
 
