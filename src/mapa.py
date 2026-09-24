@@ -3128,25 +3128,75 @@ def adicionar_graficos_series_painel(
                 </div>
 
                 <div class="painel-grafico">
-                    <h4>
+                <div class="grafico-cabecalho">
+                    <div class="grafico-cabecalho-titulo">
                         Geração, curtailment e geração esperada
-                    </h4>
-
-                    <div class="painel-grafico-canvas">
-                        <canvas
-                            id="grafico-perfil-principal"
-                        ></canvas>
                     </div>
+            
+                    <button
+                        type="button"
+                        class="botao-download-xlsx"
+                        title="Baixar dados do gráfico em Excel"
+                        aria-label="Baixar dados de geração, curtailment e geração esperada"
+                        onclick="baixarGraficoXlsx(
+                            'grafico-perfil-principal',
+                            'geracao_curtailment_geracao_esperada.xlsx',
+                            'Perfil horário'
+                        )"
+                    >
+                        <span
+                            class="botao-download-icone"
+                            aria-hidden="true"
+                        >
+                            ⇩
+                        </span>
+            
+                        <span>
+                            XLSX
+                        </span>
+                    </button>
                 </div>
+            
+                <div class="painel-grafico-canvas">
+                    <canvas
+                        id="grafico-perfil-principal"
+                    ></canvas>
+                </div>
+            </div>
 
                 ${
                     possuiDecomposicao
                     ? `
                         <div class="painel-grafico">
-                            <h4>
-                                Curtailment por código
-                            </h4>
-
+                            <div class="grafico-cabecalho">
+                                <div class="grafico-cabecalho-titulo">
+                                    Curtailment por código
+                                </div>
+                        
+                                <button
+                                    type="button"
+                                    class="botao-download-xlsx"
+                                    title="Baixar dados do gráfico em Excel"
+                                    aria-label="Baixar dados de curtailment por código"
+                                    onclick="baixarGraficoXlsx(
+                                        'grafico-curtailment-codigo',
+                                        'curtailment_por_codigo.xlsx',
+                                        'Curtailment por código'
+                                    )"
+                                >
+                                    <span
+                                        class="botao-download-icone"
+                                        aria-hidden="true"
+                                    >
+                                        ⇩
+                                    </span>
+                        
+                                    <span>
+                                        XLSX
+                                    </span>
+                                </button>
+                            </div>
+                        
                             <div class="painel-grafico-canvas">
                                 <canvas
                                     id="grafico-curtailment-codigo"
