@@ -961,7 +961,7 @@ if (
         '<span class="resumo-filtros-icone">●</span>'
         '<span>'
         f'Foram processados <strong>{quantidade_registros} '
-        f'registros de curtailment</strong>, com '
+        f'registros</strong>, com '
         f'<strong>{resumo_pipeline["usinas"]} usinas</strong>, '
         f'<strong>{resumo_pipeline["pontos"]} pontos de conexão</strong> '
         f'e <strong>{quantidade_linhas} linhas de transmissão</strong> '
