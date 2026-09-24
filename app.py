@@ -207,6 +207,31 @@ st.markdown(
             font-size: 0.82rem;
         }
 
+        .resumo-filtros {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-wrap: wrap;
+            gap: 0.45rem;
+        
+            margin-top: 0.45rem;
+            padding-top: 0.45rem;
+        
+            color: #64748b;
+            border-top: 1px solid #e2e8f0;
+        
+            font-size: 0.78rem;
+            line-height: 1.3;
+        }
+        
+        .resumo-filtros span {
+            white-space: nowrap;
+        }
+        
+        .resumo-separador {
+            color: #94a3b8;
+        }
+
         /* Área do mapa */
 
         .st-key-area_mapa {
@@ -710,7 +735,10 @@ with st.container(
             use_container_width=True,
             type="primary",
         )
+        
     status_processamento = st.empty()
+
+    resumo_filtros = st.empty()
 
 # ============================================================
 # VALIDAÇÃO DO PERÍODO
@@ -897,108 +925,62 @@ if (
         "resumo_pipeline"
     ]
 
-    st.subheader(
-        "Resumo do processamento"
+    rotulo_fonte = periodo_processado.get(
+        "rotulo_fonte",
+        "",
     )
 
-    (
-        coluna_registros,
-        coluna_agregados,
-        coluna_usinas,
-        coluna_pontos,
-    ) = st.columns(
-        4
+    rotulo_fonte_resumido = (
+        ROTULOS_FONTES_RESUMIDOS.get(
+            rotulo_fonte,
+            rotulo_fonte,
+        )
     )
 
-    with coluna_registros:
-        st.metric(
-            "Registros de curtailment",
-            f"{resumo_pipeline['registros_curtailment']:,}".replace(
-                ",",
-                ".",
-            ),
+    quantidade_linhas = (
+        f"{resumo_pipeline['linhas_desenhaveis'\]:,}"
+        .replace(
+            ",",
+            ".",
         )
-
-    with coluna_agregados:
-        st.metric(
-            "Registros agregados",
-            f"{resumo_pipeline['registros_agregados_ponto']:,}".replace(
-                ",",
-                ".",
-            ),
-        )
-
-    with coluna_usinas:
-        st.metric(
-            "Usinas",
-            resumo_pipeline[
-                "usinas"
-            ],
-        )
-
-    with coluna_pontos:
-        st.metric(
-            "Pontos de conexão",
-            resumo_pipeline[
-                "pontos"
-            ],
-        )
-
-    (
-        coluna_linhas,
-        coluna_busca,
-        coluna_coord_usinas,
-        coluna_coord_pontos,
-    ) = st.columns(
-        4
     )
 
-    with coluna_linhas:
-        st.metric(
-            "Linhas desenháveis",
-            f"{resumo_pipeline['linhas_desenhaveis']:,}".replace(
-                ",",
-                ".",
-            ),
-        )
+    resumo_filtros.markdown(
+        f"""
+        <div class="resumo-filtros">
+            <span>
+                {resumo_pipeline["periodo_inicial"]}
+                a
+                {resumo_pipeline["periodo_final"]}
+            </span>
 
-    with coluna_busca:
-        st.metric(
-            "Itens pesquisáveis",
-            resumo_pipeline[
-                "registros_busca"
-            ],
-        )
+            <span class="resumo-separador">•</span>
 
-    with coluna_coord_usinas:
-        st.metric(
-            "Coordenadas de usinas",
-            resumo_pipeline[
-                "coordenadas_usinas"
-            ],
-        )
+            <span>
+                {rotulo_fonte_resumido}
+            </span>
 
-    with coluna_coord_pontos:
-        st.metric(
-            "Coordenadas de pontos",
-            resumo_pipeline[
-                "coordenadas_pontos"
-            ],
-        )
+            <span class="resumo-separador">•</span>
 
-    st.caption(
-        "Período efetivamente processado: "
-        f"{resumo_pipeline['periodo_inicial']} a "
-        f"{resumo_pipeline['periodo_final']}."
+            <span>
+                {resumo_pipeline["usinas"]} usinas
+            </span>
+
+            <span class="resumo-separador">•</span>
+
+            <span>
+                {resumo_pipeline["pontos"]} pontos
+            </span>
+
+            <span class="resumo-separador">•</span>
+
+            <span>
+                {quantidade_linhas} linhas
+            </span>
+        </div>
+        """,
+        unsafe_allow_html=True,
     )
-
-    with st.expander(
-        "Ver relatório completo do pipeline"
-    ):
-        st.json(
-            resumo_pipeline
-        )
-
 
 # ============================================================
 # MAPA INTERATIVO
