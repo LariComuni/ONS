@@ -1525,53 +1525,72 @@ def adicionar_estilos_graficos_painel(
             display: inline-flex;
             align-items: center;
             justify-content: center;
-            gap: 0.3rem;
         
             flex: 0 0 auto;
         
-            padding: 0.35rem 0.55rem;
+            width: 38px;
+            height: 38px;
+            padding: 0;
         
-            color: #475569;
-            background-color: #f8fafc;
+            color: #ffffff;
+            background-color: #74a7ef;
         
-            border: 1px solid #dbe2ea;
-            border-radius: 6px;
+            border: 0;
+            border-radius: 50%;
         
-            font-family: inherit;
-            font-size: 0.7rem;
-            font-weight: 600;
-            line-height: 1;
+            box-shadow:
+                0 3px 8px rgba(45, 94, 157, 0.28);
         
             cursor: pointer;
         
             transition:
-                color 0.15s ease,
                 background-color 0.15s ease,
-                border-color 0.15s ease;
+                box-shadow 0.15s ease,
+                transform 0.15s ease;
         }
         
         .botao-download-xlsx:hover {
-            color: #0f5132;
-            background-color: #eaf7ef;
-            border-color: #94d3ad;
+            color: #ffffff;
+            background-color: #5f96e7;
+        
+            box-shadow:
+                0 5px 12px rgba(45, 94, 157, 0.34);
+        
+            transform: translateY(-1px);
         }
         
-        .botao-download-xlsx:focus {
-            outline: 2px solid rgba(34, 160, 107, 0.25);
+        .botao-download-xlsx:active {
+            background-color: #4f86d3;
+            transform: translateY(0);
+        }
+        
+        .botao-download-xlsx:focus-visible {
+            outline: 3px solid rgba(116, 167, 239, 0.35);
             outline-offset: 2px;
         }
         
         .botao-download-xlsx:disabled {
-            color: #94a3b8;
-            background-color: #f1f5f9;
+            color: #ffffff;
+            background-color: #b8c8dd;
         
+            box-shadow: none;
             cursor: not-allowed;
             opacity: 0.7;
         }
         
         .botao-download-icone {
-            font-size: 0.8rem;
-            line-height: 1;
+            display: block;
+        
+            width: 21px;
+            height: 21px;
+        
+            pointer-events: none;
+        }
+        
+        .botao-download-icone path,
+        .botao-download-icone line,
+        .botao-download-icone polyline {
+            stroke: currentColor;
         }
 
         @media (max-width: 600px) {
@@ -3144,16 +3163,37 @@ def adicionar_graficos_series_painel(
                             'Perfil horário'
                         )"
                     >
-                        <span
+                        <svg
                             class="botao-download-icone"
+                            viewBox="0 0 24 24"
+                            fill="none"
                             aria-hidden="true"
                         >
-                            ⇩
-                        </span>
-            
-                        <span>
-                            XLSX
-                        </span>
+                            <line
+                                x1="12"
+                                y1="3"
+                                x2="12"
+                                y2="15"
+                                stroke-width="2.6"
+                                stroke-linecap="round"
+                            ></line>
+                        
+                            <polyline
+                                points="7,10 12,15 17,10"
+                                stroke-width="2.6"
+                                stroke-linecap="round"
+                                stroke-linejoin="round"
+                            ></polyline>
+                        
+                            <line
+                                x1="5"
+                                y1="20"
+                                x2="19"
+                                y2="20"
+                                stroke-width="2.6"
+                                stroke-linecap="round"
+                            ></line>
+                        </svg>
                     </button>
                 </div>
             
@@ -3184,16 +3224,37 @@ def adicionar_graficos_series_painel(
                                         'Curtailment por código'
                                     )"
                                 >
-                                    <span
+                                    <svg
                                         class="botao-download-icone"
+                                        viewBox="0 0 24 24"
+                                        fill="none"
                                         aria-hidden="true"
                                     >
-                                        ⇩
-                                    </span>
-                        
-                                    <span>
-                                        XLSX
-                                    </span>
+                                        <line
+                                            x1="12"
+                                            y1="3"
+                                            x2="12"
+                                            y2="15"
+                                            stroke-width="2.6"
+                                            stroke-linecap="round"
+                                        ></line>
+                                
+                                        <polyline
+                                            points="7,10 12,15 17,10"
+                                            stroke-width="2.6"
+                                            stroke-linecap="round"
+                                            stroke-linejoin="round"
+                                        ></polyline>
+                                
+                                        <line
+                                            x1="5"
+                                            y1="20"
+                                            x2="19"
+                                            y2="20"
+                                            stroke-width="2.6"
+                                            stroke-linecap="round"
+                                        ></line>
+                                    </svg>
                                 </button>
                             </div>
                         
