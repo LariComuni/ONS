@@ -1505,9 +1505,82 @@ def adicionar_estilos_graficos_painel(
             font-size: 13px;
         }
 
+        .grafico-cabecalho {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 0.75rem;
+        
+            margin-bottom: 8px;
+        }
+        
+        .grafico-cabecalho-titulo {
+            color: #333333;
+            font-size: 13px;
+            font-weight: 600;
+            line-height: 1.3;
+        }
+        
+        .botao-download-xlsx {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.3rem;
+        
+            flex: 0 0 auto;
+        
+            padding: 0.35rem 0.55rem;
+        
+            color: #475569;
+            background-color: #f8fafc;
+        
+            border: 1px solid #dbe2ea;
+            border-radius: 6px;
+        
+            font-family: inherit;
+            font-size: 0.7rem;
+            font-weight: 600;
+            line-height: 1;
+        
+            cursor: pointer;
+        
+            transition:
+                color 0.15s ease,
+                background-color 0.15s ease,
+                border-color 0.15s ease;
+        }
+        
+        .botao-download-xlsx:hover {
+            color: #0f5132;
+            background-color: #eaf7ef;
+            border-color: #94d3ad;
+        }
+        
+        .botao-download-xlsx:focus {
+            outline: 2px solid rgba(34, 160, 107, 0.25);
+            outline-offset: 2px;
+        }
+        
+        .botao-download-xlsx:disabled {
+            color: #94a3b8;
+            background-color: #f1f5f9;
+        
+            cursor: not-allowed;
+            opacity: 0.7;
+        }
+        
+        .botao-download-icone {
+            font-size: 0.8rem;
+            line-height: 1;
+        }
+
         @media (max-width: 600px) {
             .painel-kpis {
                 grid-template-columns: 1fr;
+            }
+            .botao-download-xlsx {
+                padding: 0.3rem 0.45rem;
+                font-size: 0.66rem;
             }
         }
     </style>
@@ -2689,6 +2762,214 @@ def adicionar_graficos_series_painel(
             );
         }
 
+        function normalizarValorPlanilha(valor) {
+            if (
+                valor === null
+                || valor === undefined
+                || valor === ""
+            ) {
+                return null;
+            }
+        
+            if (
+                typeof valor === "object"
+                && valor !== null
+                && Object.prototype.hasOwnProperty.call(
+                    valor,
+                    "y"
+                )
+            ) {
+                valor = valor.y;
+            }
+        
+            const numero = Number(valor);
+        
+            if (Number.isFinite(numero)) {
+                return numero;
+            }
+        
+            return String(valor);
+        }
+        
+        
+        function criarLinhasPlanilhaGrafico(
+            grafico
+        ) {
+            const rotulos = Array.isArray(
+                grafico.data.labels
+            )
+                ? grafico.data.labels
+                : [];
+        
+            const conjuntos = Array.isArray(
+                grafico.data.datasets
+            )
+                ? grafico.data.datasets
+                : [];
+        
+            return rotulos.map(
+                function(rotulo, indice) {
+                    const linha = {
+                        Hora: rotulo
+                    };
+        
+                    conjuntos.forEach(
+                        function(conjunto) {
+                            const nomeSerie = (
+                                conjunto.label
+                                || "Série"
+                            );
+        
+                            const valores = Array.isArray(
+                                conjunto.data
+                            )
+                                ? conjunto.data
+                                : [];
+        
+                            linha[nomeSerie] = (
+                                normalizarValorPlanilha(
+                                    valores[indice]
+                                )
+                            );
+                        }
+                    );
+        
+                    return linha;
+                }
+            );
+        }
+        
+        
+        function ajustarLargurasPlanilha(
+            planilha,
+            linhas
+        ) {
+            if (
+                !Array.isArray(linhas)
+                || linhas.length === 0
+            ) {
+                return;
+            }
+        
+            const colunas = Object.keys(
+                linhas[0]
+            );
+        
+            planilha["!cols"] = colunas.map(
+                function(coluna) {
+                    const comprimentos = linhas.map(
+                        function(linha) {
+                            return String(
+                                linha[coluna] ?? ""
+                            ).length;
+                        }
+                    );
+        
+                    const maiorConteudo = Math.max(
+                        coluna.length,
+                        ...comprimentos
+                    );
+        
+                    return {
+                        wch: Math.min(
+                            Math.max(
+                                maiorConteudo + 2,
+                                10
+                            ),
+                            32
+                        )
+                    };
+                }
+            );
+        }
+        
+        
+        function baixarGraficoXlsx(
+            identificador,
+            nomeArquivo,
+            nomePlanilha
+        ) {
+            if (
+                typeof window.XLSX === "undefined"
+            ) {
+                window.alert(
+                    "Não foi possível carregar o recurso "
+                    + "de exportação para Excel."
+                );
+        
+                return;
+            }
+        
+            const grafico = (
+                window.GRAFICOS_PAINEL[
+                    identificador
+                ]
+            );
+        
+            if (!grafico) {
+                window.alert(
+                    "O gráfico ainda não está disponível."
+                );
+        
+                return;
+            }
+        
+            const linhas = criarLinhasPlanilhaGrafico(
+                grafico
+            );
+        
+            if (linhas.length === 0) {
+                window.alert(
+                    "O gráfico não possui dados para exportação."
+                );
+        
+                return;
+            }
+        
+            const planilha = (
+                window.XLSX.utils.json_to_sheet(
+                    linhas
+                )
+            );
+        
+            ajustarLargurasPlanilha(
+                planilha,
+                linhas
+            );
+        
+            const livro = (
+                window.XLSX.utils.book_new()
+            );
+        
+            window.XLSX.utils.book_append_sheet(
+                livro,
+                planilha,
+                nomePlanilha
+            );
+        
+            livro.Props = {
+                Title: nomePlanilha,
+                Subject: (
+                    "Dados exportados pelo SINmulator"
+                ),
+                Author: "SINmulator",
+                CreatedDate: new Date()
+            };
+        
+            window.XLSX.writeFile(
+                livro,
+                nomeArquivo,
+                {
+                    compression: true
+                }
+            );
+        }
+        
+        
+        window.baixarGraficoXlsx = (
+            baixarGraficoXlsx
+        );
+        
         function calcularIndicadoresItem(item) {
             const mediaGeracao = mediaSerie(
                 item.avg_geracao
