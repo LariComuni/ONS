@@ -650,35 +650,73 @@ if not CAMINHO_UFS.exists():
     CAMINHO_UFS
 )
 
+
+# ============================================================
+# NAVEGAÇÃO
+# ============================================================
+
+pagina_ativa = st.query_params.get(
+    "pagina",
+    "mapa",
+)
+
+paginas_permitidas = {
+    "mapa",
+    "subsistemas",
+}
+
+if pagina_ativa not in paginas_permitidas:
+    pagina_ativa = "mapa"
+
+
 # ============================================================
 # BARRA DE NAVEGAÇÃO
 # ============================================================
 
-html_navbar = """
-<div class="sin-navbar">
-    <div class="sin-navbar-marca">
-        <span
-            class="sin-navbar-icone"
-            aria-hidden="true"
-        >&#9889;&#65038;</span>
+classe_mapa = (
+    "sin-navbar-item sin-navbar-item-ativo"
+    if pagina_ativa == "mapa"
+    else "sin-navbar-item"
+)
 
-        <span class="sin-navbar-nome">
-            SINmulator
-        </span>
-    </div>
+classe_subsistemas = (
+    "sin-navbar-item sin-navbar-item-ativo"
+    if pagina_ativa == "subsistemas"
+    else "sin-navbar-item"
+)
 
-    <div class="sin-navbar-menu">
-        <div class="sin-navbar-item">
-            <span
-                class="sin-navbar-item-icone"
-                aria-hidden="true"
-            >&#128506;&#65039;</span>
+html_navbar = (
+    '<div class="sin-navbar">'
+    '<div class="sin-navbar-marca">'
+    '<span class="sin-navbar-icone" aria-hidden="true">'
+    '&#9889;&#65038;'
+    '</span>'
+    '<span class="sin-navbar-nome">'
+    'SINmulator'
+    '</span>'
+    '</div>'
 
-            <span>Mapa</span>
-        </div>
-    </div>
-</div>
-"""
+    '<div class="sin-navbar-menu">'
+
+    f'<a class="{classe_mapa}" '
+    'href="?pagina=mapa" target="_self">'
+    '<span class="sin-navbar-item-icone" aria-hidden="true">'
+    '&#128506;&#65039;'
+    '</span>'
+    '<span>Mapa</span>'
+    '</a>'
+
+    f'<a class="{classe_subsistemas}" '
+    'href="?pagina=subsistemas" target="_self">'
+    '<span class="sin-navbar-item-icone" aria-hidden="true">'
+    '&#9638;'
+    '</span>'
+    '<span>Subsistemas</span>'
+    '</a>'
+
+    '</div>'
+    '</div>'
+)
 
 st.html(
     html_navbar
