@@ -945,41 +945,23 @@ if (
         )
     )
 
-    resumo_filtros.markdown(
-        f"""
-        <div class="resumo-filtros">
-            <span>
-                {resumo_pipeline["periodo_inicial"]}
-                a
-                {resumo_pipeline["periodo_final"]}
-            </span>
+    resumo_html = (
+        '<div class="resumo-filtros">'
+        f'<span>{resumo_pipeline["periodo_inicial"]} '
+        f'a {resumo_pipeline["periodo_final"]}</span>'
+        '<span class="resumo-separador">•</span>'
+        f'<span>{rotulo_fonte_resumido}</span>'
+        '<span class="resumo-separador">•</span>'
+        f'<span>{resumo_pipeline["usinas"]} usinas</span>'
+        '<span class="resumo-separador">•</span>'
+        f'<span>{resumo_pipeline["pontos"]} pontos</span>'
+        '<span class="resumo-separador">•</span>'
+        f'<span>{quantidade_linhas} linhas</span>'
+        '</div>'
+    )
 
-            <span class="resumo-separador">•</span>
-
-            <span>
-                {rotulo_fonte_resumido}
-            </span>
-
-            <span class="resumo-separador">•</span>
-
-            <span>
-                {resumo_pipeline["usinas"]} usinas
-            </span>
-
-            <span class="resumo-separador">•</span>
-
-            <span>
-                {resumo_pipeline["pontos"]} pontos
-            </span>
-
-            <span class="resumo-separador">•</span>
-
-            <span>
-                {quantidade_linhas} linhas
-            </span>
-        </div>
-        """,
-        unsafe_allow_html=True,
+    resumo_filtros.html(
+        resumo_html
     )
 
 # ============================================================
