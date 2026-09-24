@@ -938,7 +938,7 @@ if (
     )
 
     quantidade_linhas = (
-        f"{resumo_pipeline['linhas_desenhaveis'\]:,}"
+        f"{resumo_pipeline['linhas_desenhaveis']:,}"
         .replace(
             ",",
             ".",
