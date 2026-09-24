@@ -211,25 +211,28 @@ st.markdown(
             display: flex;
             align-items: center;
             justify-content: center;
-            flex-wrap: wrap;
-            gap: 0.45rem;
+            gap: 0.5rem;
         
             margin-top: 0.45rem;
-            padding-top: 0.45rem;
+            padding-top: 0.55rem;
         
             color: #64748b;
             border-top: 1px solid #e2e8f0;
         
-            font-size: 0.78rem;
-            line-height: 1.3;
+            font-size: 0.79rem;
+            line-height: 1.4;
+            text-align: left;
         }
         
-        .resumo-filtros span {
-            white-space: nowrap;
+        .resumo-filtros strong {
+            color: #334155;
+            font-weight: 600;
         }
         
-        .resumo-separador {
-            color: #94a3b8;
+        .resumo-filtros-icone {
+            flex: 0 0 auto;
+            color: #22a06b;
+            font-size: 0.55rem;
         }
 
         /* Área do mapa */
@@ -937,6 +940,14 @@ if (
         )
     )
 
+    quantidade_registros = (
+        f"{resumo_pipeline['registros_curtailment']:,}"
+        .replace(
+            ",",
+            ".",
+        )
+    )
+
     quantidade_linhas = (
         f"{resumo_pipeline['linhas_desenhaveis']:,}"
         .replace(
@@ -947,19 +958,21 @@ if (
 
     resumo_html = (
         '<div class="resumo-filtros">'
-        f'<span>{resumo_pipeline["periodo_inicial"]} '
-        f'a {resumo_pipeline["periodo_final"]}</span>'
-        '<span class="resumo-separador">•</span>'
-        f'<span>{rotulo_fonte_resumido}</span>'
-        '<span class="resumo-separador">•</span>'
-        f'<span>{resumo_pipeline["usinas"]} usinas</span>'
-        '<span class="resumo-separador">•</span>'
-        f'<span>{resumo_pipeline["pontos"]} pontos</span>'
-        '<span class="resumo-separador">•</span>'
-        f'<span>{quantidade_linhas} linhas</span>'
+        '<span class="resumo-filtros-icone">●</span>'
+        '<span>'
+        f'Foram processados <strong>{quantidade_registros} '
+        f'registros de curtailment</strong>, com '
+        f'<strong>{resumo_pipeline["usinas"]} usinas</strong>, '
+        f'<strong>{resumo_pipeline["pontos"]} pontos de conexão</strong> '
+        f'e <strong>{quantidade_linhas} linhas de transmissão</strong> '
+        f'no período de '
+        f'<strong>{resumo_pipeline["periodo_inicial"]}</strong> a '
+        f'<strong>{resumo_pipeline["periodo_final"]}</strong> '
+        f'para a fonte <strong>{rotulo_fonte_resumido}</strong>.'
+        '</span>'
         '</div>'
     )
-
+    
     resumo_filtros.html(
         resumo_html
     )
