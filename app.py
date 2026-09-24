@@ -265,29 +265,67 @@ st.markdown(
         /* Regras das bases */
 
         .st-key-informacoes_bases {
-            width: min(1280px, calc(100vw - 3rem));
-            margin: 0.75rem auto 1.5rem;
+            width: min(460px, calc(100vw - 2rem));
+        
+            margin-top: 0.75rem;
+            margin-right: auto;
+            margin-bottom: 1.25rem;
+            margin-left: 1rem;
         }
         
         .st-key-informacoes_bases
         details {
+            background-color: transparent;
+        
+            border: 1px solid #e2e8f0 !important;
+            border-radius: 8px;
+        
+            box-shadow: none !important;
+        }
+        
+        .st-key-informacoes_bases
+        details[open] {
             background-color: #f8fafc;
-            border: 1px solid #e2e8f0;
-            border-radius: 9px;
         }
         
         .st-key-informacoes_bases
         summary {
-            color: #475569;
-            font-size: 0.88rem;
-            font-weight: 600;
+            min-height: 38px;
+            padding: 0.35rem 0.65rem;
+        
+            color: #64748b;
+            font-size: 0.8rem;
+            font-weight: 500;
+        }
+        
+        .st-key-informacoes_bases
+        summary:hover {
+            color: #334155;
+            background-color: #f8fafc;
+        }
+        
+        .st-key-informacoes_bases
+        div[data-testid="stExpanderDetails"] {
+            padding: 0.25rem 0.75rem 0.65rem;
         }
         
         .st-key-informacoes_bases
         div[data-testid="stMarkdownContainer"] {
             color: #64748b;
-            font-size: 0.86rem;
-            line-height: 1.55;
+            font-size: 0.78rem;
+            line-height: 1.45;
+        }
+        
+        .st-key-informacoes_bases
+        div[data-testid="stMarkdownContainer"] ul {
+            margin-top: 0.25rem;
+            margin-bottom: 0;
+            padding-left: 1.15rem;
+        }
+        
+        .st-key-informacoes_bases
+        div[data-testid="stMarkdownContainer"] li {
+            margin-bottom: 0.28rem;
         }
 
         @media (max-width: 900px) {
@@ -1078,7 +1116,7 @@ with st.container(
     key="informacoes_bases",
 ):
     with st.expander(
-        "Critérios de atualização dos dados",
+        "Critérios de atualização",
         expanded=False,
     ):
         st.markdown(
