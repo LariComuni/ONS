@@ -262,6 +262,34 @@ st.markdown(
             border: 0;
         }
 
+        /* Regras das bases */
+
+        .st-key-informacoes_bases {
+            width: min(1280px, calc(100vw - 3rem));
+            margin: 0.75rem auto 1.5rem;
+        }
+        
+        .st-key-informacoes_bases
+        details {
+            background-color: #f8fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 9px;
+        }
+        
+        .st-key-informacoes_bases
+        summary {
+            color: #475569;
+            font-size: 0.88rem;
+            font-weight: 600;
+        }
+        
+        .st-key-informacoes_bases
+        div[data-testid="stMarkdownContainer"] {
+            color: #64748b;
+            font-size: 0.86rem;
+            line-height: 1.55;
+        }
+
         @media (max-width: 900px) {
             .sin-navbar {
                 min-height: 56px;
@@ -1046,20 +1074,20 @@ with st.container(
 # REGRAS DAS BASES
 # ============================================================
 
-st.subheader(
-    "Regras de atualização das bases"
-)
-
-st.markdown(
-    f"""
-    - **dados EOL e UFV:** período escolhido pelo
-      usuário, podendo abranger mais de um ano.
-    - **Fator de capacidade:** última competência mensal
-      completa, atualmente
-      **{ultimo_mes_completo:02d}/{ultimo_ano_completo}**.
-    - **Subestações:** cadastro mais atual disponibilizado
-      pelo ONS.
-    - **Linhas de transmissão:** cadastro mais atual
-      disponibilizado pelo ONS.
-    """
-)
+with st.container(
+    key="informacoes_bases",
+):
+    with st.expander(
+        "Critérios de atualização dos dados",
+        expanded=False,
+    ):
+        st.markdown(
+            f"""
+            - **Geração e curtailment:** período selecionado nos
+              filtros.
+            - **Fator de capacidade:** competência
+              {ultimo_mes_completo:02d}/{ultimo_ano_completo}.
+            - **Subestações e linhas de transmissão:** cadastros
+              mais recentes disponibilizados pelo ONS.
+            """
+        )
