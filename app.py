@@ -101,40 +101,73 @@ st.markdown(
         .sin-navbar-menu {
             display: flex;
             align-items: center;
+            gap: 0.9rem;
         }
-
+        
         .sin-navbar-item {
             display: inline-flex;
             align-items: center;
             justify-content: center;
             gap: 0.55rem;
-
-            min-width: 105px;
+        
+            min-width: 112px;
             padding: 0.65rem 1rem;
-
-            color: #ffffff;
-            background-color: #204777;
-
+        
+            color: rgba(255, 255, 255, 0.78) !important;
+            background-color: transparent;
+        
+            border: 1px solid transparent;
             border-radius: 8px;
-
+        
             font-family:
                 "Segoe UI",
                 sans-serif;
             font-size: 0.9rem;
             font-weight: 600;
             line-height: 1;
-
+        
+            text-decoration: none !important;
+        
+            cursor: pointer;
+        
+            transition:
+                color 0.15s ease,
+                background-color 0.15s ease,
+                border-color 0.15s ease;
+        }
+        
+        .sin-navbar-item:hover {
+            color: #ffffff !important;
+            background-color: rgba(255, 255, 255, 0.08);
+        
+            text-decoration: none !important;
+        }
+        
+        .sin-navbar-item:focus,
+        .sin-navbar-item:active,
+        .sin-navbar-item:visited {
+            text-decoration: none !important;
+        }
+        
+        .sin-navbar-item-ativo {
+            color: #ffffff !important;
+            background-color: #204777;
+        
+            border-color: rgba(255, 255, 255, 0.08);
+        
+            text-decoration: none !important;
+        
             box-shadow:
                 inset 0 0 0 1px
-                rgba(255, 255, 255, 0.08);
+                rgba(255, 255, 255, 0.04);
         }
-
+        
         .sin-navbar-item-icone {
             display: inline-flex;
             align-items: center;
             justify-content: center;
-
-            color: #ffffff;
+        
+            color: inherit;
             font-size: 1rem;
             line-height: 1;
         }
