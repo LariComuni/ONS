@@ -361,6 +361,59 @@ st.markdown(
             margin-bottom: 0.28rem;
         }
 
+        /* aba subsistemas*/
+        .pagina-subsistemas {
+            width: min(760px, calc(100vw - 3rem));
+        
+            margin-top: 3rem;
+            margin-right: auto;
+            margin-bottom: 3rem;
+            margin-left: auto;
+        
+            padding: 3rem 2rem;
+        
+            color: #334155;
+            text-align: center;
+        
+            background-color: #ffffff;
+        
+            border: 1px solid #e2e8f0;
+            border-radius: 14px;
+        
+            box-shadow:
+                0 8px 24px rgba(15, 23, 42, 0.08);
+        }
+        
+        .pagina-subsistemas-icone {
+            margin-bottom: 0.75rem;
+        
+            color: #204777;
+            font-size: 2.2rem;
+            line-height: 1;
+        }
+        
+        .pagina-subsistemas h1 {
+            margin: 0 0 0.75rem;
+        
+            color: #0f2948;
+            font-size: 1.8rem;
+            font-weight: 700;
+        }
+        
+        .pagina-subsistemas p {
+            max-width: 580px;
+        
+            margin-top: 0;
+            margin-right: auto;
+            margin-bottom: 0;
+            margin-left: auto;
+        
+            color: #64748b;
+            font-size: 0.95rem;
+            line-height: 1.6;
+        }
+        
+
         @media (max-width: 900px) {
             .sin-navbar {
                 min-height: 56px;
@@ -651,6 +704,32 @@ def construir_mapa_aplicacao(
         relatorio_mapa,
     )
 
+def renderizar_pagina_subsistemas():
+    """
+    Renderiza a página provisória da aba Subsistemas.
+    """
+
+    st.html(
+        """
+        <div class="pagina-subsistemas">
+            <div class="pagina-subsistemas-icone">
+                ▦
+            </div>
+
+            <h1>
+                Subsistemas
+            </h1>
+
+            <p>
+                Esta área apresentará indicadores e análises
+                dos subsistemas Norte, Nordeste,
+                Sudeste/Centro-Oeste e Sul.
+            </p>
+        </div>
+        """
+    )
+
+
 # ============================================================
 # COMPETÊNCIA MAIS RECENTE
 # ============================================================
@@ -754,6 +833,17 @@ html_navbar = (
 st.html(
     html_navbar
 )
+
+
+# ============================================================
+# CONTEÚDO DA ABA SUBSISTEMAS
+# ============================================================
+
+if pagina_ativa == "subsistemas":
+    renderizar_pagina_subsistemas()
+
+    st.stop()
+
 
 # ============================================================
 # FILTROS SUSPENSOS DO MAPA
