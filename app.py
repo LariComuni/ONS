@@ -912,9 +912,9 @@ def renderizar_pagina_subsistemas(
 
     st.caption(
         "Configuração selecionada: "
-        f"{filtros_subsistemas['mes_inicial'\]:02d}/"
+        f"{filtros_subsistemas['mes_inicial']:02d}/"
         f"{filtros_subsistemas['ano_inicial']} a "
-        f"{filtros_subsistemas['mes_final'\]:02d}/"
+        f"{filtros_subsistemas['mes_final']:02d}/"
         f"{filtros_subsistemas['ano_final']} | "
         f"{filtros_subsistemas['rotulo_fonte']}"
     )
