@@ -1019,42 +1019,47 @@ def renderizar_pagina_subsistemas(
     dados_subsistemas = st.session_state.get(
         "dados_subsistemas"
     )
-
+    
     periodo_processado = st.session_state.get(
         "periodo_processado_subsistemas"
     )
-
+    
     if (
         dados_subsistemas is None
         or periodo_processado is None
     ):
         return
-
+    
+    
+    # ============================================================
+    # RESUMO DA BASE PROCESSADA
+    # ============================================================
+    
     resumo_pipeline = dados_subsistemas[
         "relatorios"
     ][
         "resumo_pipeline"
     ]
-
+    
     rotulo_fonte = periodo_processado[
         "rotulo_fonte"
     ]
-
+    
     rotulo_fonte_resumido = (
         ROTULOS_FONTES_RESUMIDOS.get(
             rotulo_fonte,
             rotulo_fonte,
         )
     )
-
+    
     quantidade_registros = (
-        f"{resumo_pipeline['registros_curtailment']:,}"
+        f"{resumo_pipeline['registros_curtailment'\]:,}"
         .replace(
             ",",
             ".",
         )
     )
-
+    
     st.info(
         "Base processada: "
         f"{quantidade_registros} registros, "
@@ -1062,6 +1067,162 @@ def renderizar_pagina_subsistemas(
         f"a {resumo_pipeline['periodo_final']}, "
         f"fonte {rotulo_fonte_resumido}."
     )
+    
+    
+    # ============================================================
+    # CÁLCULO DOS KPIS
+    # ============================================================
+    
+    df_curtailment_subsistemas = dados_subsistemas[
+        "df_curtailment"
+    ]
+    
+    try:
+        kpis_subsistemas = (
+            calcular_kpis_subsistemas_aplicacao(
+                df_curtailment_subsistemas
+            )
+        )
+    
+    except (
+        TypeError,
+        ValueError,
+        KeyError,
+    ) as erro:
+        st.error(
+            "Não foi possível calcular os indicadores "
+            "da análise por subsistemas."
+        )
+    
+        st.exception(
+            erro
+        )
+    
+        return
+    
+    
+    # ============================================================
+    # CARTÕES DOS KPIS
+    # ============================================================
+    
+    st.subheader(
+        "Visão geral"
+    )
+    
+    (
+        coluna_corte,
+        coluna_subsistema,
+        coluna_tipo,
+        coluna_mes,
+    ) = st.columns(
+        4
+    )
+    
+    with coluna_corte:
+        st.metric(
+            "Corte médio",
+            formatar_percentual(
+                kpis_subsistemas[
+                    "Corte Médio (%)"
+                ]
+            ),
+            help=(
+                "Razão entre o curtailment total e a "
+                "geração esperada total no período."
+            ),
+        )
+    
+        st.caption(
+            "No período analisado"
+        )
+    
+    with coluna_subsistema:
+        st.metric(
+            "Subsistema crítico",
+            kpis_subsistemas[
+                "Nome do Subsistema Crítico"
+            ],
+            help=(
+                "Subsistema com o maior percentual de corte "
+                "em relação à geração esperada."
+            ),
+        )
+    
+        st.caption(
+            formatar_percentual(
+                kpis_subsistemas[
+                    "Corte do Subsistema Crítico (%)"
+                ]
+            )
+            + " de corte"
+        )
+    
+    with coluna_tipo:
+        st.metric(
+            "Tipo predominante",
+            kpis_subsistemas[
+                "Tipo Predominante"
+            ],
+            help=(
+                "Tipo responsável pela maior parcela da "
+                "energia curtailed no período."
+            ),
+        )
+    
+        st.caption(
+           formatar_percentual(
+                kpis_subsistemas[
+                    "Participação do Tipo Predominante (%)"
+                ]
+            )
+            + " do curtailment"
+        )
+    
+    with coluna_mes:
+        st.metric(
+            "Mês crítico",
+            kpis_subsistemas[
+                "Rótulo do Mês Crítico"
+            ],
+            help=(
+                "Mês com o maior percentual de corte em "
+                "relação à geração esperada."
+            ),
+        )
+    
+        st.caption(
+            formatar_percentual(
+                kpis_subsistemas[
+                    "Corte no Mês Crítico (%)"
+                ]
+            )
+            + " de corte"
+        )
+
+
+@st.cache_data(
+    show_spinner=False,
+)
+def calcular_kpis_subsistemas_aplicacao(
+    df_curtailment,
+):
+    """
+    Calcula os KPIs da página Subsistemas.
+    """
+
+    return calcular_kpis_curtailment(df_curtailment)
+
+def formatar_percentual(
+    valor,
+):
+    """
+    Formata um percentual segundo o padrão brasileiro.
+    """
+
+    if valor is None:
+        return "Não disponível"
+
+    return (f"{valor:,.2f}%".replace(",","X").replace(".",",").replace("X","."))
 
 # ============================================================
 # COMPETÊNCIA MAIS RECENTE
