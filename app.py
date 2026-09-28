@@ -1275,21 +1275,23 @@ def renderizar_pagina_subsistemas(
             )
         
             return
+    # ============================================================
+    # RECUPERAÇÃO DOS DADOS PROCESSADOS
+    # ============================================================
         
+    dados_subsistemas = st.session_state.get(
+        "dados_subsistemas"
+    )
         
-        dados_subsistemas = st.session_state.get(
-            "dados_subsistemas"
-        )
+    periodo_processado = st.session_state.get(
+        "periodo_processado_subsistemas"
+    )
         
-        periodo_processado = st.session_state.get(
-            "periodo_processado_subsistemas"
-        )
-        
-        if (
-            dados_subsistemas is None
-            or periodo_processado is None
-        ):
-            return
+    if (
+        dados_subsistemas is None
+        or periodo_processado is None
+    ):
+        return
     
     # ============================================================
     # RESUMO DA BASE PROCESSADA
