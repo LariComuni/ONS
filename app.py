@@ -1120,11 +1120,6 @@ def renderizar_pagina_subsistemas(
     )
 
     if filtros_subsistemas is None:
-        st.info(
-            "Selecione a competência e a fonte para "
-            "carregar a análise por subsistemas."
-        )
-
         return
     
     if st.session_state.get(
