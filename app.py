@@ -496,11 +496,11 @@ st.markdown(
         }
         
         .kpi-subsistema-icone svg {
+            display: block;
             width: 25px;
             height: 25px;
         
-            fill: none;
-            stroke: currentColor;
+            overflow: visible;
         }
         
         .kpi-icone-corte {
@@ -1285,11 +1285,15 @@ def renderizar_pagina_subsistemas(
     
         '<div class="kpi-subsistema-card">'
         '<div class="kpi-subsistema-icone kpi-icone-corte">'
-        '<svg viewBox="0 0 24 24" stroke-width="2.2">'
-        '<circle cx="7" cy="7" r="2.2"></circle>'
-        '<circle cx="17" cy="17" r="2.2"></circle>'
-        '<line x1="18.5" y1="5.5" x2="5.5" y2="18.5">'
-        '</line>'
+        '<svg '
+        'viewBox="0 0 24 24" '
+        'fill="none" '
+        'stroke="currentColor" '
+        'stroke-width="2.2" '
+        'stroke-linecap="round">'
+        '<circle cx="7" cy="7" r="2.3"></circle>'
+        '<circle cx="17" cy="17" r="2.3"></circle>'
+        '<line x1="18.5" y1="5.5" x2="5.5" y2="18.5"></line>'
         '</svg>'
         '</div>'
         '<div class="kpi-subsistema-conteudo">'
@@ -1307,13 +1311,16 @@ def renderizar_pagina_subsistemas(
     
         '<div class="kpi-subsistema-card">'
         '<div class="kpi-subsistema-icone kpi-icone-subsistema">'
-        '<svg viewBox="0 0 24 24" stroke-width="2.2">'
-        '<circle cx="12" cy="12" r="8"></circle>'
-        '<circle cx="12" cy="12" r="3"></circle>'
-        '<line x1="12" y1="2" x2="12" y2="5"></line>'
-        '<line x1="12" y1="19" x2="12" y2="22"></line>'
-        '<line x1="2" y1="12" x2="5" y2="12"></line>'
-        '<line x1="19" y1="12" x2="22" y2="12"></line>'
+        '<svg '
+        'viewBox="0 0 24 24" '
+        'fill="none" '
+        'stroke="currentColor" '
+        'stroke-width="2.2" '
+        'stroke-linecap="round" '
+        'stroke-linejoin="round">'
+        '<circle cx="12" cy="12" r="8.5"></circle>'
+        '<circle cx="12" cy="12" r="4.5"></circle>'
+        '<circle cx="12" cy="12" r="1.2" fill="currentColor"></circle>'
         '</svg>'
         '</div>'
         '<div class="kpi-subsistema-conteudo">'
@@ -1334,10 +1341,15 @@ def renderizar_pagina_subsistemas(
     
         '<div class="kpi-subsistema-card">'
         '<div class="kpi-subsistema-icone kpi-icone-tipo">'
-        '<svg viewBox="0 0 24 24" stroke-width="2.2">'
-        '<line x1="5" y1="20" x2="5" y2="13"></line>'
-        '<line x1="11" y1="20" x2="11" y2="8"></line>'
-        '<line x1="17" y1="20" x2="17" y2="4"></line>'
+        '<svg '
+        'viewBox="0 0 24 24" '
+        'fill="none" '
+        'stroke="currentColor" '
+        'stroke-width="2.2" '
+        'stroke-linecap="round" '
+        'stroke-linejoin="round">'
+        '<polyline points="13,2 5,14 11,14 10,22 19,9 13,9 13,2">'
+        '</polyline>'
         '</svg>'
         '</div>'
         '<div class="kpi-subsistema-conteudo">'
@@ -1355,12 +1367,22 @@ def renderizar_pagina_subsistemas(
     
         '<div class="kpi-subsistema-card">'
         '<div class="kpi-subsistema-icone kpi-icone-mes">'
-        '<svg viewBox="0 0 24 24" stroke-width="2.2">'
-        '<rect x="3" y="5" width="18" height="16" rx="2">'
-        '</rect>'
+        '<svg '
+        'viewBox="0 0 24 24" '
+        'fill="none" '
+        'stroke="currentColor" '
+        'stroke-width="2.1" '
+        'stroke-linecap="round" '
+        'stroke-linejoin="round">'
+        '<rect x="3" y="5" width="18" height="16" rx="2.5"></rect>'
         '<line x1="3" y1="10" x2="21" y2="10"></line>'
         '<line x1="8" y1="3" x2="8" y2="7"></line>'
         '<line x1="16" y1="3" x2="16" y2="7"></line>'
+        '<circle cx="8" cy="14" r="0.8" fill="currentColor"></circle>'
+        '<circle cx="12" cy="14" r="0.8" fill="currentColor"></circle>'
+        '<circle cx="16" cy="14" r="0.8" fill="currentColor"></circle>'
+        '<circle cx="8" cy="18" r="0.8" fill="currentColor"></circle>'
+        '<circle cx="12" cy="18" r="0.8" fill="currentColor"></circle>'
         '</svg>'
         '</div>'
         '<div class="kpi-subsistema-conteudo">'
