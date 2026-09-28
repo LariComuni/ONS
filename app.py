@@ -1490,52 +1490,26 @@ def renderizar_pagina_subsistemas(
     # GRÁFICOS DE CURTAILMENT POR SUBSISTEMA
     # ============================================================
     
-    coluna_grafico_mensal, coluna_grafico_participacao = (
-        st.columns(
-            [
-                1.75,
-                1,
-            ],
-            gap="medium",
-        )
+    (
+        coluna_grafico_mensal,
+        coluna_grafico_participacao,
+    ) = st.columns(
+        [
+            1.75,
+            1,
+        ],
+        gap="medium",
     )
-
-    # ============================================================
-    # CURTAILMENT MENSAL
-    # ============================================================
     
-    # seletor
-
-    with coluna_grafico_participacao:
-        with st.container(
-            border=True,
-            key="card_grafico_participacao",
-        ):
-            st.markdown(
-                """
-                <div class="titulo-card-grafico">
-                    Participação do curtailment
-                </div>
-                """,
-                unsafe_allow_html=True,
-            )
-    
-            st.markdown(
-                """
-                <div class="grafico-placeholder">
-                    O gráfico de participação por subsistema
-                    será apresentado aqui.
-                </div>
-                """,
-                unsafe_allow_html=True,
-            )
-
     with coluna_grafico_mensal:
         with st.container(
             border=True,
             key="card_grafico_mensal",
         ):
-            coluna_titulo, coluna_tipo = st.columns(
+            (
+                coluna_titulo,
+                coluna_tipo,
+            ) = st.columns(
                 [
                     1.7,
                     1,
@@ -1598,185 +1572,216 @@ def renderizar_pagina_subsistemas(
                         "curtailment_gwh",
                     ]
                 )
-
-    ordem_subsistemas = [
-        "N",
-        "NE",
-        "SE",
-        "S",
-    ]
     
-    data_inicial = pd.Timestamp(
-        year=filtros_subsistemas[
-            "ano_inicial"
-        ],
-        month=filtros_subsistemas[
-            "mes_inicial"
-        ],
-        day=1,
-    )
-    
-    data_final = pd.Timestamp(
-        year=filtros_subsistemas[
-            "ano_final"
-        ],
-        month=filtros_subsistemas[
-            "mes_final"
-        ],
-        day=1,
-    )
-    
-    meses_disponiveis = pd.date_range(
-        start=data_inicial,
-        end=data_final,
-        freq="MS",
-    )
-    
-    # Complementação de meses e subsistemas
-    indice_completo = pd.MultiIndex.from_product(
-        [
-            meses_disponiveis,
-            ordem_subsistemas,
-        ],
-        names=[
-            "mes",
-            "id_subsistema",
-        ],
-    )
-    
-    base_mensal_completa = (
-        base_mensal
-        .set_index(
-            [
-                "mes",
-                "id_subsistema",
+            ordem_subsistemas = [
+                "N",
+                "NE",
+                "SE",
+                "S",
             ]
-        )
-        .reindex(
-            indice_completo,
-            fill_value=0.0,
-        )
-        .reset_index()
-    )
-
-    dados_grafico_mensal = (
-        base_mensal_completa
-        .pivot(
-            index="mes",
-            columns="id_subsistema",
-            values="curtailment_gwh",
-        )
-        .reindex(
-            columns=ordem_subsistemas,
-            fill_value=0.0,
-        )
-        .sort_index()
-    )
     
-    cores_subsistemas = {
-        "N": "#FFC300",
-        "NE": "#E15759",
-        "SE": "#2A9D8F",
-        "S": "#4E79A7",
-    }
+            data_inicial = pd.Timestamp(
+                year=filtros_subsistemas[
+                    "ano_inicial"
+                ],
+                month=filtros_subsistemas[
+                    "mes_inicial"
+                ],
+                day=1,
+            )
     
-    rotulos_meses = (
-        dados_grafico_mensal.index
-        .strftime("%m/%Y")
-    )
+            data_final = pd.Timestamp(
+                year=filtros_subsistemas[
+                    "ano_final"
+                ],
+                month=filtros_subsistemas[
+                    "mes_final"
+                ],
+                day=1,
+            )
     
-    fig_mensal, ax_mensal = plt.subplots(
-        figsize=(
-            7.8,
-            4.2,
-        )
-    )
+            meses_disponiveis = pd.date_range(
+                start=data_inicial,
+                end=data_final,
+                freq="MS",
+            )
     
-    base_empilhamento = pd.Series(
-        0.0,
-        index=dados_grafico_mensal.index,
-    )
+            indice_completo = pd.MultiIndex.from_product(
+                [
+                    meses_disponiveis,
+                    ordem_subsistemas,
+                ],
+                names=[
+                    "mes",
+                    "id_subsistema",
+                ],
+            )
     
-    for subsistema in ordem_subsistemas:
-        valores_subsistema = (
-            dados_grafico_mensal[
-                subsistema
-            ]
-        )
+            base_mensal_completa = (
+                base_mensal
+                .set_index(
+                    [
+                        "mes",
+                        "id_subsistema",
+                    ]
+                )
+                .reindex(
+                    indice_completo,
+                    fill_value=0.0,
+                )
+                .reset_index()
+            )
     
-        ax_mensal.bar(
-            rotulos_meses,
-            valores_subsistema,
-            bottom=base_empilhamento,
-            label=subsistema,
-            color=cores_subsistemas[
-                subsistema
-            ],
-            edgecolor="white",
-            linewidth=0.6,
-        )
+            dados_grafico_mensal = (
+                base_mensal_completa
+                .pivot(
+                    index="mes",
+                    columns="id_subsistema",
+                    values="curtailment_gwh",
+                )
+                .reindex(
+                    columns=ordem_subsistemas,
+                    fill_value=0.0,
+                )
+                .sort_index()
+            )
     
-        base_empilhamento = (
-            base_empilhamento
-            + valores_subsistema
-        )
+            cores_subsistemas = {
+                "N": "#FFC300",
+                "NE": "#E15759",
+                "SE": "#2A9D8F",
+                "S": "#4E79A7",
+            }
     
-    ax_mensal.set_xlabel(
-        "Mês"
-    )
+            rotulos_meses = (
+                dados_grafico_mensal.index
+                .strftime("%m/%Y")
+            )
     
-    ax_mensal.set_ylabel(
-        "Curtailment (GWh)"
-    )
+            fig_mensal, ax_mensal = plt.subplots(
+                figsize=(
+                    7.8,
+                    4.0,
+                )
+            )
     
-    ax_mensal.grid(
-        axis="y",
-        alpha=0.25,
-        linestyle="--",
-    )
+            base_empilhamento = pd.Series(
+                0.0,
+                index=dados_grafico_mensal.index,
+            )
     
-    ax_mensal.tick_params(
-        axis="x",
-        rotation=0,
-    )
+            for subsistema in ordem_subsistemas:
+                valores_subsistema = (
+                    dados_grafico_mensal[
+                        subsistema
+                    ]
+                )
     
-    ax_mensal.legend(
-        title=None,
-        ncol=4,
-        loc="upper center",
-        bbox_to_anchor=(
-            0.5,
-            1.08,
-        ),
-        frameon=False,
-        fontsize=9,
-    )
+                ax_mensal.bar(
+                    rotulos_meses,
+                    valores_subsistema,
+                    bottom=base_empilhamento,
+                    label=subsistema,
+                    color=cores_subsistemas[
+                        subsistema
+                    ],
+                    edgecolor="white",
+                    linewidth=0.6,
+                )
     
-    ax_mensal.spines[
-        "top"
-    ].set_visible(
-        False
-    )
+                base_empilhamento = (
+                    base_empilhamento
+                    + valores_subsistema
+                )
     
-    ax_mensal.spines[
-        "right"
-    ].set_visible(
-        False
-    )
+            ax_mensal.set_xlabel(
+                "Mês"
+            )
     
-    # Construção da figura
-    fig_mensal.tight_layout()
-    fig_mensal.subplots_adjust(top=0.84)
+            ax_mensal.set_ylabel(
+                "Curtailment (GWh)"
+            )
     
-    # Exibição na página
-    st.pyplot(
-        fig_mensal,
-        use_container_width=True,
-    )
+            ax_mensal.grid(
+                axis="y",
+                alpha=0.25,
+                linestyle="--",
+            )
     
-    plt.close(
-        fig_mensal
-    )
+            ax_mensal.set_axisbelow(
+                True
+            )
+    
+            ax_mensal.tick_params(
+                axis="x",
+                rotation=0,
+                labelsize=9,
+            )
+    
+            ax_mensal.tick_params(
+                axis="y",
+                labelsize=9,
+            )
+    
+            ax_mensal.legend(
+                title=None,
+                ncol=4,
+                loc="upper center",
+                bbox_to_anchor=(
+                    0.5,
+                    1.10,
+                ),
+                frameon=False,
+                fontsize=9,
+            )
+    
+            ax_mensal.spines[
+                "top"
+            ].set_visible(
+                False
+            )
+    
+            ax_mensal.spines[
+                "right"
+            ].set_visible(
+                False
+            )
+    
+            fig_mensal.tight_layout()
+    
+            st.pyplot(
+                fig_mensal,
+                use_container_width=True,
+            )
+    
+            plt.close(
+                fig_mensal
+            )
+    
+    
+    with coluna_grafico_participacao:
+        with st.container(
+            border=True,
+            key="card_grafico_participacao",
+        ):
+            st.markdown(
+                """
+                <div class="titulo-card-grafico">
+                    Participação do curtailment
+                </div>
+                """,
+                unsafe_allow_html=True,
+            )
+    
+            st.markdown(
+                """
+                <div class="grafico-placeholder">
+                    O gráfico de participação por subsistema
+                    será apresentado aqui.
+                </div>
+                """,
+                unsafe_allow_html=True,
+            )
 
 @st.cache_data(
     show_spinner=False,
