@@ -1036,7 +1036,7 @@ def renderizar_pagina_subsistemas(
 
         return
 
-     st.html(
+    st.html(
         """
         <div class="cabecalho-subsistemas">
             <h1>Subsistemas</h1>
