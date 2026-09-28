@@ -9,3 +9,4 @@ requests
 shapely
 streamlit
 streamlit-folium
+plotly>=6.0.0
