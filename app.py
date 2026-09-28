@@ -364,10 +364,65 @@ st.markdown(
         }
 
         /* aba subsistemas*/
+
+        /* Filtros da página Subsistemas */
+
+        .st-key-filtros_subsistemas {
+            position: relative;
+            z-index: 10;
+        
+            width: min(1120px, calc(100vw - 3rem));
+        
+            margin-top: 14px;
+            margin-right: auto;
+            margin-bottom: 1.25rem;
+            margin-left: auto;
+        
+            padding: 0.55rem 0.75rem 0.7rem;
+        
+            background-color: rgba(255, 255, 255, 0.97);
+            backdrop-filter: blur(12px);
+        
+            border: 1px solid rgba(203, 213, 225, 0.95);
+            border-radius: 13px;
+        
+            box-shadow:
+                0 10px 28px rgba(15, 23, 42, 0.14);
+        
+            box-sizing: border-box;
+        }
+        
+        .st-key-filtros_subsistemas
+        div[data-testid="stVerticalBlockBorderWrapper"] {
+            padding: 0;
+            background: transparent;
+            border: 0;
+            box-shadow: none;
+        }
+        
+        .st-key-filtros_subsistemas
+        div[data-testid="stSelectbox"] {
+            min-width: 0;
+        }
+        
+        .st-key-filtros_subsistemas
+        div[data-testid="stSelectbox"] label {
+            color: #334155;
+            font-size: 0.78rem;
+            font-weight: 600;
+        }
+        
+        .st-key-filtros_subsistemas
+        div[data-testid="stButton"] button {
+            min-height: 40px;
+            border-radius: 9px;
+            font-weight: 600;
+        }
+        
         .cabecalho-subsistemas {
             width: min(1180px, calc(100vw - 3rem));
         
-            margin-top: 1.75rem;
+            margin-top: 0.35rem;
             margin-right: auto;
             margin-bottom: 1rem;
             margin-left: auto;
@@ -388,6 +443,132 @@ st.markdown(
             font-size: 0.9rem;
         }
         
+        .kpis-subsistemas {
+            display: grid;
+            grid-template-columns: repeat(4, minmax(0, 1fr));
+            gap: 0.9rem;
+        
+            width: min(1180px, calc(100vw - 3rem));
+        
+            margin-top: 1rem;
+            margin-right: auto;
+            margin-bottom: 1.5rem;
+            margin-left: auto;
+        }
+        
+        .kpi-subsistema-card {
+            display: flex;
+            align-items: center;
+            gap: 0.85rem;
+        
+            min-width: 0;
+            min-height: 86px;
+        
+            padding: 0.85rem 1rem;
+        
+            background:
+                linear-gradient(
+                    135deg,
+                    #ffffff 0%,
+                    #fbfdff 100%
+                );
+        
+            border: 1px solid #e5edf5;
+            border-radius: 13px;
+        
+            box-shadow:
+                0 6px 18px rgba(15, 42, 70, 0.08);
+        
+            box-sizing: border-box;
+        }
+        
+        .kpi-subsistema-icone {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+        
+            flex: 0 0 auto;
+        
+            width: 48px;
+            height: 48px;
+        
+            border-radius: 50%;
+        }
+        
+        .kpi-subsistema-icone svg {
+            width: 25px;
+            height: 25px;
+        
+            fill: none;
+            stroke: currentColor;
+        }
+        
+        .kpi-icone-corte {
+            color: #05aaa4;
+            background-color: #ddf8f6;
+        }
+        
+        .kpi-icone-subsistema {
+            color: #ef476f;
+            background-color: #ffe8ed;
+        }
+        
+        .kpi-icone-tipo {
+            color: #7959da;
+            background-color: #eee9ff;
+        }
+        
+        .kpi-icone-mes {
+            color: #2979e8;
+            background-color: #e4f0ff;
+        }
+        
+        .kpi-subsistema-conteudo {
+            min-width: 0;
+        }
+        
+        .kpi-subsistema-titulo {
+            margin-bottom: 0.2rem;
+        
+            color: #53667c;
+            font-size: 0.72rem;
+            font-weight: 600;
+            line-height: 1.2;
+        }
+        
+        .kpi-subsistema-valor {
+            overflow: hidden;
+        
+            color: #102d57;
+            font-size: 1.05rem;
+            font-weight: 750;
+            line-height: 1.2;
+        
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+        
+        .kpi-subsistema-detalhe {
+            margin-top: 0.18rem;
+        
+            color: #7c8ca0;
+            font-size: 0.67rem;
+            line-height: 1.25;
+        }
+        
+        @media (max-width: 1000px) {
+            .kpis-subsistemas {
+                grid-template-columns:
+                    repeat(2, minmax(0, 1fr));
+            }
+        }
+        
+        @media (max-width: 600px) {
+            .kpis-subsistemas {
+                grid-template-columns: 1fr;
+                width: calc(100vw - 1rem);
+            }
+        }
 
         @media (max-width: 900px) {
             .sin-navbar {
@@ -402,30 +583,6 @@ st.markdown(
             .sin-navbar-item {
                 min-width: auto;
                 padding: 0.55rem 0.75rem;
-            }
-
-            .st-key-filtros_mapa {
-                width: calc(100vw - 1rem);
-                margin-top: 8px;
-                margin-bottom: 8px;
-                padding: 0.65rem;
-            }
-            .st-key-filtros_subsistemas {
-                width: min(1180px, calc(100vw - 3rem));
-            
-                margin-right: auto;
-                margin-bottom: 1rem;
-                margin-left: auto;
-            
-                padding: 0.65rem 0.8rem 0.8rem;
-            
-                background-color: #ffffff;
-            
-                border: 1px solid #dbe3ec;
-                border-radius: 12px;
-            
-                box-shadow:
-                    0 6px 18px rgba(15, 23, 42, 0.08);
             }
         }
     </style>
@@ -860,19 +1017,6 @@ def renderizar_pagina_subsistemas(
     Renderiza a página de análise dos subsistemas.
     """
 
-    st.html(
-        """
-        <div class="cabecalho-subsistemas">
-            <h1>Subsistemas</h1>
-
-            <p>
-                Indicadores e análises dos subsistemas Norte,
-                Nordeste, Sudeste/Centro-Oeste e Sul.
-            </p>
-        </div>
-        """
-    )
-
     try:
         filtros_aplicados = (
             renderizar_filtros_subsistemas(
@@ -891,6 +1035,14 @@ def renderizar_pagina_subsistemas(
         )
 
         return
+
+     st.html(
+        """
+        <div class="cabecalho-subsistemas">
+            <h1>Subsistemas</h1>
+        </div>
+        """
+    )
 
     if filtros_aplicados is not None:
         st.session_state[
@@ -912,7 +1064,7 @@ def renderizar_pagina_subsistemas(
         )
 
         return
-
+    
     if st.session_state.get(
         "processar_subsistemas",
         False,
@@ -1104,100 +1256,132 @@ def renderizar_pagina_subsistemas(
     # ============================================================
     # CARTÕES DOS KPIS
     # ============================================================
-    
-    st.subheader(
-        "Visão geral"
+    corte_medio = formatar_percentual(
+        kpis_subsistemas[
+            "Corte Médio (%)"
+        ]
     )
     
-    (
-        coluna_corte,
-        coluna_subsistema,
-        coluna_tipo,
-        coluna_mes,
-    ) = st.columns(
-        4
+    corte_subsistema = formatar_percentual(
+        kpis_subsistemas[
+            "Corte do Subsistema Crítico (%)"
+        ]
     )
     
-    with coluna_corte:
-        st.metric(
-            "Corte médio",
-            formatar_percentual(
-                kpis_subsistemas[
-                    "Corte Médio (%)"
-                ]
-            ),
-            help=(
-                "Razão entre o curtailment total e a "
-                "geração esperada total no período."
-            ),
-        )
+    participacao_tipo = formatar_percentual(
+        kpis_subsistemas[
+            "Participação do Tipo Predominante (%)"
+        ]
+    )
     
-        st.caption(
-            "No período analisado"
-        )
+    corte_mes = formatar_percentual(
+        kpis_subsistemas[
+            "Corte no Mês Crítico (%)"
+        ]
+    )
+
+    html_kpis = (
+        '<div class="kpis-subsistemas">'
     
-    with coluna_subsistema:
-        st.metric(
-            "Subsistema crítico",
-            kpis_subsistemas[
-                "Nome do Subsistema Crítico"
-            ],
-            help=(
-                "Subsistema com o maior percentual de corte "
-                "em relação à geração esperada."
-            ),
-        )
+        '<div class="kpi-subsistema-card">'
+        '<div class="kpi-subsistema-icone kpi-icone-corte">'
+        '<svg viewBox="0 0 24 24" stroke-width="2.2">'
+        '<circle cx="7" cy="7" r="2.2"></circle>'
+        '<circle cx="17" cy="17" r="2.2"></circle>'
+        '<line x1="18.5" y1="5.5" x2="5.5" y2="18.5">'
+        '</line>'
+        '</svg>'
+        '</div>'
+        '<div class="kpi-subsistema-conteudo">'
+        '<div class="kpi-subsistema-titulo">'
+        'Corte médio'
+        '</div>'
+        '<div class="kpi-subsistema-valor">'
+        f'{corte_medio}'
+        '</div>'
+        '<div class="kpi-subsistema-detalhe">'
+        'No período analisado'
+        '</div>'
+        '</div>'
+        '</div>'
     
-        st.caption(
-            formatar_percentual(
-                kpis_subsistemas[
-                    "Corte do Subsistema Crítico (%)"
-                ]
-            )
-            + " de corte"
-        )
+        '<div class="kpi-subsistema-card">'
+        '<div class="kpi-subsistema-icone kpi-icone-subsistema">'
+        '<svg viewBox="0 0 24 24" stroke-width="2.2">'
+        '<circle cx="12" cy="12" r="8"></circle>'
+        '<circle cx="12" cy="12" r="3"></circle>'
+        '<line x1="12" y1="2" x2="12" y2="5"></line>'
+        '<line x1="12" y1="19" x2="12" y2="22"></line>'
+        '<line x1="2" y1="12" x2="5" y2="12"></line>'
+        '<line x1="19" y1="12" x2="22" y2="12"></line>'
+        '</svg>'
+        '</div>'
+        '<div class="kpi-subsistema-conteudo">'
+        '<div class="kpi-subsistema-titulo">'
+        'Subsistema crítico'
+        '</div>'
+        '<div class="kpi-subsistema-valor" '
+        'title="'
+        f'{kpis_subsistemas["Nome do Subsistema Crítico"]}'
+        '">'
+        f'{kpis_subsistemas["Nome do Subsistema Crítico"]}'
+        '</div>'
+        '<div class="kpi-subsistema-detalhe">'
+        f'{corte_subsistema} de corte'
+        '</div>'
+        '</div>'
+        '</div>'
     
-    with coluna_tipo:
-        st.metric(
-            "Tipo predominante",
-            kpis_subsistemas[
-                "Tipo Predominante"
-            ],
-            help=(
-                "Tipo responsável pela maior parcela da "
-                "energia curtailed no período."
-            ),
-        )
+        '<div class="kpi-subsistema-card">'
+        '<div class="kpi-subsistema-icone kpi-icone-tipo">'
+        '<svg viewBox="0 0 24 24" stroke-width="2.2">'
+        '<line x1="5" y1="20" x2="5" y2="13"></line>'
+        '<line x1="11" y1="20" x2="11" y2="8"></line>'
+        '<line x1="17" y1="20" x2="17" y2="4"></line>'
+        '</svg>'
+        '</div>'
+        '<div class="kpi-subsistema-conteudo">'
+        '<div class="kpi-subsistema-titulo">'
+        'Tipo predominante'
+        '</div>'
+        '<div class="kpi-subsistema-valor">'
+        f'{kpis_subsistemas["Tipo Predominante"]}'
+        '</div>'
+        '<div class="kpi-subsistema-detalhe">'
+        f'{participacao_tipo} do curtailment'
+        '</div>'
+        '</div>'
+        '</div>'
     
-        st.caption(
-           formatar_percentual(
-                kpis_subsistemas[
-                    "Participação do Tipo Predominante (%)"
-                ]
-            )
-            + " do curtailment"
-        )
+        '<div class="kpi-subsistema-card">'
+        '<div class="kpi-subsistema-icone kpi-icone-mes">'
+        '<svg viewBox="0 0 24 24" stroke-width="2.2">'
+        '<rect x="3" y="5" width="18" height="16" rx="2">'
+        '</rect>'
+        '<line x1="3" y1="10" x2="21" y2="10"></line>'
+        '<line x1="8" y1="3" x2="8" y2="7"></line>'
+        '<line x1="16" y1="3" x2="16" y2="7"></line>'
+        '</svg>'
+        '</div>'
+        '<div class="kpi-subsistema-conteudo">'
+        '<div class="kpi-subsistema-titulo">'
+        'Mês crítico'
+        '</div>'
+        '<div class="kpi-subsistema-valor">'
+        f'{kpis_subsistemas["Rótulo do Mês Crítico"]}'
+        '</div>'
+        '<div class="kpi-subsistema-detalhe">'
+        f'{corte_mes} de corte'
+        '</div>'
+        '</div>'
+        '</div>'
     
-    with coluna_mes:
-        st.metric(
-            "Mês crítico",
-            kpis_subsistemas[
-                "Rótulo do Mês Crítico"
-            ],
-            help=(
-                "Mês com o maior percentual de corte em "
-                "relação à geração esperada."
-            ),
-        )
+        '</div>'
+    )
     
-        st.caption(
-            formatar_percentual(
-                kpis_subsistemas[
-                    "Corte no Mês Crítico (%)"
-                ]
-            )
-            + " de corte"
-        )
+    st.html(
+        html_kpis
+    )
 
 
 @st.cache_data(
