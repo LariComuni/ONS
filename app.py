@@ -1053,7 +1053,7 @@ def renderizar_pagina_subsistemas(
     )
     
     quantidade_registros = (
-        f"{resumo_pipeline['registros_curtailment'\]:,}"
+        f"{resumo_pipeline['registros_curtailment']:,}"
         .replace(
             ",",
             ".",
