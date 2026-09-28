@@ -22,6 +22,7 @@ from src.mapa import (
 from src.pipeline import preparar_dados_aplicacao
 from src.analise_subsistemas import (
     calcular_kpis_curtailment,
+    preparar_curtailment_mensal_subsistemas,
 )
 # ============================================================
 # CONFIGURAÇÃO
@@ -684,6 +685,13 @@ ROTULOS_FONTES_RESUMIDOS = {
     "Eólica e solar fotovoltaica": "Eólica e solar",
     "Eólica": "Eólica",
     "Solar fotovoltaica": "Solar fotovoltaica",
+}
+
+TIPOS_CURTAILMENT = {
+    "Todos": "TODOS",
+    "Energético": "ENE",
+    "Elétrico": "REL",
+    "Confiabilidade": "CNF",
 }
 
 # ============================================================
@@ -1434,6 +1442,123 @@ def renderizar_pagina_subsistemas(
         html_kpis
     )
 
+    # ============================================================
+    # CURTAILMENT MENSAL
+    # ============================================================
+
+    st.subheader(
+        "Curtailment mensal por subsistema"
+    )
+    
+    coluna_titulo, coluna_tipo = st.columns(
+        [
+            3,
+            1,
+        ],
+        vertical_alignment="bottom",
+    )
+    
+    with coluna_titulo:
+        st.caption(
+            "Energia curtailed mensal, distribuída entre "
+            "os subsistemas do SIN."
+        )
+    
+    with coluna_tipo:
+        tipo_mensal_rotulo = st.selectbox(
+            "Tipo de curtailment",
+            options=[
+                "Todos",
+                "Energético",
+                "Elétrico",
+                "Confiabilidade",
+            ],
+            key="subsistemas_tipo_mensal",
+        )
+    
+    tipo_mensal_codigo = TIPOS_CURTAILMENT[
+        tipo_mensal_rotulo
+    ]
+    
+    base_mensal = (
+        preparar_curtailment_mensal_subsistemas(
+            df=df_curtailment_subsistemas,
+            tipo_curtailment=tipo_mensal_codigo,
+        )
+    )
+
+    ordem_subsistemas = [
+        "N",
+        "NE",
+        "SE",
+        "S",
+    ]
+    
+    data_inicial = pd.Timestamp(
+        year=filtros_subsistemas[
+            "ano_inicial"
+        ],
+        month=filtros_subsistemas[
+            "mes_inicial"
+        ],
+        day=1,
+    )
+    
+    data_final = pd.Timestamp(
+        year=filtros_subsistemas[
+            "ano_final"
+        ],
+        month=filtros_subsistemas[
+            "mes_final"
+        ],
+        day=1,
+    )
+    
+    meses_disponiveis = pd.date_range(
+        start=data_inicial,
+        end=data_final,
+        freq="MS",
+    )
+    
+    indice_completo = pd.MultiIndex.from_product(
+        [
+            meses_disponiveis,
+            ordem_subsistemas,
+        ],
+        names=[
+            "mes",
+            "id_subsistema",
+        ],
+    )
+    
+    base_mensal_completa = (
+        base_mensal
+        .set_index(
+            [
+                "mes",
+                "id_subsistema",
+            ]
+        )
+        .reindex(
+            indice_completo,
+            fill_value=0.0,
+        )
+        .reset_index()
+    )
+
+    dados_grafico_mensal = (
+        base_mensal_completa
+        .pivot(
+            index="mes",
+            columns="id_subsistema",
+            values="curtailment_gwh",
+        )
+        .reindex(
+            columns=ordem_subsistemas,
+            fill_value=0.0,
+        )
+        .sort_index()
+    )
 
 @st.cache_data(
     show_spinner=False,
