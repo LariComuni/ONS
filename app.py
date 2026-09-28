@@ -478,13 +478,13 @@ st.markdown(
         .kpis-subsistemas {
             display: grid;
             grid-template-columns: repeat(4, minmax(0, 1fr));
-            gap: 0.9rem;
+            gap: 1rem;
         
-            width: min(1180px, calc(100vw - 3rem));
+            width: min(1500px, calc(100vw - 3rem));
         
             margin-top: 1rem;
             margin-right: auto;
-            margin-bottom: 1.5rem;
+            margin-bottom: 1.25rem;
             margin-left: auto;
         }
         
@@ -572,11 +572,11 @@ st.markdown(
         }
         
         .kpi-subsistema-titulo {
-            margin-bottom: 0.2rem;
+            margin-bottom: 0.25rem;
         
             color: #53667c;
-            font-size: 0.72rem;
-            font-weight: 600;
+            font-size: 0.82rem;
+            font-weight: 650;
             line-height: 1.2;
         }
         
@@ -584,7 +584,7 @@ st.markdown(
             overflow: hidden;
         
             color: #102d57;
-            font-size: 1.05rem;
+            font-size: 1.22rem;
             font-weight: 750;
             line-height: 1.2;
         
@@ -593,11 +593,16 @@ st.markdown(
         }
         
         .kpi-subsistema-detalhe {
-            margin-top: 0.18rem;
+            margin-top: 0.22rem;
         
             color: #7c8ca0;
-            font-size: 0.67rem;
-            line-height: 1.25;
+            font-size: 0.75rem;
+            line-height: 1.3;
+        }
+        
+        .kpi-subsistema-card {
+            min-height: 96px;
+            padding: 0.95rem 1.05rem;
         }
         
         @media (max-width: 1000px) {
@@ -1440,51 +1445,117 @@ def renderizar_pagina_subsistemas(
     )
 
     # ============================================================
+    # GRÁFICOS DE CURTAILMENT POR SUBSISTEMA
+    # ============================================================
+    
+    coluna_grafico_mensal, coluna_grafico_participacao = (
+        st.columns(
+            [
+                1.75,
+                1,
+            ],
+            gap="medium",
+        )
+    )
+
+    # ============================================================
     # CURTAILMENT MENSAL
     # ============================================================
     
-    # Título e seletor
-    st.subheader(
-        "Curtailment mensal por subsistema"
-    )
+    # seletor
+
+    with coluna_grafico_participacao:
+        with st.container(
+            border=True,
+            key="card_grafico_participacao",
+        ):
+            st.markdown(
+                """
+                <div class="titulo-card-grafico">
+                    Participação do curtailment
+                </div>
+                """,
+                unsafe_allow_html=True,
+            )
     
-    coluna_titulo, coluna_tipo = st.columns(
-        [
-            3,
-            1,
-        ],
-        vertical_alignment="bottom",
-    )
+            st.markdown(
+                """
+                <div class="grafico-placeholder">
+                    O gráfico de participação por subsistema
+                    será apresentado aqui.
+                </div>
+                """,
+                unsafe_allow_html=True,
+            )
+
+    with coluna_grafico_mensal:
+        with st.container(
+            border=True,
+            key="card_grafico_mensal",
+        ):
+            coluna_titulo, coluna_tipo = st.columns(
+                [
+                    1.7,
+                    1,
+                ],
+                vertical_alignment="bottom",
+            )
     
-    with coluna_titulo:
-        st.caption(
-            "Energia curtailed mensal, distribuída entre "
-            "os subsistemas do SIN."
-        )
+            with coluna_titulo:
+                st.markdown(
+                    """
+                    <div class="titulo-card-grafico">
+                        Curtailment mensal por subsistema
+                    </div>
+                    """,
+                    unsafe_allow_html=True,
+                )
     
-    with coluna_tipo:
-        tipo_mensal_rotulo = st.selectbox(
-            "Tipo de curtailment",
-            options=[
-                "Todos",
-                "Energético",
-                "Elétrico",
-                "Confiabilidade",
-            ],
-            key="subsistemas_tipo_mensal",
-        )
+            with coluna_tipo:
+                tipo_mensal_rotulo = st.selectbox(
+                    "Tipo de curtailment",
+                    options=[
+                        "Todos",
+                        "Energético",
+                        "Elétrico",
+                        "Confiabilidade",
+                    ],
+                    key="subsistemas_tipo_mensal",
+                )
     
-    tipo_mensal_codigo = TIPOS_CURTAILMENT[
-        tipo_mensal_rotulo
-    ]
+            tipo_mensal_codigo = TIPOS_CURTAILMENT[
+                tipo_mensal_rotulo
+            ]
     
-    # Preparação da base
-    base_mensal = (
-        preparar_curtailment_mensal_subsistemas(
-            df=df_curtailment_subsistemas,
-            tipo_curtailment=tipo_mensal_codigo,
-        )
-    )
+            try:
+                base_mensal = (
+                    preparar_curtailment_mensal_subsistemas(
+                        df=df_curtailment_subsistemas,
+                        tipo_curtailment=tipo_mensal_codigo,
+                    )
+                )
+    
+            except (
+                TypeError,
+                ValueError,
+                KeyError,
+            ) as erro:
+                st.warning(
+                    "Não foi possível preparar o curtailment "
+                    "mensal para o tipo selecionado."
+                )
+    
+                st.caption(
+                    str(erro)
+                )
+    
+                base_mensal = pd.DataFrame(
+                    columns=[
+                        "mes",
+                        "id_subsistema",
+                        "curtailment_gwh",
+                    ]
+                )
 
     ordem_subsistemas = [
         "N",
@@ -1574,8 +1645,8 @@ def renderizar_pagina_subsistemas(
     
     fig_mensal, ax_mensal = plt.subplots(
         figsize=(
-            13,
-            5.5,
+            7.8,
+            4.2,
         )
     )
     
@@ -1628,14 +1699,15 @@ def renderizar_pagina_subsistemas(
     )
     
     ax_mensal.legend(
-        title="Subsistema",
+        title=None,
         ncol=4,
         loc="upper center",
         bbox_to_anchor=(
             0.5,
-            1.12,
+            1.08,
         ),
         frameon=False,
+        fontsize=9,
     )
     
     ax_mensal.spines[
@@ -1652,6 +1724,7 @@ def renderizar_pagina_subsistemas(
     
     # Construção da figura
     fig_mensal.tight_layout()
+    fig_mensal.subplots_adjust(top=0.84)
     
     # Exibição na página
     st.pyplot(
