@@ -425,3 +425,193 @@ def calcular_kpis_curtailment(
         else None
     ),
 }
+
+
+def preparar_curtailment_mensal_subsistemas(
+    df,
+    tipo_curtailment,
+):
+    """
+    Prepara o curtailment mensal por subsistema.
+
+    Os registros do ONS representam intervalos de 30 minutos.
+    Portanto, a conversão utiliza:
+
+    MW * 0.5 = MWh
+    MWh / 1000 = GWh
+
+    Parâmetros
+    ----------
+    df : pandas.DataFrame
+        Base calculada de curtailment.
+    tipo_curtailment : str
+        Código do tipo de curtailment. São aceitos:
+        ENE, REL, CNF ou TODOS.
+
+    Retorno
+    -------
+    pandas.DataFrame
+        Base mensal no formato longo, com mês, subsistema
+        e curtailment em GWh.
+    """
+
+    if not isinstance(
+        df,
+        pd.DataFrame,
+    ):
+        raise TypeError(
+            "df deve ser um DataFrame."
+        )
+
+    if df.empty:
+        raise ValueError(
+            "A base informada está vazia."
+        )
+
+    colunas_obrigatorias = {
+        "din_instante",
+        "id_subsistema",
+        "cod_razaorestricao",
+        "val_curtailment",
+    }
+
+    colunas_ausentes = (
+        colunas_obrigatorias
+        - set(df.columns)
+    )
+
+    if colunas_ausentes:
+        raise ValueError(
+            "A base não possui as colunas obrigatórias: "
+            f"{sorted(colunas_ausentes)}."
+        )
+
+    tipo_normalizado = (
+        str(tipo_curtailment)
+        .strip()
+        .upper()
+    )
+
+    tipos_permitidos = {
+        "TODOS",
+        "ENE",
+        "REL",
+        "CNF",
+    }
+
+    if tipo_normalizado not in tipos_permitidos:
+        raise ValueError(
+            "O tipo de curtailment deve ser TODOS, "
+            "ENE, REL ou CNF."
+        )
+
+    df_aux = df.copy()
+
+    df_aux["din_instante"] = pd.to_datetime(
+        df_aux["din_instante"],
+        errors="coerce",
+    )
+
+    df_aux["val_curtailment"] = pd.to_numeric(
+        df_aux["val_curtailment"],
+        errors="coerce",
+    )
+
+    df_aux["tipo_curtailment"] = (
+        df_aux["cod_razaorestricao"]
+        .astype("string")
+        .str.strip()
+        .str.upper()
+    )
+
+    df_aux = df_aux.dropna(
+        subset=[
+            "din_instante",
+            "id_subsistema",
+            "val_curtailment",
+        ]
+    ).copy()
+
+    if tipo_normalizado != "TODOS":
+        df_aux = df_aux[
+            df_aux["tipo_curtailment"]
+            == tipo_normalizado
+        ].copy()
+
+    if df_aux.empty:
+        raise ValueError(
+            "Não foram encontrados registros para "
+            "o tipo de curtailment selecionado."
+        )
+
+    df_aux["mes"] = (
+        df_aux["din_instante"]
+        .dt.to_period("M")
+        .dt.to_timestamp()
+    )
+
+    df_aux["curtailment_gwh"] = (
+        df_aux["val_curtailment"]
+        .clip(lower=0)
+        * 0.5
+        / 1000
+    )
+
+    base_mensal = (
+        df_aux
+        .groupby(
+            [
+                "mes",
+                "id_subsistema",
+            ],
+            as_index=False,
+            observed=True,
+        )
+        .agg(
+            curtailment_gwh=(
+                "curtailment_gwh",
+                "sum",
+            )
+        )
+    )
+
+    base_mensal["id_subsistema"] = (
+        base_mensal["id_subsistema"]
+        .astype("string")
+        .str.strip()
+        .str.upper()
+    )
+
+    ordem_subsistemas = {
+        "N": 1,
+        "NE": 2,
+        "SE": 3,
+        "SE/CO": 3,
+        "S": 4,
+    }
+
+    base_mensal["ordem_subsistema"] = (
+        base_mensal["id_subsistema"]
+        .map(
+            ordem_subsistemas
+        )
+        .fillna(99)
+    )
+
+    base_mensal = (
+        base_mensal
+        .sort_values(
+            [
+                "mes",
+                "ordem_subsistema",
+            ]
+        )
+        .drop(
+            columns="ordem_subsistema"
+        )
+        .reset_index(
+            drop=True
+        )
+    )
+
+    return base_mensal
