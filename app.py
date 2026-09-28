@@ -418,6 +418,35 @@ st.markdown(
             border-radius: 9px;
             font-weight: 600;
         }
+
+        .resumo-subsistemas-filtros {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+        
+            margin-top: 0.45rem;
+            padding-top: 0.5rem;
+        
+            color: #64748b;
+            border-top: 1px solid #e2e8f0;
+        
+            font-size: 0.79rem;
+            line-height: 1.4;
+            text-align: center;
+        }
+        
+        .resumo-subsistemas-filtros strong {
+            color: #334155;
+            font-weight: 600;
+        }
+        
+        .resumo-subsistemas-indicador {
+            flex: 0 0 auto;
+        
+            color: #22a06b;
+            font-size: 0.55rem;
+        }
         
         .cabecalho-subsistemas {
             width: min(1180px, calc(100vw - 3rem));
@@ -495,12 +524,24 @@ st.markdown(
             border-radius: 50%;
         }
         
-        .kpi-subsistema-icone svg {
-            display: block;
-            width: 25px;
-            height: 25px;
+        .kpi-subsistema-simbolo {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
         
-            overflow: visible;
+            width: 100%;
+            height: 100%;
+        
+            color: currentColor;
+            font-family:
+                "Segoe UI Symbol",
+                Arial,
+                sans-serif;
+            font-size: 1.55rem;
+            font-weight: 700;
+            line-height: 1;
+        
+            user-select: none;
         }
         
         .kpi-icone-corte {
@@ -980,9 +1021,16 @@ def renderizar_filtros_subsistemas(
                 type="primary",
                 key="subsistemas_aplicar",
             )
+            
+        status_subsistemas = st.empty()
+        resumo_subsistemas = st.empty()
 
     if not aplicar_filtros:
-        return None
+        return (
+            None,
+            status_subsistemas,
+            resumo_subsistemas,
+        )
 
     validar_periodo_interface(
         ano_inicial=ano_inicial,
@@ -997,16 +1045,20 @@ def renderizar_filtros_subsistemas(
         ),
     )
 
-    return {
-        "ano_inicial": ano_inicial,
-        "mes_inicial": mes_inicial,
-        "ano_final": ano_final,
-        "mes_final": mes_final,
-        "fontes": tuple(
-            fontes_selecionadas
-        ),
-        "rotulo_fonte": opcao_fonte,
-    }
+    return (
+        {
+            "ano_inicial": ano_inicial,
+            "mes_inicial": mes_inicial,
+            "ano_final": ano_final,
+            "mes_final": mes_final,
+            "fontes": tuple(
+                fontes_selecionadas
+            ),
+            "rotulo_fonte": opcao_fonte,
+        },
+        status_subsistemas,
+        resumo_subsistemas,
+    )
 
 def renderizar_pagina_subsistemas(
     hoje,
@@ -1018,17 +1070,18 @@ def renderizar_pagina_subsistemas(
     """
 
     try:
-        filtros_aplicados = (
-            renderizar_filtros_subsistemas(
-                ultimo_ano_completo=(
-                    ultimo_ano_completo
-                ),
-                ultimo_mes_completo=(
-                    ultimo_mes_completo
-                ),
-            )
+        (
+            filtros_aplicados,
+            status_subsistemas,
+            resumo_subsistemas,
+        ) = renderizar_filtros_subsistemas(
+            ultimo_ano_completo=(
+                ultimo_ano_completo
+            ),
+            ultimo_mes_completo=(
+                ultimo_mes_completo
+            ),
         )
-
     except ValueError as erro:
         st.error(
             str(erro)
@@ -1099,89 +1152,92 @@ def renderizar_pagina_subsistemas(
         )
 
         try:
-            with st.spinner(
-                mensagem_processamento
-            ):
-                dados_subsistemas = (
-                    executar_pipeline_aplicacao(
-                        ano_inicial=(
-                            filtros_subsistemas[
-                                "ano_inicial"
-                            ]
-                        ),
-                        mes_inicial=(
-                            filtros_subsistemas[
-                                "mes_inicial"
-                            ]
-                        ),
-                        ano_final=(
-                            filtros_subsistemas[
-                                "ano_final"
-                            ]
-                        ),
-                        mes_final=(
-                            filtros_subsistemas[
-                                "mes_final"
-                            ]
-                        ),
-                        fontes=tuple(
-                            filtros_subsistemas[
-                                "fontes"
-                            ]
-                        ),
-                        data_referencia=hoje,
-                        timeout=TIMEOUT_PIPELINE,
+            with status_subsistemas.container():
+                with st.spinner(
+                    mensagem_processamento
+                ):
+                    dados_subsistemas = (
+                        executar_pipeline_aplicacao(
+                            ano_inicial=(
+                                filtros_subsistemas[
+                                    "ano_inicial"
+                                ]
+                            ),
+                            mes_inicial=(
+                                filtros_subsistemas[
+                                    "mes_inicial"
+                                ]
+                            ),
+                            ano_final=(
+                                filtros_subsistemas[
+                                    "ano_final"
+                                ]
+                            ),
+                            mes_final=(
+                                filtros_subsistemas[
+                                    "mes_final"
+                                ]
+                            ),
+                            fontes=tuple(
+                                filtros_subsistemas[
+                                    "fontes"
+                                ]
+                            ),
+                            data_referencia=hoje,
+                            timeout=TIMEOUT_PIPELINE,
+                        )
                     )
-                )
-
+        
             st.session_state[
                 "dados_subsistemas"
             ] = dados_subsistemas
-
+        
             st.session_state[
                 "periodo_processado_subsistemas"
             ] = filtros_subsistemas.copy()
-
+        
             st.session_state[
                 "processar_subsistemas"
             ] = False
-
+        
+            status_subsistemas.empty()
+        
             st.toast(
                 "Dados dos subsistemas processados "
                 "com sucesso.",
                 icon="✅",
             )
-
+        
         except Exception as erro:
             st.session_state[
                 "processar_subsistemas"
             ] = False
-
-            st.error(
+        
+            status_subsistemas.error(
                 "Não foi possível processar os dados "
                 "da análise por subsistemas."
             )
-
+        
             st.exception(
                 erro
             )
-
+        
             return
-
-    dados_subsistemas = st.session_state.get(
-        "dados_subsistemas"
-    )
-    
-    periodo_processado = st.session_state.get(
-        "periodo_processado_subsistemas"
-    )
-    
-    if (
-        dados_subsistemas is None
-        or periodo_processado is None
-    ):
-        return
-    
+        
+        
+        dados_subsistemas = st.session_state.get(
+            "dados_subsistemas"
+        )
+        
+        periodo_processado = st.session_state.get(
+            "periodo_processado_subsistemas"
+        )
+        
+        if (
+            dados_subsistemas is None
+            or periodo_processado is None
+        ):
+            return
     
     # ============================================================
     # RESUMO DA BASE PROCESSADA
@@ -1211,15 +1267,24 @@ def renderizar_pagina_subsistemas(
             ".",
         )
     )
-    
-    st.info(
-        "Base processada: "
-        f"{quantidade_registros} registros, "
-        f"período de {resumo_pipeline['periodo_inicial']} "
-        f"a {resumo_pipeline['periodo_final']}, "
-        f"fonte {rotulo_fonte_resumido}."
+
+    resumo_subsistemas_html = (
+        '<div class="resumo-subsistemas-filtros">'
+        '<span class="resumo-subsistemas-indicador">●</span>'
+        '<span>'
+        f'Foram processados <strong>{quantidade_registros} '
+        f'registros</strong> no período de '
+        f'<strong>{resumo_pipeline["periodo_inicial"]}</strong> a '
+        f'<strong>{resumo_pipeline["periodo_final"]}</strong>, '
+        f'para a fonte '
+        f'<strong>{rotulo_fonte_resumido}</strong>.'
+        '</span>'
+        '</div>'
     )
     
+    resumo_subsistemas.html(
+        resumo_subsistemas_html
+    )
     
     # ============================================================
     # CÁLCULO DOS KPIS
@@ -1285,16 +1350,9 @@ def renderizar_pagina_subsistemas(
     
         '<div class="kpi-subsistema-card">'
         '<div class="kpi-subsistema-icone kpi-icone-corte">'
-        '<svg '
-        'viewBox="0 0 24 24" '
-        'fill="none" '
-        'stroke="currentColor" '
-        'stroke-width="2.2" '
-        'stroke-linecap="round">'
-        '<circle cx="7" cy="7" r="2.3"></circle>'
-        '<circle cx="17" cy="17" r="2.3"></circle>'
-        '<line x1="18.5" y1="5.5" x2="5.5" y2="18.5"></line>'
-        '</svg>'
+        '<span class="kpi-subsistema-simbolo" aria-hidden="true">'
+        '%'
+        '</span>'
         '</div>'
         '<div class="kpi-subsistema-conteudo">'
         '<div class="kpi-subsistema-titulo">'
@@ -1311,17 +1369,9 @@ def renderizar_pagina_subsistemas(
     
         '<div class="kpi-subsistema-card">'
         '<div class="kpi-subsistema-icone kpi-icone-subsistema">'
-        '<svg '
-        'viewBox="0 0 24 24" '
-        'fill="none" '
-        'stroke="currentColor" '
-        'stroke-width="2.2" '
-        'stroke-linecap="round" '
-        'stroke-linejoin="round">'
-        '<circle cx="12" cy="12" r="8.5"></circle>'
-        '<circle cx="12" cy="12" r="4.5"></circle>'
-        '<circle cx="12" cy="12" r="1.2" fill="currentColor"></circle>'
-        '</svg>'
+        '<span class="kpi-subsistema-simbolo" aria-hidden="true">'
+        '◎'
+        '</span>'
         '</div>'
         '<div class="kpi-subsistema-conteudo">'
         '<div class="kpi-subsistema-titulo">'
@@ -1341,16 +1391,9 @@ def renderizar_pagina_subsistemas(
     
         '<div class="kpi-subsistema-card">'
         '<div class="kpi-subsistema-icone kpi-icone-tipo">'
-        '<svg '
-        'viewBox="0 0 24 24" '
-        'fill="none" '
-        'stroke="currentColor" '
-        'stroke-width="2.2" '
-        'stroke-linecap="round" '
-        'stroke-linejoin="round">'
-        '<polyline points="13,2 5,14 11,14 10,22 19,9 13,9 13,2">'
-        '</polyline>'
-        '</svg>'
+        '<span class="kpi-subsistema-simbolo" aria-hidden="true">'
+        '&#9889;&#65038;'
+        '</span>'
         '</div>'
         '<div class="kpi-subsistema-conteudo">'
         '<div class="kpi-subsistema-titulo">'
@@ -1367,23 +1410,9 @@ def renderizar_pagina_subsistemas(
     
         '<div class="kpi-subsistema-card">'
         '<div class="kpi-subsistema-icone kpi-icone-mes">'
-        '<svg '
-        'viewBox="0 0 24 24" '
-        'fill="none" '
-        'stroke="currentColor" '
-        'stroke-width="2.1" '
-        'stroke-linecap="round" '
-        'stroke-linejoin="round">'
-        '<rect x="3" y="5" width="18" height="16" rx="2.5"></rect>'
-        '<line x1="3" y1="10" x2="21" y2="10"></line>'
-        '<line x1="8" y1="3" x2="8" y2="7"></line>'
-        '<line x1="16" y1="3" x2="16" y2="7"></line>'
-        '<circle cx="8" cy="14" r="0.8" fill="currentColor"></circle>'
-        '<circle cx="12" cy="14" r="0.8" fill="currentColor"></circle>'
-        '<circle cx="16" cy="14" r="0.8" fill="currentColor"></circle>'
-        '<circle cx="8" cy="18" r="0.8" fill="currentColor"></circle>'
-        '<circle cx="12" cy="18" r="0.8" fill="currentColor"></circle>'
-        '</svg>'
+        '<span class="kpi-subsistema-simbolo" aria-hidden="true">'
+        '&#x1F4C5;'
+        '</span>'
         '</div>'
         '<div class="kpi-subsistema-conteudo">'
         '<div class="kpi-subsistema-titulo">'
