@@ -364,55 +364,28 @@ st.markdown(
         }
 
         /* aba subsistemas*/
-        .pagina-subsistemas {
-            width: min(760px, calc(100vw - 3rem));
+        .cabecalho-subsistemas {
+            width: min(1180px, calc(100vw - 3rem));
         
-            margin-top: 3rem;
+            margin-top: 1.75rem;
             margin-right: auto;
-            margin-bottom: 3rem;
+            margin-bottom: 1rem;
             margin-left: auto;
-        
-            padding: 3rem 2rem;
-        
-            color: #334155;
-            text-align: center;
-        
-            background-color: #ffffff;
-        
-            border: 1px solid #e2e8f0;
-            border-radius: 14px;
-        
-            box-shadow:
-                0 8px 24px rgba(15, 23, 42, 0.08);
         }
         
-        .pagina-subsistemas-icone {
-            margin-bottom: 0.75rem;
-        
-            color: #204777;
-            font-size: 2.2rem;
-            line-height: 1;
-        }
-        
-        .pagina-subsistemas h1 {
-            margin: 0 0 0.75rem;
+        .cabecalho-subsistemas h1 {
+            margin: 0 0 0.35rem;
         
             color: #0f2948;
-            font-size: 1.8rem;
+            font-size: 1.65rem;
             font-weight: 700;
         }
         
-        .pagina-subsistemas p {
-            max-width: 580px;
-        
-            margin-top: 0;
-            margin-right: auto;
-            margin-bottom: 0;
-            margin-left: auto;
+        .cabecalho-subsistemas p {
+            margin: 0;
         
             color: #64748b;
-            font-size: 0.95rem;
-            line-height: 1.6;
+            font-size: 0.9rem;
         }
         
 
@@ -436,6 +409,23 @@ st.markdown(
                 margin-top: 8px;
                 margin-bottom: 8px;
                 padding: 0.65rem;
+            }
+            .st-key-filtros_subsistemas {
+                width: min(1180px, calc(100vw - 3rem));
+            
+                margin-right: auto;
+                margin-bottom: 1rem;
+                margin-left: auto;
+            
+                padding: 0.65rem 0.8rem 0.8rem;
+            
+                background-color: #ffffff;
+            
+                border: 1px solid #dbe3ec;
+                border-radius: 12px;
+            
+                box-shadow:
+                    0 6px 18px rgba(15, 23, 42, 0.08);
             }
         }
     </style>
@@ -706,31 +696,228 @@ def construir_mapa_aplicacao(
         relatorio_mapa,
     )
 
-def renderizar_pagina_subsistemas():
+def renderizar_filtros_subsistemas(
+    ultimo_ano_completo,
+    ultimo_mes_completo,
+):
     """
-    Renderiza a página provisória da aba Subsistemas.
+    Renderiza os filtros independentes da página Subsistemas.
+
+    Retorno
+    -------
+    dict ou None
+        Configuração selecionada quando o botão Aplicar
+        for acionado. Caso contrário, retorna None.
+    """
+
+    anos_disponiveis = list(
+        range(
+            ANO_MINIMO,
+            ultimo_ano_completo + 1,
+        )
+    )
+
+    with st.container(
+        border=True,
+        key="filtros_subsistemas",
+    ):
+        (
+            coluna_ano_inicial,
+            coluna_mes_inicial,
+            coluna_ano_final,
+            coluna_mes_final,
+            coluna_fonte,
+            coluna_botao,
+        ) = st.columns(
+            [
+                0.8,
+                1.3,
+                0.8,
+                1.3,
+                1.9,
+                1,
+            ],
+            vertical_alignment="bottom",
+        )
+
+        with coluna_ano_inicial:
+            ano_inicial = st.selectbox(
+                "Ano inicial",
+                options=anos_disponiveis,
+                index=len(
+                    anos_disponiveis
+                ) - 1,
+                key="subsistemas_ano_inicial",
+            )
+
+        meses_iniciais = obter_meses_disponiveis(
+            ano=ano_inicial,
+            ultimo_ano_completo=(
+                ultimo_ano_completo
+            ),
+            ultimo_mes_completo=(
+                ultimo_mes_completo
+            ),
+        )
+
+        with coluna_mes_inicial:
+            mes_inicial = st.selectbox(
+                "Mês inicial",
+                options=meses_iniciais,
+                index=0,
+                format_func=formatar_mes,
+                key="subsistemas_mes_inicial",
+            )
+
+        with coluna_ano_final:
+            ano_final = st.selectbox(
+                "Ano final",
+                options=anos_disponiveis,
+                index=len(
+                    anos_disponiveis
+                ) - 1,
+                key="subsistemas_ano_final",
+            )
+
+        meses_finais = obter_meses_disponiveis(
+            ano=ano_final,
+            ultimo_ano_completo=(
+                ultimo_ano_completo
+            ),
+            ultimo_mes_completo=(
+                ultimo_mes_completo
+            ),
+        )
+
+        with coluna_mes_final:
+            mes_final = st.selectbox(
+                "Mês final",
+                options=meses_finais,
+                index=len(
+                    meses_finais
+                ) - 1,
+                format_func=formatar_mes,
+                key="subsistemas_mes_final",
+            )
+
+        with coluna_fonte:
+            opcao_fonte = st.selectbox(
+                "Tipo de fonte",
+                options=list(
+                    OPCOES_FONTES
+                ),
+                index=0,
+                key="subsistemas_opcao_fonte",
+            )
+
+        fontes_selecionadas = (
+            OPCOES_FONTES[
+                opcao_fonte
+            ]
+        )
+
+        with coluna_botao:
+            aplicar_filtros = st.button(
+                "Aplicar",
+                use_container_width=True,
+                type="primary",
+                key="subsistemas_aplicar",
+            )
+
+    if not aplicar_filtros:
+        return None
+
+    validar_periodo_interface(
+        ano_inicial=ano_inicial,
+        mes_inicial=mes_inicial,
+        ano_final=ano_final,
+        mes_final=mes_final,
+        ultimo_ano_completo=(
+            ultimo_ano_completo
+        ),
+        ultimo_mes_completo=(
+            ultimo_mes_completo
+        ),
+    )
+
+    return {
+        "ano_inicial": ano_inicial,
+        "mes_inicial": mes_inicial,
+        "ano_final": ano_final,
+        "mes_final": mes_final,
+        "fontes": tuple(
+            fontes_selecionadas
+        ),
+        "rotulo_fonte": opcao_fonte,
+    }
+
+def renderizar_pagina_subsistemas(
+    ultimo_ano_completo,
+    ultimo_mes_completo,
+):
+    """
+    Renderiza a página de análise dos subsistemas.
     """
 
     st.html(
         """
-        <div class="pagina-subsistemas">
-            <div class="pagina-subsistemas-icone">
-                ▦
-            </div>
-
-            <h1>
-                Subsistemas
-            </h1>
+        <div class="cabecalho-subsistemas">
+            <h1>Subsistemas</h1>
 
             <p>
-                Esta área apresentará indicadores e análises
-                dos subsistemas Norte, Nordeste,
-                Sudeste/Centro-Oeste e Sul.
+                Indicadores e análises dos subsistemas Norte,
+                Nordeste, Sudeste/Centro-Oeste e Sul.
             </p>
         </div>
         """
     )
 
+    try:
+        filtros_aplicados = (
+            renderizar_filtros_subsistemas(
+                ultimo_ano_completo=(
+                    ultimo_ano_completo
+                ),
+                ultimo_mes_completo=(
+                    ultimo_mes_completo
+                ),
+            )
+        )
+
+    except ValueError as erro:
+        st.error(
+            str(erro)
+        )
+
+        return
+
+    if filtros_aplicados is not None:
+        st.session_state[
+            "filtros_subsistemas"
+        ] = filtros_aplicados
+
+    filtros_subsistemas = (
+        st.session_state.get(
+            "filtros_subsistemas"
+        )
+    )
+
+    if filtros_subsistemas is None:
+        st.info(
+            "Selecione a competência e a fonte para "
+            "carregar a análise por subsistemas."
+        )
+
+        return
+
+    st.caption(
+        "Configuração selecionada: "
+        f"{filtros_subsistemas['mes_inicial'\]:02d}/"
+        f"{filtros_subsistemas['ano_inicial']} a "
+        f"{filtros_subsistemas['mes_final'\]:02d}/"
+        f"{filtros_subsistemas['ano_final']} | "
+        f"{filtros_subsistemas['rotulo_fonte']}"
+    )
 
 # ============================================================
 # COMPETÊNCIA MAIS RECENTE
@@ -842,7 +1029,14 @@ st.html(
 # ============================================================
 
 if pagina_ativa == "subsistemas":
-    renderizar_pagina_subsistemas()
+    renderizar_pagina_subsistemas(
+        ultimo_ano_completo=(
+            ultimo_ano_completo
+        ),
+        ultimo_mes_completo=(
+            ultimo_mes_completo
+        ),
+    )
 
     st.stop()
 
