@@ -12,6 +12,7 @@ from datetime import date
 from pathlib import Path
 
 import pandas as pd
+import matplotlib.pyplot as plt
 import streamlit as st
 import streamlit.components.v1 as components
 
@@ -1441,7 +1442,8 @@ def renderizar_pagina_subsistemas(
     # ============================================================
     # CURTAILMENT MENSAL
     # ============================================================
-
+    
+    # Título e seletor
     st.subheader(
         "Curtailment mensal por subsistema"
     )
@@ -1476,6 +1478,7 @@ def renderizar_pagina_subsistemas(
         tipo_mensal_rotulo
     ]
     
+    # Preparação da base
     base_mensal = (
         preparar_curtailment_mensal_subsistemas(
             df=df_curtailment_subsistemas,
@@ -1516,6 +1519,7 @@ def renderizar_pagina_subsistemas(
         freq="MS",
     )
     
+    # Complementação de meses e subsistemas
     indice_completo = pd.MultiIndex.from_product(
         [
             meses_disponiveis,
@@ -1554,6 +1558,109 @@ def renderizar_pagina_subsistemas(
             fill_value=0.0,
         )
         .sort_index()
+    )
+    
+    cores_subsistemas = {
+        "N": "#FFC300",
+        "NE": "#E15759",
+        "SE": "#2A9D8F",
+        "S": "#4E79A7",
+    }
+    
+    rotulos_meses = (
+        dados_grafico_mensal.index
+        .strftime("%m/%Y")
+    )
+    
+    fig_mensal, ax_mensal = plt.subplots(
+        figsize=(
+            13,
+            5.5,
+        )
+    )
+    
+    base_empilhamento = pd.Series(
+        0.0,
+        index=dados_grafico_mensal.index,
+    )
+    
+    for subsistema in ordem_subsistemas:
+        valores_subsistema = (
+            dados_grafico_mensal[
+                subsistema
+            ]
+        )
+    
+        ax_mensal.bar(
+            rotulos_meses,
+            valores_subsistema,
+            bottom=base_empilhamento,
+            label=subsistema,
+            color=cores_subsistemas[
+                subsistema
+            ],
+            edgecolor="white",
+            linewidth=0.6,
+        )
+    
+        base_empilhamento = (
+            base_empilhamento
+            + valores_subsistema
+        )
+    
+    ax_mensal.set_xlabel(
+        "Mês"
+    )
+    
+    ax_mensal.set_ylabel(
+        "Curtailment (GWh)"
+    )
+    
+    ax_mensal.grid(
+        axis="y",
+        alpha=0.25,
+        linestyle="--",
+    )
+    
+    ax_mensal.tick_params(
+        axis="x",
+        rotation=0,
+    )
+    
+    ax_mensal.legend(
+        title="Subsistema",
+        ncol=4,
+        loc="upper center",
+        bbox_to_anchor=(
+            0.5,
+            1.12,
+        ),
+        frameon=False,
+    )
+    
+    ax_mensal.spines[
+        "top"
+    ].set_visible(
+        False
+    )
+    
+    ax_mensal.spines[
+        "right"
+    ].set_visible(
+        False
+    )
+    
+    # Construção da figura
+    fig_mensal.tight_layout()
+    
+    # Exibição na página
+    st.pyplot(
+        fig_mensal,
+        use_container_width=True,
+    )
+    
+    plt.close(
+        fig_mensal
     )
 
 @st.cache_data(
