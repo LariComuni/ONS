@@ -852,6 +852,7 @@ def renderizar_filtros_subsistemas(
     }
 
 def renderizar_pagina_subsistemas(
+    hoje,
     ultimo_ano_completo,
     ultimo_mes_completo,
 ):
@@ -896,10 +897,12 @@ def renderizar_pagina_subsistemas(
             "filtros_subsistemas"
         ] = filtros_aplicados
 
-    filtros_subsistemas = (
-        st.session_state.get(
-            "filtros_subsistemas"
-        )
+        st.session_state[
+            "processar_subsistemas"
+        ] = True
+
+    filtros_subsistemas = st.session_state.get(
+        "filtros_subsistemas"
     )
 
     if filtros_subsistemas is None:
@@ -910,13 +913,154 @@ def renderizar_pagina_subsistemas(
 
         return
 
-    st.caption(
-        "Configuração selecionada: "
-        f"{filtros_subsistemas['mes_inicial']:02d}/"
-        f"{filtros_subsistemas['ano_inicial']} a "
-        f"{filtros_subsistemas['mes_final']:02d}/"
-        f"{filtros_subsistemas['ano_final']} | "
-        f"{filtros_subsistemas['rotulo_fonte']}"
+    if st.session_state.get(
+        "processar_subsistemas",
+        False,
+    ):
+        competencia_inicial = (
+            formatar_competencia(
+                ano=filtros_subsistemas[
+                    "ano_inicial"
+                ],
+                mes=filtros_subsistemas[
+                    "mes_inicial"
+                ],
+            )
+        )
+
+        competencia_final = (
+            formatar_competencia(
+                ano=filtros_subsistemas[
+                    "ano_final"
+                ],
+                mes=filtros_subsistemas[
+                    "mes_final"
+                ],
+            )
+        )
+
+        mensagem_processamento = (
+            "Coletando e processando os dados de "
+            f"{competencia_inicial} a "
+            f"{competencia_final}. "
+            "A primeira execução pode levar alguns minutos."
+        )
+
+        try:
+            with st.spinner(
+                mensagem_processamento
+            ):
+                dados_subsistemas = (
+                    executar_pipeline_aplicacao(
+                        ano_inicial=(
+                            filtros_subsistemas[
+                                "ano_inicial"
+                            ]
+                        ),
+                        mes_inicial=(
+                            filtros_subsistemas[
+                                "mes_inicial"
+                            ]
+                        ),
+                        ano_final=(
+                            filtros_subsistemas[
+                                "ano_final"
+                            ]
+                        ),
+                        mes_final=(
+                            filtros_subsistemas[
+                                "mes_final"
+                            ]
+                        ),
+                        fontes=tuple(
+                            filtros_subsistemas[
+                                "fontes"
+                            ]
+                        ),
+                        data_referencia=hoje,
+                        timeout=TIMEOUT_PIPELINE,
+                    )
+                )
+
+            st.session_state[
+                "dados_subsistemas"
+            ] = dados_subsistemas
+
+            st.session_state[
+                "periodo_processado_subsistemas"
+            ] = filtros_subsistemas.copy()
+
+            st.session_state[
+                "processar_subsistemas"
+            ] = False
+
+            st.toast(
+                "Dados dos subsistemas processados "
+                "com sucesso.",
+                icon="✅",
+            )
+
+        except Exception as erro:
+            st.session_state[
+                "processar_subsistemas"
+            ] = False
+
+            st.error(
+                "Não foi possível processar os dados "
+                "da análise por subsistemas."
+            )
+
+            st.exception(
+                erro
+            )
+
+            return
+
+    dados_subsistemas = st.session_state.get(
+        "dados_subsistemas"
+    )
+
+    periodo_processado = st.session_state.get(
+        "periodo_processado_subsistemas"
+    )
+
+    if (
+        dados_subsistemas is None
+        or periodo_processado is None
+    ):
+        return
+
+    resumo_pipeline = dados_subsistemas[
+        "relatorios"
+    ][
+        "resumo_pipeline"
+    ]
+
+    rotulo_fonte = periodo_processado[
+        "rotulo_fonte"
+    ]
+
+    rotulo_fonte_resumido = (
+        ROTULOS_FONTES_RESUMIDOS.get(
+            rotulo_fonte,
+            rotulo_fonte,
+        )
+    )
+
+    quantidade_registros = (
+        f"{resumo_pipeline['registros_curtailment']:,}"
+        .replace(
+            ",",
+            ".",
+        )
+    )
+
+    st.info(
+        "Base processada: "
+        f"{quantidade_registros} registros, "
+        f"período de {resumo_pipeline['periodo_inicial']} "
+        f"a {resumo_pipeline['periodo_final']}, "
+        f"fonte {rotulo_fonte_resumido}."
     )
 
 # ============================================================
@@ -1030,6 +1174,7 @@ st.html(
 
 if pagina_ativa == "subsistemas":
     renderizar_pagina_subsistemas(
+        hoje=hoje,
         ultimo_ano_completo=(
             ultimo_ano_completo
         ),
