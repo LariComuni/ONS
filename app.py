@@ -20,7 +20,9 @@ from src.mapa import (
     criar_mapa_interativo,
 )
 from src.pipeline import preparar_dados_aplicacao
-
+from src.analise_subsistemas import (
+    calcular_kpis_curtailment,
+)
 # ============================================================
 # CONFIGURAÇÃO
 # ============================================================
