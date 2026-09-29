@@ -27,7 +27,8 @@ from src.analise_subsistemas import (
     calcular_kpis_curtailment,
     preparar_curtailment_mensal_subsistemas,
     preparar_perfil_horario_curtailment,
-    preparar_corte_subsistema_tipo,    
+    preparar_corte_subsistema_tipo,  
+    preparar_resumo_subsistemas,
 )
 # ============================================================
 # CONFIGURAÇÃO
@@ -2720,9 +2721,8 @@ def renderizar_pagina_subsistemas(
                         )
 
 
-@st.cache_data(
-    show_spinner=False,
-)
+@st.cache_data(show_spinner=False,)
+
 def calcular_kpis_subsistemas_aplicacao(
     df_curtailment,
 ):
@@ -2731,6 +2731,19 @@ def calcular_kpis_subsistemas_aplicacao(
     """
 
     return calcular_kpis_curtailment(df_curtailment)
+
+@st.cache_data(show_spinner=False,)
+
+def preparar_resumo_subsistemas_aplicacao(
+    df_curtailment,
+):
+    """
+    Prepara a tabela de resumo da página Subsistemas.
+    """
+
+    return preparar_resumo_subsistemas(
+        df_curtailment
+    )
 
 def formatar_percentual(
     valor,
