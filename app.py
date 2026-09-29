@@ -2073,6 +2073,16 @@ def renderizar_pagina_subsistemas(
                     sort=False,
                     direction="clockwise",
                     rotation=0,
+                    domain={
+                        "x": [
+                            0.0,
+                            1.0,
+                        ],
+                        "y": [
+                            0.24,
+                            1.0,
+                        ],
+                    },
                     marker={
                         "line": {
                             "color": "#FFFFFF",
@@ -2117,23 +2127,19 @@ def renderizar_pagina_subsistemas(
                 )
     
                 fig_participacao.update_layout(
-                    height=325,
+                    height=365,
                     margin={
-                        "l": 65,
-                        "r": 65,
-                        "t": 65,
-                        "b": 75,
+                        "l": 55,
+                        "r": 55,
+                        "t": 55,
+                        "b": 65,
                     },
                     uniformtext={
-                    "minsize": 9,
-                    "mode": "show",
+                        "minsize": 9,
+                        "mode": "show",
                     },
-                    paper_bgcolor=(
-                        "rgba(0,0,0,0)"
-                    ),
-                    plot_bgcolor=(
-                        "rgba(0,0,0,0)"
-                    ),
+                    paper_bgcolor="rgba(0,0,0,0)",
+                    plot_bgcolor="rgba(0,0,0,0)",
                     font={
                         "family": (
                             "Segoe UI, Arial, sans-serif"
@@ -2147,16 +2153,16 @@ def renderizar_pagina_subsistemas(
                         },
                         "orientation": "h",
                         "yanchor": "bottom",
-                        "y": -0.16,
+                        "y": 0.0,
                         "xanchor": "center",
                         "x": 0.5,
                         "font": {
-                            "size": 13,
+                            "size": 12,
                             "color": "#334155",
                         },
                         "itemsizing": "constant",
                         "traceorder": "normal",
-                        "entrywidth": 95,
+                        "entrywidth": 105,
                         "entrywidthmode": "pixels",
                     },
                     hoverlabel={
@@ -2171,12 +2177,13 @@ def renderizar_pagina_subsistemas(
                         {
                             "text": (
                                 f"<b>{total_formatado}</b>"
-                                "<br><span style='font-size:11px'>"
+                                "<br>"
+                                "<span style='font-size:11px'>"
                                 "GWh no período"
                                 "</span>"
                             ),
                             "x": 0.5,
-                            "y": 0.5,
+                            "y": 0.62,
                             "showarrow": False,
                             "align": "center",
                             "font": {
