@@ -1092,3 +1092,373 @@ def preparar_corte_subsistema_tipo(
     )
 
     return tabela
+
+def preparar_resumo_subsistemas(
+    df,
+):
+    """
+    Prepara a tabela de resumo da análise por subsistema.
+
+    Os registros representam intervalos de 30 minutos.
+    Por isso, a conversão de MW para MWh utiliza o fator 0.5.
+
+    Parâmetros
+    ----------
+    df : pandas.DataFrame
+        Base calculada de curtailment.
+
+    Retorno
+    -------
+    pandas.DataFrame
+        Tabela com os principais indicadores por subsistema.
+    """
+
+    if not isinstance(
+        df,
+        pd.DataFrame,
+    ):
+        raise TypeError(
+            "df deve ser um DataFrame."
+        )
+
+    if df.empty:
+        raise ValueError(
+            "A base informada está vazia."
+        )
+
+    colunas_obrigatorias = {
+        "din_instante",
+        "id_subsistema",
+        "cod_razaorestricao",
+        "val_curtailment",
+        "val_geracao_esperada",
+    }
+
+    colunas_ausentes = (
+        colunas_obrigatorias
+        - set(df.columns)
+    )
+
+    if colunas_ausentes:
+        raise ValueError(
+            "A base não possui as colunas obrigatórias: "
+            f"{sorted(colunas_ausentes)}."
+        )
+
+    df_aux = df.copy()
+
+    df_aux["din_instante"] = pd.to_datetime(
+        df_aux["din_instante"],
+        errors="coerce",
+    )
+
+    df_aux["val_curtailment"] = pd.to_numeric(
+        df_aux["val_curtailment"],
+        errors="coerce",
+    )
+
+    df_aux["val_geracao_esperada"] = pd.to_numeric(
+        df_aux["val_geracao_esperada"],
+        errors="coerce",
+    )
+
+    df_aux["id_subsistema"] = (
+        df_aux["id_subsistema"]
+        .astype("string")
+        .str.strip()
+        .str.upper()
+    )
+
+    df_aux["tipo_curtailment"] = (
+        df_aux["cod_razaorestricao"]
+        .astype("string")
+        .str.strip()
+        .str.upper()
+        .fillna("SEM_CODIGO")
+        .replace(
+            "",
+            "SEM_CODIGO",
+        )
+    )
+
+    df_aux = df_aux.dropna(
+        subset=[
+            "din_instante",
+            "id_subsistema",
+            "val_curtailment",
+            "val_geracao_esperada",
+        ]
+    ).copy()
+
+    if df_aux.empty:
+        raise ValueError(
+            "Não restaram registros válidos após o "
+            "tratamento da base."
+        )
+
+    df_aux["mes"] = (
+        df_aux["din_instante"]
+        .dt.to_period("M")
+    )
+
+    df_aux["hora"] = (
+        df_aux["din_instante"]
+        .dt.hour
+    )
+
+    df_aux["curtailment_mwh"] = (
+        df_aux["val_curtailment"]
+        .clip(lower=0)
+        * 0.5
+    )
+
+    df_aux["geracao_esperada_mwh"] = (
+        df_aux["val_geracao_esperada"]
+        .clip(lower=0)
+        * 0.5
+    )
+
+    curtailment_total_mwh = (
+        df_aux["curtailment_mwh"]
+        .sum()
+    )
+
+    ordem_subsistemas = [
+        "N",
+        "NE",
+        "SE",
+        "S",
+    ]
+
+    rotulos_tipos = {
+        "ENE": "Energético",
+        "REL": "Elétrico",
+        "CNF": "Confiabilidade",
+        "SEM_CODIGO": "Sem classificação",
+    }
+
+    resultados = []
+
+    for subsistema in ordem_subsistemas:
+        df_sub = df_aux[
+            df_aux["id_subsistema"]
+            == subsistema
+        ].copy()
+
+        if df_sub.empty:
+            continue
+
+        curtailment_sub_mwh = (
+            df_sub["curtailment_mwh"]
+            .sum()
+        )
+
+        geracao_esperada_sub_mwh = (
+            df_sub["geracao_esperada_mwh"]
+            .sum()
+        )
+
+        if geracao_esperada_sub_mwh > 0:
+            corte_pct = (
+                100
+                * curtailment_sub_mwh
+                / geracao_esperada_sub_mwh
+            )
+        else:
+            corte_pct = None
+
+        if curtailment_total_mwh > 0:
+            participacao_pct = (
+                100
+                * curtailment_sub_mwh
+                / curtailment_total_mwh
+            )
+        else:
+            participacao_pct = None
+
+        # ====================================================
+        # TIPO PREDOMINANTE
+        # ====================================================
+
+        curtailment_tipo = (
+            df_sub
+            .groupby(
+                "tipo_curtailment",
+                observed=True,
+            )["curtailment_mwh"]
+            .sum()
+        )
+
+        curtailment_tipo = curtailment_tipo[
+            curtailment_tipo > 0
+        ]
+
+        if curtailment_tipo.empty:
+            tipo_predominante = (
+                "Não disponível"
+            )
+
+        else:
+            codigo_predominante = (
+                curtailment_tipo
+                .idxmax()
+            )
+
+            tipo_predominante = (
+                rotulos_tipos.get(
+                    codigo_predominante,
+                    codigo_predominante,
+                )
+            )
+
+        # ====================================================
+        # MÊS CRÍTICO
+        # ====================================================
+
+        resumo_mensal = (
+            df_sub
+            .groupby(
+                "mes",
+                observed=True,
+            )
+            .agg(
+                curtailment_mwh=(
+                    "curtailment_mwh",
+                    "sum",
+                ),
+                geracao_esperada_mwh=(
+                    "geracao_esperada_mwh",
+                    "sum",
+                ),
+            )
+        )
+
+        resumo_mensal = resumo_mensal[
+            resumo_mensal[
+                "geracao_esperada_mwh"
+            ] > 0
+        ].copy()
+
+        resumo_mensal["corte_pct"] = (
+            100
+            * resumo_mensal[
+                "curtailment_mwh"
+            ]
+            / resumo_mensal[
+                "geracao_esperada_mwh"
+            ]
+        )
+
+        if resumo_mensal.empty:
+            mes_critico = (
+                "Não disponível"
+            )
+
+        else:
+            periodo_critico = (
+                resumo_mensal[
+                    "corte_pct"
+                ]
+                .idxmax()
+            )
+
+            mes_critico = (
+                periodo_critico
+                .to_timestamp()
+                .strftime("%m/%Y")
+            )
+
+        # ====================================================
+        # HORA CRÍTICA
+        # ====================================================
+
+        perfil_horario = (
+            df_sub
+            .groupby(
+                "hora",
+                observed=True,
+            )["val_curtailment"]
+            .mean()
+        )
+
+        if perfil_horario.empty:
+            hora_critica = (
+                "Não disponível"
+            )
+
+        else:
+            hora_critica_valor = (
+                int(
+                    perfil_horario
+                    .idxmax()
+                )
+            )
+
+            hora_critica = (
+                f"{hora_critica_valor:02d}:00"
+            )
+
+        resultados.append(
+            {
+                "Subsistema": subsistema,
+                "Curtailment (GWh)": (
+                    curtailment_sub_mwh
+                    / 1000
+                ),
+                "Geração Esperada (GWh)": (
+                    geracao_esperada_sub_mwh
+                    / 1000
+                ),
+                "Corte (%)": corte_pct,
+                "Participação (%)": (
+                    participacao_pct
+                ),
+                "Tipo Predominante": (
+                    tipo_predominante
+                ),
+                "Mês Crítico": (
+                    mes_critico
+                ),
+                "Hora Crítica": (
+                    hora_critica
+                ),
+            }
+        )
+
+    resumo = pd.DataFrame(
+        resultados
+    )
+
+    if resumo.empty:
+        return resumo
+
+    ordem_subsistemas_mapa = {
+        subsistema: ordem
+        for ordem, subsistema
+        in enumerate(
+            ordem_subsistemas,
+            start=1,
+        )
+    }
+
+    resumo["ordem_subsistema"] = (
+        resumo["Subsistema"]
+        .map(
+            ordem_subsistemas_mapa
+        )
+    )
+
+    resumo = (
+        resumo
+        .sort_values(
+            "ordem_subsistema"
+        )
+        .drop(
+            columns="ordem_subsistema"
+        )
+        .reset_index(
+            drop=True
+        )
+    )
+
+    return resumo
