@@ -1690,7 +1690,7 @@ def renderizar_pagina_subsistemas(
             ]
             
             cores_subsistemas_rotulos = {
-                rotulos_subsistemascor
+                rotulos_subsistemas[codigo]: cor
                 for codigo, cor
                 in cores_subsistemas.items()
             }
