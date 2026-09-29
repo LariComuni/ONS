@@ -616,14 +616,23 @@ st.markdown(
             gap: 0.75rem;
         
             width: 100%;
-            margin-bottom: 0.25rem;
+            min-height: 38px;
+            margin: 0;
+            padding: 0;
         }
         
         .titulo-card-grafico {
+            display: flex;
+            align-items: center;
+        
+            min-height: 38px;
+            margin: 0;
+            padding: 0;
+        
             color: #102d57;
             font-size: 1.15rem;
             font-weight: 750;
-            line-height: 1.25;
+            line-height: 1.2;
         }
         
         .selo-tipo-curtailment {
@@ -1910,10 +1919,11 @@ def renderizar_pagina_subsistemas(
                 '</div>'
             )
             
-            st.html(
-                titulo_participacao_html
+            st.markdown(
+                titulo_participacao_html,
+                unsafe_allow_html=True,
             )
-    
+            
             participacao_subsistemas = (
                 base_mensal_completa
                 .groupby(
@@ -1966,6 +1976,32 @@ def renderizar_pagina_subsistemas(
                     ]
                     / curtailment_total_gwh
                 )
+                
+                limite_rotulo_externo = 5.0
+
+                posicoes_rotulos = [
+                    (
+                        "outside"
+                        if participacao < limite_rotulo_externo
+                        else "inside"
+                    )
+                    for participacao
+                    in participacao_subsistemas[
+                        "participacao_pct"
+                    ]
+                ]
+                
+                destaque_fatias = [
+                    (
+                        0.04
+                        if participacao < limite_rotulo_externo
+                        else 0
+                    )
+                    for participacao
+                    in participacao_subsistemas[
+                        "participacao_pct"
+                    ]
+                ]
     
                 fig_participacao = px.pie(
                     participacao_subsistemas,
@@ -1986,6 +2022,7 @@ def renderizar_pagina_subsistemas(
                 fig_participacao.update_traces(
                     sort=False,
                     direction="clockwise",
+                    pull=destaque_fatias,
                     marker={
                         "line": {
                             "color": "#FFFFFF",
@@ -1993,17 +2030,20 @@ def renderizar_pagina_subsistemas(
                         },
                     },
                     textinfo="percent",
-                    textposition="inside",
-                    textfont={
+                    texttemplate="%{percent:.1%}",
+                    textposition=posicoes_rotulos,
+                    insidetextfont={
                         "size": 12,
                         "color": "#FFFFFF",
                     },
+                    outsidetextfont={
+                        "size": 12,
+                        "color": "#334155",
+                    },
                     hovertemplate=(
                         "<b>%{label}</b>"
-                        "<br>Curtailment: "
-                        "%{value:,.2f} GWh"
-                        "<br>Participação: "
-                        "%{percent:.1%}"
+                        "<br>Curtailment: %{value:,.2f} GWh"
+                        "<br>Participação: %{percent:.1%}"
                         "<extra></extra>"
                     ),
                 )
@@ -2027,10 +2067,14 @@ def renderizar_pagina_subsistemas(
                 fig_participacao.update_layout(
                     height=325,
                     margin={
-                        "l": 5,
-                        "r": 5,
-                        "t": 40,
-                        "b": 5,
+                        "l": 30,
+                        "r": 30,
+                        "t": 25,
+                        "b": 52,
+                    },
+                    uniformtext={
+                    "minsize": 10,
+                    "mode": "show",
                     },
                     paper_bgcolor=(
                         "rgba(0,0,0,0)"
@@ -2046,19 +2090,21 @@ def renderizar_pagina_subsistemas(
                         "size": 12,
                     },
                     legend={
-                        "title": {
-                            "text": "",
+                            "title": {
+                                "text": "",
+                            },
+                            "orientation": "h",
+                            "yanchor": "top",
+                            "y": -0.03,
+                            "xanchor": "center",
+                            "x": 0.5,
+                            "font": {
+                                "size": 13,
+                                "color": "#334155",
+                            },
+                            "itemsizing": "constant",
+                            "traceorder": "normal",
                         },
-                        "orientation": "h",
-                        "yanchor": "top",
-                        "y": -0.02,
-                        "xanchor": "center",
-                        "x": 0.5,
-                        "font": {
-                            "size": 12,
-                            "color": "#334155",
-                        },
-                    },
                     hoverlabel={
                         "bgcolor": "#FFFFFF",
                         "bordercolor": "#D9E2EC",
