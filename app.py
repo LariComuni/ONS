@@ -706,6 +706,40 @@ st.markdown(
             min-height: 38px;
             font-size: 0.82rem;
         }
+
+        .st-key-card_heatmap_subsistemas {
+            width: 100%;
+        
+            margin-top: 1rem;
+            margin-right: 0;
+            margin-bottom: 1.5rem;
+            margin-left: 0;
+        
+            padding: 0.75rem 0.85rem 0.45rem;
+        
+            background-color: #ffffff;
+        
+            border: 1px solid #e2e8f0;
+            border-radius: 13px;
+        
+            box-shadow:
+                0 6px 18px rgba(15, 42, 70, 0.08);
+        
+            box-sizing: border-box;
+        }
+        
+        .st-key-card_heatmap_subsistemas
+        div[data-testid="stVerticalBlockBorderWrapper"] {
+            border: 0;
+            box-shadow: none;
+        }
+        
+        .st-key-card_heatmap_subsistemas
+        div[data-testid="stSelectbox"] {
+            width: 100%;
+            max-width: 190px;
+            margin-left: auto;
+        }
         
         .grafico-placeholder {
             display: flex;
@@ -1575,6 +1609,16 @@ def renderizar_pagina_subsistemas(
             ],
             gap="medium",
         )
+        (
+            coluna_heatmap,
+            coluna_direita_inferior,
+        ) = st.columns(
+            [
+                1.75,
+                1,
+            ],
+            gap="medium",
+        )
     
     with coluna_grafico_mensal:
         with st.container(
@@ -2213,254 +2257,264 @@ def renderizar_pagina_subsistemas(
                     "Não há valores de curtailment para "
                     "o tipo selecionado."
                 )
-    # ============================================================
-    # PERFIL HORÁRIO DE CURTAILMENT
-    # ============================================================
+
+    (
+        coluna_heatmap,
+        coluna_direita_inferior,
+    ) = st.columns(
+        [
+            1.75,
+            1,
+        ],
+        gap="medium",
+    )
     
-    with st.container(
-        border=True,
-        key="card_heatmap_subsistemas",
-    ):
-        (
-            coluna_titulo_heatmap,
-            coluna_tipo_heatmap,
-        ) = st.columns(
-            [
-                5,
-                1.15,
-            ],
-            vertical_alignment="center",
-        )
-    
-        with coluna_titulo_heatmap:
-            st.html(
-                """
-                <div class="titulo-card-grafico">
-                    Perfil horário de curtailment
-                </div>
-                """
-            )
-    
-        with coluna_tipo_heatmap:
-            tipo_heatmap_rotulo = st.selectbox(
-                "Tipo de curtailment do perfil horário",
-                options=[
-                    "Todos",
-                    "Energético",
-                    "Elétrico",
-                    "Confiabilidade",
+    with coluna_heatmap:
+        with st.container(
+            border=True,
+            key="card_heatmap_subsistemas",
+        ):
+            (
+                coluna_titulo_heatmap,
+                coluna_tipo_heatmap,
+            ) = st.columns(
+                [
+                    5,
+                    1.15,
                 ],
-                key="subsistemas_tipo_heatmap",
-                label_visibility="collapsed",
+                vertical_alignment="center",
             )
-    
-        tipo_heatmap_codigo = TIPOS_CURTAILMENT[
-            tipo_heatmap_rotulo
-        ]
-    
-        # ========================================================
-        # PREPARAÇÃO DOS DADOS DO HEATMAP
-        # ========================================================
-    
-        try:
-            tabela_heatmap = (
-                preparar_perfil_horario_curtailment(
-                    df=df_curtailment_subsistemas,
-                    tipo_curtailment=(
-                        tipo_heatmap_codigo
-                    ),
+        
+            with coluna_titulo_heatmap:
+                st.html(
+                    """
+                    <div class="titulo-card-grafico">
+                        Perfil horário de curtailment
+                    </div>
+                    """
                 )
-            )
-    
-        except (
-            TypeError,
-            ValueError,
-            KeyError,
-        ) as erro:
-            st.warning(
-                "Não foi possível preparar o perfil horário "
-                "de curtailment."
-            )
-    
-            st.caption(
-                str(erro)
-            )
-    
-            tabela_heatmap = pd.DataFrame(
-                0.0,
-                index=[
-                    "N",
-                    "NE",
-                    "SE",
-                    "S",
-                ],
-                columns=range(24),
-            )
-    
-        # ========================================================
-        # RÓTULOS PARA EXIBIÇÃO
-        # ========================================================
-    
-        rotulos_heatmap_subsistemas = {
-            "N": "Norte",
-            "NE": "Nordeste",
-            "SE": "Sudeste/Centro-Oeste",
-            "S": "Sul",
-        }
-    
-        tabela_heatmap_plot = tabela_heatmap.copy()
-    
-        tabela_heatmap_plot.index = [
-            rotulos_heatmap_subsistemas.get(
-                subsistema,
-                subsistema,
-            )
-            for subsistema
-            in tabela_heatmap_plot.index
-        ]
-    
-        # ========================================================
-        # CONSTRUÇÃO DO HEATMAP
-        # ========================================================
-    
-        fig_heatmap = px.imshow(
-            tabela_heatmap_plot,
-            x=list(
-                range(24)
-            ),
-            y=tabela_heatmap_plot.index,
-            color_continuous_scale=[
-                [
-                    0.00,
-                    "#FFF7F9",
-                ],
-                [
-                    0.15,
-                    "#FCE1E8",
-                ],
-                [
-                    0.35,
-                    "#F7BAC9",
-                ],
-                [
-                    0.55,
-                    "#ED809B",
-                ],
-                [
-                    0.75,
-                    "#D94C70",
-                ],
-                [
-                    1.00,
-                    "#A61E4D",
-                ],
-            ],
-            aspect="auto",
-            labels={
-                "x": "Hora do dia",
-                "y": "",
-                "color": "MW médio",
-            },
-        )
-    
-        fig_heatmap.update_traces(
-            xgap=3,
-            ygap=5,
-            hovertemplate=(
-                "<b>%{y}</b>"
-                "<br>Hora: %{x}:00"
-                "<br>Curtailment médio: "
-                "%{z:,.2f} MW"
-                "<extra></extra>"
-            ),
-        )
-    
-        fig_heatmap.update_layout(
-            height=330,
-            margin={
-                "l": 15,
-                "r": 30,
-                "t": 25,
-                "b": 25,
-            },
-            paper_bgcolor="rgba(0,0,0,0)",
-            plot_bgcolor="rgba(0,0,0,0)",
-            font={
-                "family": (
-                    "Segoe UI, Arial, sans-serif"
+        
+            with coluna_tipo_heatmap:
+                tipo_heatmap_rotulo = st.selectbox(
+                    "Tipo de curtailment do perfil horário",
+                    options=[
+                        "Todos",
+                        "Energético",
+                        "Elétrico",
+                        "Confiabilidade",
+                    ],
+                    key="subsistemas_tipo_heatmap",
+                    label_visibility="collapsed",
+                )
+        
+            tipo_heatmap_codigo = TIPOS_CURTAILMENT[
+                tipo_heatmap_rotulo
+            ]
+        
+            # ========================================================
+            # PREPARAÇÃO DOS DADOS DO HEATMAP
+            # ========================================================
+        
+            try:
+                tabela_heatmap = (
+                    preparar_perfil_horario_curtailment(
+                        df=df_curtailment_subsistemas,
+                        tipo_curtailment=(
+                            tipo_heatmap_codigo
+                        ),
+                    )
+                )
+        
+            except (
+                TypeError,
+                ValueError,
+                KeyError,
+            ) as erro:
+                st.warning(
+                    "Não foi possível preparar o perfil horário "
+                    "de curtailment."
+                )
+        
+                st.caption(
+                    str(erro)
+                )
+        
+                tabela_heatmap = pd.DataFrame(
+                    0.0,
+                    index=[
+                        "N",
+                        "NE",
+                        "SE",
+                        "S",
+                    ],
+                    columns=range(24),
+                )
+        
+            # ========================================================
+            # RÓTULOS PARA EXIBIÇÃO
+            # ========================================================
+        
+            rotulos_heatmap_subsistemas = {
+                "N": "Norte",
+                "NE": "Nordeste",
+                "SE": "Sudeste/Centro-Oeste",
+                "S": "Sul",
+            }
+        
+            tabela_heatmap_plot = tabela_heatmap.copy()
+        
+            tabela_heatmap_plot.index = [
+                rotulos_heatmap_subsistemas.get(
+                    subsistema,
+                    subsistema,
+                )
+                for subsistema
+                in tabela_heatmap_plot.index
+            ]
+        
+            # ========================================================
+            # CONSTRUÇÃO DO HEATMAP
+            # ========================================================
+        
+            fig_heatmap = px.imshow(
+                tabela_heatmap_plot,
+                x=list(
+                    range(24)
                 ),
-                "color": "#334155",
-                "size": 12,
-            },
-            coloraxis_colorbar={
-                "title": {
-                    "text": "MW médio",
-                    "side": "right",
+                y=tabela_heatmap_plot.index,
+                color_continuous_scale=[
+                    [
+                        0.00,
+                        "#FFF7F9",
+                    ],
+                    [
+                        0.15,
+                        "#FCE1E8",
+                    ],
+                    [
+                        0.35,
+                        "#F7BAC9",
+                    ],
+                    [
+                        0.55,
+                        "#ED809B",
+                    ],
+                    [
+                        0.75,
+                        "#D94C70",
+                    ],
+                    [
+                        1.00,
+                        "#A61E4D",
+                    ],
+                ],
+                aspect="auto",
+                labels={
+                    "x": "Hora do dia",
+                    "y": "",
+                    "color": "MW médio",
                 },
-                "thickness": 13,
-                "len": 0.78,
-                "x": 1.01,
-                "tickfont": {
+            )
+        
+            fig_heatmap.update_traces(
+                xgap=3,
+                ygap=5,
+                hovertemplate=(
+                    "<b>%{y}</b>"
+                    "<br>Hora: %{x}:00"
+                    "<br>Curtailment médio: "
+                    "%{z:,.2f} MW"
+                    "<extra></extra>"
+                ),
+            )
+        
+            fig_heatmap.update_layout(
+                height=300,
+                margin={
+                    "l": 15,
+                    "r": 30,
+                    "t": 25,
+                    "b": 25,
+                },
+                paper_bgcolor="rgba(0,0,0,0)",
+                plot_bgcolor="rgba(0,0,0,0)",
+                font={
+                    "family": (
+                        "Segoe UI, Arial, sans-serif"
+                    ),
+                    "color": "#334155",
+                    "size": 12,
+                },
+                coloraxis_colorbar={
+                    "title": {
+                        "text": "MW médio",
+                        "side": "right",
+                    },
+                    "thickness": 13,
+                    "len": 0.78,
+                    "x": 1.01,
+                    "tickfont": {
+                        "size": 10,
+                        "color": "#64748B",
+                    },
+                },
+                hoverlabel={
+                    "bgcolor": "#FFFFFF",
+                    "bordercolor": "#D9E2EC",
+                    "font": {
+                        "color": "#102D57",
+                        "size": 12,
+                    },
+                },
+            )
+        
+            fig_heatmap.update_xaxes(
+                title="Hora do dia",
+                tickmode="linear",
+                dtick=1,
+                side="bottom",
+                showgrid=False,
+                showline=False,
+                tickfont={
                     "size": 10,
                     "color": "#64748B",
                 },
-            },
-            hoverlabel={
-                "bgcolor": "#FFFFFF",
-                "bordercolor": "#D9E2EC",
-                "font": {
-                    "color": "#102D57",
-                    "size": 12,
+                title_font={
+                    "size": 11,
+                    "color": "#475569",
                 },
-            },
-        )
-    
-        fig_heatmap.update_xaxes(
-            title="Hora do dia",
-            tickmode="linear",
-            dtick=1,
-            side="bottom",
-            showgrid=False,
-            showline=False,
-            tickfont={
-                "size": 10,
-                "color": "#64748B",
-            },
-            title_font={
-                "size": 11,
-                "color": "#475569",
-            },
-            fixedrange=True,
-        )
-    
-        fig_heatmap.update_yaxes(
-            title=None,
-            showgrid=False,
-            showline=False,
-            tickfont={
-                "size": 12,
-                "color": "#334155",
-            },
-            autorange="reversed",
-            fixedrange=True,
-        )
-    
-        st.plotly_chart(
-            fig_heatmap,
-            width="stretch",
-            height=330,
-            config={
-                "displayModeBar": False,
-                "responsive": True,
-            },
-            key=(
-                "heatmap_subsistemas_"
-                f"{tipo_heatmap_codigo}"
-            ),
-        )
+                fixedrange=True,
+            )
+        
+            fig_heatmap.update_yaxes(
+                title=None,
+                showgrid=False,
+                showline=False,
+                tickfont={
+                    "size": 12,
+                    "color": "#334155",
+                },
+                autorange="reversed",
+                fixedrange=True,
+            )
+        
+            st.plotly_chart(
+                fig_heatmap,
+                width="stretch",
+                height=300,
+                config={
+                    "displayModeBar": False,
+                    "responsive": True,
+                },
+                key=(
+                    "heatmap_subsistemas_"
+                    f"{tipo_heatmap_codigo}"
+                ),
+            )
         
 
-            
+    with coluna_direita_inferior:
+        pass      
 
 @st.cache_data(
     show_spinner=False,
