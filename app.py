@@ -2587,9 +2587,9 @@ def renderizar_pagina_subsistemas(
                             )
                 
                         cores_tipos = {
-                            "Energético": "#2F6690",
-                            "Elétrico": "#3FA7A3",
-                            "Confiabilidade": "#8172B3",
+                            "Energético": "#d62728",
+                            "Elétrico": "#ff7f0e",
+                            "Confiabilidade": "#9467bd",
                         }
                 
                         ordem_tipos = [
