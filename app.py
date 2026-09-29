@@ -12,6 +12,7 @@ from datetime import date
 from pathlib import Path
 
 import pandas as pd
+import plotly.express as px
 import matplotlib.pyplot as plt
 import streamlit as st
 import streamlit.components.v1 as components
@@ -616,7 +617,7 @@ st.markdown(
         
         .st-key-card_grafico_mensal,
         .st-key-card_grafico_participacao {
-            min-height: 460px;
+            min-height: 410px;
         
             padding: 0.35rem;
         
@@ -1633,131 +1634,189 @@ def renderizar_pagina_subsistemas(
                 )
                 .reset_index()
             )
-    
-            dados_grafico_mensal = (
-                base_mensal_completa
-                .pivot(
-                    index="mes",
-                    columns="id_subsistema",
-                    values="curtailment_gwh",
-                )
-                .reindex(
-                    columns=ordem_subsistemas,
-                    fill_value=0.0,
-                )
-                .sort_index()
-            )
-    
-            cores_subsistemas = {
-                "N": "#FFC300",
-                "NE": "#E15759",
-                "SE": "#2A9D8F",
-                "S": "#4E79A7",
+
+            rotulos_subsistemas = {
+                "N": "Norte",
+                "NE": "Nordeste",
+                "SE": "Sudeste/Centro-Oeste",
+                "S": "Sul",
             }
-    
-            rotulos_meses = (
-                dados_grafico_mensal.index
-                .strftime("%m/%Y")
+            
+            cores_subsistemas = {
+                "N": "#86BBD8",
+                "NE": "#2F6690",
+                "SE": "#3FA7A3",
+                "S": "#8172B3",
+            }
+            
+            dados_plot_mensal = (
+                base_mensal_completa
+                .copy()
             )
-    
-            fig_mensal, ax_mensal = plt.subplots(
-                figsize=(
-                    7.8,
-                    4.0,
+            
+            dados_plot_mensal["mes_rotulo"] = (
+                dados_plot_mensal["mes"]
+                .dt.strftime("%m/%Y")
+            )
+            
+            dados_plot_mensal["subsistema_rotulo"] = (
+                dados_plot_mensal["id_subsistema"]
+                .map(
+                    rotulos_subsistemas
                 )
             )
-    
-            base_empilhamento = pd.Series(
-                0.0,
-                index=dados_grafico_mensal.index,
-            )
-    
-            for subsistema in ordem_subsistemas:
-                valores_subsistema = (
-                    dados_grafico_mensal[
-                        subsistema
+            
+            ordem_meses = (
+                dados_plot_mensal[
+                    [
+                        "mes",
+                        "mes_rotulo",
                     ]
-                )
-    
-                ax_mensal.bar(
-                    rotulos_meses,
-                    valores_subsistema,
-                    bottom=base_empilhamento,
-                    label=subsistema,
-                    color=cores_subsistemas[
-                        subsistema
-                    ],
-                    edgecolor="white",
-                    linewidth=0.6,
-                )
-    
-                base_empilhamento = (
-                    base_empilhamento
-                    + valores_subsistema
-                )
-    
-            ax_mensal.set_xlabel(
-                "Mês"
+                ]
+                .drop_duplicates()
+                .sort_values(
+                    "mes"
+                )[
+                    "mes_rotulo"
+                ]
+                .tolist()
             )
-    
-            ax_mensal.set_ylabel(
-                "Curtailment (GWh)"
-            )
-    
-            ax_mensal.grid(
-                axis="y",
-                alpha=0.25,
-                linestyle="--",
-            )
-    
-            ax_mensal.set_axisbelow(
-                True
-            )
-    
-            ax_mensal.tick_params(
-                axis="x",
-                rotation=0,
-                labelsize=9,
-            )
-    
-            ax_mensal.tick_params(
-                axis="y",
-                labelsize=9,
-            )
-    
-            ax_mensal.legend(
-                title=None,
-                ncol=4,
-                loc="upper center",
-                bbox_to_anchor=(
-                    0.5,
-                    1.10,
+            
+            ordem_subsistemas_rotulos = [
+                "Norte",
+                "Nordeste",
+                "Sudeste/Centro-Oeste",
+                "Sul",
+            ]
+            
+            cores_subsistemas_rotulos = {
+                rotulos_subsistemascor
+                for codigo, cor
+                in cores_subsistemas.items()
+            }
+            
+            fig_mensal = px.bar(
+                dados_plot_mensal,
+                x="mes_rotulo",
+                y="curtailment_gwh",
+                color="subsistema_rotulo",
+                category_orders={
+                    "mes_rotulo": ordem_meses,
+                    "subsistema_rotulo": (
+                        ordem_subsistemas_rotulos
+                    ),
+                },
+                color_discrete_map=(
+                    cores_subsistemas_rotulos
                 ),
-                frameon=False,
-                fontsize=9,
+                labels={
+                    "mes_rotulo": "Mês",
+                    "curtailment_gwh": (
+                        "Curtailment (GWh)"
+                    ),
+                    "subsistema_rotulo": (
+                        "Subsistema"
+                    ),
+                },
+                custom_data=[
+                    "subsistema_rotulo",
+                ],
             )
-    
-            ax_mensal.spines[
-                "top"
-            ].set_visible(
-                False
+            
+            fig_mensal.update_traces(
+                marker_line_color="#FFFFFF",
+                marker_line_width=0.7,
+                hovertemplate=(
+                    "<b>%{customdata[0]}</b>"
+                    "<br>Mês: %{x}"
+                    "<br>Curtailment: %{y:,.2f} GWh"
+                    "<extra></extra>"
+                ),
             )
-    
-            ax_mensal.spines[
-                "right"
-            ].set_visible(
-                False
+            
+            fig_mensal.update_layout(
+                barmode="stack",
+                height=350,
+                margin={
+                    "l": 10,
+                    "r": 10,
+                    "t": 52,
+                    "b": 10,
+                },
+                paper_bgcolor="rgba(0,0,0,0)",
+                plot_bgcolor="rgba(0,0,0,0)",
+                font={
+                    "family": (
+                        "Segoe UI, Arial, sans-serif"
+                    ),
+                    "color": "#334155",
+                    "size": 12,
+                },
+                legend={
+                    "title": {
+                        "text": "",
+                    },
+                    "orientation": "h",
+                    "yanchor": "bottom",
+                    "y": 1.02,
+                    "xanchor": "center",
+                    "x": 0.5,
+                    "font": {
+                        "size": 11,
+                    },
+                },
+                hoverlabel={
+                    "bgcolor": "#FFFFFF",
+                    "bordercolor": "#D9E2EC",
+                    "font": {
+                        "color": "#102D57",
+                        "size": 12,
+                    },
+                },
+                bargap=0.25,
             )
-    
-            fig_mensal.tight_layout()
-    
-            st.pyplot(
+            
+            fig_mensal.update_xaxes(
+                title=None,
+                showgrid=False,
+                showline=False,
+                tickfont={
+                    "size": 11,
+                    "color": "#64748B",
+                },
+                fixedrange=True,
+            )
+            
+            fig_mensal.update_yaxes(
+                title="Curtailment (GWh)",
+                gridcolor="rgba(148, 163, 184, 0.20)",
+                griddash="dot",
+                zeroline=False,
+                showline=False,
+                tickfont={
+                    "size": 10,
+                    "color": "#64748B",
+                },
+                title_font={
+                    "size": 11,
+                    "color": "#475569",
+                },
+                tickformat=",.0f",
+                fixedrange=True,
+            )
+            
+            st.plotly_chart(
                 fig_mensal,
-                use_container_width=True,
-            )
-    
-            plt.close(
-                fig_mensal
+                width="stretch",
+                height=350,
+                config={
+                    "displayModeBar": False,
+                    "responsive": True,
+                },
+                key=(
+                    "grafico_mensal_"
+                    f"{tipo_mensal_codigo}"
+                ),
             )
     
     
