@@ -1957,7 +1957,7 @@ def renderizar_pagina_subsistemas(
                         "<br>Curtailment: "
                         "%{value:,.2f} GWh"
                         "<br>Participação: "
-                        "%{customdata[0\]:.2f}%"
+                        "%{customdata[0]:.2f}%"
                         "<extra></extra>"
                     ),
                 )
@@ -2029,7 +2029,8 @@ def renderizar_pagina_subsistemas(
                                 "GWh no período"
                                 "</span>"
                             ),
-                            "x": 0                       "y": 0.5,
+                            "x": 0.5,
+                            "y": 0.5,
                             "showarrow": False,
                             "align": "center",
                             "font": {
