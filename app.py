@@ -2633,7 +2633,7 @@ def renderizar_pagina_subsistemas(
                                 "<br>Tipo: %{customdata[0]}"
                                 "<br>Corte: %{x:.2f}%"
                                 "<br>Curtailment: "
-                                "%{customdata[1\]:,.2f} MWh"
+                                "%{customdata[1]:,.2f} MWh"
                                 "<extra></extra>"
                             ),
                         )
