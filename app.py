@@ -608,11 +608,43 @@ st.markdown(
         }
 
         /* GRÁFICO CURT */
+
+        .cabecalho-card-grafico {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 0.75rem;
+        
+            width: 100%;
+            margin-bottom: 0.25rem;
+        }
+        
         .titulo-card-grafico {
             color: #102d57;
             font-size: 1.15rem;
             font-weight: 750;
             line-height: 1.25;
+        }
+        
+        .selo-tipo-curtailment {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+        
+            flex: 0 0 auto;
+        
+            padding: 0.3rem 0.55rem;
+        
+            color: #2f6690;
+            background-color: #edf5fb;
+        
+            border: 1px solid #d4e5f2;
+            border-radius: 999px;
+        
+            font-size: 0.7rem;
+            font-weight: 650;
+            line-height: 1;
+            white-space: nowrap;
         }
 
         .st-key-graficos_subsistemas {
@@ -1857,12 +1889,29 @@ def renderizar_pagina_subsistemas(
             border=True,
             key="card_grafico_participacao",
         ):
+            rotulo_tipo_participacao = {
+                "TODOS": "Todos os tipos",
+                "ENE": "Energético",
+                "REL": "Elétrico",
+                "CNF": "Confiabilidade",
+            }.get(
+                tipo_mensal_codigo,
+                tipo_mensal_rotulo,
+            )
+            
+            titulo_participacao_html = (
+                '<div class="cabecalho-card-grafico">'
+                '<div class="titulo-card-grafico">'
+                'Participação do curtailment'
+                '</div>'
+                '<span class="selo-tipo-curtailment">'
+                f'{rotulo_tipo_participacao}'
+                '</span>'
+                '</div>'
+            )
+            
             st.html(
-                """
-                <div class="titulo-card-grafico">
-                    Participação do curtailment
-                </div>
-                """
+                titulo_participacao_html
             )
     
             participacao_subsistemas = (
@@ -1932,9 +1981,6 @@ def renderizar_pagina_subsistemas(
                     color_discrete_map=(
                         cores_subsistemas_rotulos
                     ),
-                    custom_data=[
-                        "participacao_pct",
-                    ],
                 )
     
                 fig_participacao.update_traces(
@@ -1957,7 +2003,7 @@ def renderizar_pagina_subsistemas(
                         "<br>Curtailment: "
                         "%{value:,.2f} GWh"
                         "<br>Participação: "
-                        "%{customdata[0]:.2f}%"
+                        "%{percent:.1%}"
                         "<extra></extra>"
                     ),
                 )
