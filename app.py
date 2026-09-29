@@ -27,6 +27,7 @@ from src.analise_subsistemas import (
     calcular_kpis_curtailment,
     preparar_curtailment_mensal_subsistemas,
     preparar_perfil_horario_curtailment,
+    preparar_corte_subsistema_tipo,    
 )
 # ============================================================
 # CONFIGURAÇÃO
@@ -747,7 +748,34 @@ st.markdown(
             max-width: 190px;
             margin-left: auto;
         }
+
+        .st-key-card_corte_subsistema {
+            width: 100%;
         
+            margin-top: 1rem;
+            margin-right: 0;
+            margin-bottom: 1.5rem;
+            margin-left: 0;
+        
+            padding: 0.75rem 0.85rem 0.45rem;
+        
+            background-color: #ffffff;
+        
+            border: 1px solid #e2e8f0;
+            border-radius: 13px;
+        
+            box-shadow:
+                0 6px 18px rgba(15, 42, 70, 0.08);
+        
+            box-sizing: border-box;
+        }
+        
+        .st-key-card_corte_subsistema
+        div[data-testid="stVerticalBlockBorderWrapper"] {
+            border: 0;
+            box-shadow: none;
+        }
+                
         .grafico-placeholder {
             display: flex;
             align-items: center;
@@ -2516,7 +2544,183 @@ def renderizar_pagina_subsistemas(
                         
                 
                 with coluna_direita_inferior:
-                    pass         
+                    with st.container(
+                        border=True,
+                        key="card_corte_subsistema",
+                    ):
+                        st.html(
+                            """
+                            <div class="titulo-card-grafico">
+                                Corte por subsistema e tipo
+                            </div>
+                            """
+                        )
+                
+                        try:
+                            tabela_corte_tipo = (
+                                preparar_corte_subsistema_tipo(
+                                    df_curtailment_subsistemas
+                                )
+                            )
+                
+                        except (
+                            TypeError,
+                            ValueError,
+                            KeyError,
+                        ) as erro:
+                            st.warning(
+                                "Não foi possível preparar o corte "
+                                "por subsistema e tipo."
+                            )
+                
+                            st.caption(
+                                str(erro)
+                            )
+                
+                            tabela_corte_tipo = pd.DataFrame(
+                                columns=[
+                                    "id_subsistema",
+                                    "tipo_curtailment",
+                                    "corte_pct",
+                                    "tipo_rotulo",
+                                ]
+                            )
+                
+                        cores_tipos = {
+                            "Energético": "#2F6690",
+                            "Elétrico": "#3FA7A3",
+                            "Confiabilidade": "#8172B3",
+                        }
+                
+                        ordem_tipos = [
+                            "Energético",
+                            "Elétrico",
+                            "Confiabilidade",
+                        ]
+                
+                        fig_corte_tipo = px.bar(
+                            tabela_corte_tipo,
+                            y="id_subsistema",
+                            x="corte_pct",
+                            color="tipo_rotulo",
+                            orientation="h",
+                            barmode="stack",
+                            category_orders={
+                                "id_subsistema": [
+                                    "N",
+                                    "NE",
+                                    "SE",
+                                    "S",
+                                ],
+                                "tipo_rotulo": ordem_tipos,
+                            },
+                            color_discrete_map=cores_tipos,
+                            labels={
+                                "id_subsistema": "",
+                                "corte_pct": "Corte (%)",
+                                "tipo_rotulo": "Tipo",
+                            },
+                            custom_data=[
+                                "tipo_rotulo",
+                                "curtailment_mwh",
+                            ],
+                        )
+                        fig_corte_tipo.update_traces(
+                            marker_line_color="#FFFFFF",
+                            marker_line_width=0.7,
+                            hovertemplate=(
+                                "<b>Subsistema %{y}</b>"
+                                "<br>Tipo: %{customdata[0]}"
+                                "<br>Corte: %{x:.2f}%"
+                                "<br>Curtailment: "
+                                "%{customdata[1\]:,.2f} MWh"
+                                "<extra></extra>"
+                            ),
+                        )
+                        
+                        fig_corte_tipo.update_layout(
+                            height=290,
+                            margin={
+                                "l": 5,
+                                "r": 15,
+                                "t": 55,
+                                "b": 15,
+                            },
+                            paper_bgcolor="rgba(0,0,0,0)",
+                            plot_bgcolor="rgba(0,0,0,0)",
+                            font={
+                                "family": (
+                                    "Segoe UI, Arial, sans-serif"
+                                ),
+                                "color": "#334155",
+                                "size": 12,
+                            },
+                            legend={
+                                "title": {
+                                    "text": "",
+                                },
+                                "orientation": "h",
+                                "yanchor": "bottom",
+                                "y": 1.03,
+                                "xanchor": "center",
+                                "x": 0.5,
+                                "font": {
+                                    "size": 11,
+                                    "color": "#334155",
+                                },
+                            },
+                            label={
+                                "bgcolor": "#FFFFFF",
+                                "bordercolor": "#D9E2EC",
+                                "font": {
+                                    "color": "#102D57",
+                                    "size": 12,
+                                },
+                            },
+                            bargap=0.32,
+                        )
+                        
+                        fig_corte_tipo.update_xaxes(
+                            title="Corte (%)",
+                            ticksuffix="%",
+                            gridcolor="rgba(148, 163, 184, 0.20)",
+                            griddash="dot",
+                            zeroline=False,
+                            showline=False,
+                            tickfont={
+                                "size": 10,
+                                "color": "#64748B",
+                            },
+                            title_font={
+                                "size": 11,
+                                "color": "#475569",
+                            },
+                            fixedrange=True,
+                        )
+                        
+                        fig_corte_tipo.update_yaxes(
+                            title=None,
+                            autorange="reversed",
+                            showgrid=False,
+                            showline=False,
+                            tickfont={
+                                "size": 12,
+                                "color": "#334155",
+                            },
+                            fixedrange=True,
+                        )
+                        
+                        st.plotly_chart(
+                            fig_corte_tipo,
+                            width="stretch",
+                            height=290,
+                            config={
+                                "displayModeBar": False,
+                                "responsive": True,
+                            },
+                            key="grafico_corte_subsistema_tipo",
+                        )
+
 
 @st.cache_data(
     show_spinner=False,
