@@ -1788,7 +1788,7 @@ def renderizar_pagina_subsistemas(
                         }
                         
                         cores_subsistemas = {
-                            "N": "#86BBD8",
+                            "N": "#F3A6B8",
                             "NE": "#2F6690",
                             "SE": "#3FA7A3",
                             "S": "#8172B3",
@@ -2585,9 +2585,9 @@ def renderizar_pagina_subsistemas(
                             )
                 
                         cores_tipos = {
-                            "Energético": "#d62728",
-                            "Elétrico": "#ff7f0e",
-                            "Confiabilidade": "#9467bd",
+                            "Energético": "#E57373",
+                            "Elétrico": "#F5A65B",
+                            "Confiabilidade": "#A58ACB",
                         }
                 
                         ordem_tipos = [
