@@ -776,6 +776,27 @@ st.markdown(
             border: 0;
             box-shadow: none;
         }
+
+        .st-key-card_tabela_subsistemas {
+            width: min(1500px, calc(100vw - 3rem));
+        
+            margin-top: 0;
+            margin-right: auto;
+            margin-bottom: 1.75rem;
+            margin-left: auto;
+        
+            padding: 0.85rem 0.95rem 1rem;
+        
+            background-color: #ffffff;
+        
+            border: 1px solid #e2e8f0;
+            border-radius: 13px;
+        
+            box-shadow:
+                0 6px 18px rgba(15, 42, 70, 0.08);
+        
+            box-sizing: border-box;
+        }
                 
         .grafico-placeholder {
             display: flex;
@@ -2719,6 +2740,59 @@ def renderizar_pagina_subsistemas(
                             },
                             key="grafico_corte_subsistema_tipo",
                         )
+    # ============================================================
+    # RESUMO POR SUBSISTEMA
+    # ============================================================
+    
+    try:
+        tabela_resumo_subsistemas = (
+            preparar_resumo_subsistemas_aplicacao(
+                df_curtailment_subsistemas
+            )
+        )
+    
+    except (
+        TypeError,
+        ValueError,
+        KeyError,
+    ) as erro:
+        st.warning(
+            "Não foi possível preparar a tabela de resumo "
+            "por subsistema."
+        )
+    
+        st.caption(
+            str(erro)
+        )
+    
+        tabela_resumo_subsistemas = pd.DataFrame()
+    
+    
+    with st.container(
+        border=True,
+        key="card_tabela_subsistemas",
+    ):
+        st.html(
+            """
+            <div class="titulo-card-grafico">
+                Resumo por subsistema
+            </div>
+            """
+        )
+    
+        if tabela_resumo_subsistemas.empty:
+            st.info(
+                "Não há dados disponíveis para a tabela "
+                "de resumo."
+            )
+    
+        else:
+            tabela_exibicao = (
+                tabela_resumo_subsistemas
+                .copy()
+            )
+    
+            # Formatação e st.dataframe() entram aqui.    
 
 
 @st.cache_data(show_spinner=False,)
