@@ -782,3 +782,313 @@ def preparar_perfil_horario_curtailment(
     )
 
     return tabela_horaria
+
+def preparar_corte_subsistema_tipo(
+    df,
+):
+    """
+    Prepara o corte percentual por subsistema e tipo
+    de curtailment.
+
+    Para cada subsistema, o curtailment de cada tipo
+    é dividido pela geração esperada total do subsistema.
+
+    Os registros representam intervalos de 30 minutos.
+    Por isso, a conversão de MW para MWh utiliza 0.5.
+
+    Parâmetros
+    ----------
+    df : pandas.DataFrame
+        Base calculada de curtailment.
+
+    Retorno
+    -------
+    pandas.DataFrame
+        Base com subsistema, tipo de curtailment,
+        curtailment em MWh, geração esperada em MWh
+        e corte percentual.
+    """
+
+    if not isinstance(
+        df,
+        pd.DataFrame,
+    ):
+        raise TypeError(
+            "df deve ser um DataFrame."
+        )
+
+    if df.empty:
+        raise ValueError(
+            "A base informada está vazia."
+        )
+
+    colunas_obrigatorias = {
+        "id_subsistema",
+        "cod_razaorestricao",
+        "val_curtailment",
+        "val_geracao_esperada",
+    }
+
+    colunas_ausentes = (
+        colunas_obrigatorias
+        - set(df.columns)
+    )
+
+    if colunas_ausentes:
+        raise ValueError(
+            "A base não possui as colunas obrigatórias: "
+            f"{sorted(colunas_ausentes)}."
+        )
+
+    df_aux = df.copy()
+
+    df_aux["id_subsistema"] = (
+        df_aux["id_subsistema"]
+        .astype("string")
+        .str.strip()
+        .str.upper()
+    )
+
+    df_aux["tipo_curtailment"] = (
+        df_aux["cod_razaorestricao"]
+        .astype("string")
+        .str.strip()
+        .str.upper()
+    )
+
+    df_aux["val_curtailment"] = pd.to_numeric(
+        df_aux["val_curtailment"],
+        errors="coerce",
+    )
+
+    df_aux["val_geracao_esperada"] = pd.to_numeric(
+        df_aux["val_geracao_esperada"],
+        errors="coerce",
+    )
+
+    df_aux = df_aux.dropna(
+        subset=[
+            "id_subsistema",
+            "tipo_curtailment",
+            "val_curtailment",
+            "val_geracao_esperada",
+        ]
+    ).copy()
+
+    tipos_permitidos = [
+        "ENE",
+        "REL",
+        "CNF",
+    ]
+
+    df_aux = df_aux[
+        df_aux["tipo_curtailment"]
+        .isin(
+            tipos_permitidos
+        )
+    ].copy()
+
+    if df_aux.empty:
+        raise ValueError(
+            "Não foram encontrados registros dos tipos "
+            "ENE, REL ou CNF."
+        )
+
+    df_aux["curtailment_mwh"] = (
+        df_aux["val_curtailment"]
+        .clip(lower=0)
+        * 0.5
+    )
+
+    df_aux["geracao_esperada_mwh"] = (
+        df_aux["val_geracao_esperada"]
+        .clip(lower=0)
+        * 0.5
+    )
+
+    # Curtailment por subsistema e tipo.
+
+    curtailment_tipo = (
+        df_aux
+        .groupby(
+            [
+                "id_subsistema",
+                "tipo_curtailment",
+            ],
+            as_index=False,
+            observed=True,
+        )
+        .agg(
+            curtailment_mwh=(
+                "curtailment_mwh",
+                "sum",
+            )
+        )
+    )
+
+    # Geração esperada total por subsistema.
+    # O denominador é o mesmo para todos os tipos.
+
+    geracao_subsistema = (
+        df_aux
+        .groupby(
+            "id_subsistema",
+            as_index=False,
+            observed=True,
+        )
+        .agg(
+            geracao_esperada_mwh=(
+                "geracao_esperada_mwh",
+                "sum",
+            )
+        )
+    )
+
+    tabela = curtailment_tipo.merge(
+        geracao_subsistema,
+        on="id_subsistema",
+        how="left",
+        validate="many_to_one",
+    )
+
+    tabela["corte_pct"] = 0.0
+
+    mascara_geracao_positiva = (
+        tabela["geracao_esperada_mwh"] > 0
+    )
+
+    tabela.loc[
+        mascara_geracao_positiva,
+        "corte_pct",
+    ] = (
+        100
+        * tabela.loc[
+            mascara_geracao_positiva,
+            "curtailment_mwh",
+        ]
+        / tabela.loc[
+            mascara_geracao_positiva,
+            "geracao_esperada_mwh",
+        ]
+    )
+
+    # Completa todas as combinações entre
+    # subsistemas e tipos com zero.
+
+    ordem_subsistemas = [
+        "N",
+        "NE",
+        "SE",
+        "S",
+    ]
+
+    indice_completo = pd.MultiIndex.from_product(
+        [
+            ordem_subsistemas,
+            tipos_permitidos,
+        ],
+        names=[
+            "id_subsistema",
+            "tipo_curtailment",
+        ],
+    )
+
+    tabela = (
+        tabela
+        .set_index(
+            [
+                "id_subsistema",
+                "tipo_curtailment",
+            ]
+        )
+        .reindex(
+            indice_completo,
+        )
+        .reset_index()
+    )
+
+    tabela["curtailment_mwh"] = (
+        tabela["curtailment_mwh"]
+        .fillna(0.0)
+    )
+
+    tabela["corte_pct"] = (
+        tabela["corte_pct"]
+        .fillna(0.0)
+    )
+
+    geracao_por_subsistema = (
+        geracao_subsistema
+        .set_index(
+            "id_subsistema"
+        )[
+            "geracao_esperada_mwh"
+        ]
+    )
+
+    tabela["geracao_esperada_mwh"] = (
+        tabela[
+            "id_subsistema"
+        ]
+        .map(
+            geracao_por_subsistema
+        )
+        .fillna(0.0)
+    )
+
+    rotulos_tipos = {
+        "ENE": "Energético",
+        "REL": "Elétrico",
+        "CNF": "Confiabilidade",
+    }
+
+    tabela["tipo_rotulo"] = (
+        tabela["tipo_curtailment"]
+        .map(
+            rotulos_tipos
+        )
+    )
+
+    tabela["ordem_subsistema"] = (
+        tabela["id_subsistema"]
+        .map(
+            {
+                "N": 1,
+                "NE": 2,
+                "SE": 3,
+                "S": 4,
+            }
+        )
+    )
+
+    tabela["ordem_tipo"] = (
+        tabela["tipo_curtailment"]
+        .map(
+            {
+                "ENE": 1,
+                "REL": 2,
+                "CNF": 3,
+            }
+        )
+    )
+
+    tabela = (
+        tabela
+        .sort_values(
+            [
+                "ordem_subsistema",
+                "ordem_tipo",
+            ]
+        )
+        .drop(
+            columns=[
+                "ordem_subsistema",
+                "ordem_tipo",
+            ]
+        )
+        .reset_index(
+            drop=True
+        )
+    )
+
+    return tabela
