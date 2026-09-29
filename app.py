@@ -1857,24 +1857,210 @@ def renderizar_pagina_subsistemas(
             border=True,
             key="card_grafico_participacao",
         ):
-            st.markdown(
+            st.html(
                 """
                 <div class="titulo-card-grafico">
                     Participação do curtailment
                 </div>
-                """,
-                unsafe_allow_html=True,
+                """
             )
     
-            st.markdown(
-                """
-                <div class="grafico-placeholder">
-                    O gráfico de participação por subsistema
-                    será apresentado aqui.
-                </div>
-                """,
-                unsafe_allow_html=True,
+            participacao_subsistemas = (
+                base_mensal_completa
+                .groupby(
+                    "id_subsistema",
+                    as_index=False,
+                    observed=True,
+                )
+                .agg(
+                    curtailment_gwh=(
+                        "curtailment_gwh",
+                        "sum",
+                    )
+                )
             )
+    
+            participacao_subsistemas[
+                "subsistema_rotulo"
+            ] = (
+                participacao_subsistemas[
+                    "id_subsistema"
+                ]
+                .map(
+                    rotulos_subsistemas
+                )
+            )
+    
+            participacao_subsistemas = (
+                participacao_subsistemas[
+                    participacao_subsistemas[
+                        "curtailment_gwh"
+                    ] > 0
+                ]
+                .copy()
+            )
+    
+            curtailment_total_gwh = (
+                participacao_subsistemas[
+                    "curtailment_gwh"
+                ]
+                .sum()
+            )
+    
+            if curtailment_total_gwh > 0:
+                participacao_subsistemas[
+                    "participacao_pct"
+                ] = (
+                    100
+                    * participacao_subsistemas[
+                        "curtailment_gwh"
+                    ]
+                    / curtailment_total_gwh
+                )
+    
+                fig_participacao = px.pie(
+                    participacao_subsistemas,
+                    names="subsistema_rotulo",
+                    values="curtailment_gwh",
+                    hole=0.62,
+                    category_orders={
+                        "subsistema_rotulo": (
+                            ordem_subsistemas_rotulos
+                        ),
+                    },
+                    color="subsistema_rotulo",
+                    color_discrete_map=(
+                        cores_subsistemas_rotulos
+                    ),
+                    custom_data=[
+                        "participacao_pct",
+                    ],
+                )
+    
+                fig_participacao.update_traces(
+                    sort=False,
+                    direction="clockwise",
+                    marker={
+                        "line": {
+                            "color": "#FFFFFF",
+                            "width": 2,
+                        },
+                    },
+                    textinfo="percent",
+                    textposition="inside",
+                    textfont={
+                        "size": 12,
+                        "color": "#FFFFFF",
+                    },
+                    hovertemplate=(
+                        "<b>%{label}</b>"
+                        "<br>Curtailment: "
+                        "%{value:,.2f} GWh"
+                        "<br>Participação: "
+                        "%{customdata[0\]:.2f}%"
+                        "<extra></extra>"
+                    ),
+                )
+    
+                total_formatado = (
+                    f"{curtailment_total_gwh:,.1f}"
+                    .replace(
+                        ",",
+                        "X",
+                    )
+                    .replace(
+                        ".",
+                        ",",
+                    )
+                    .replace(
+                        "X",
+                        ".",
+                    )
+                )
+    
+                fig_participacao.update_layout(
+                    height=325,
+                    margin={
+                        "l": 5,
+                        "r": 5,
+                        "t": 40,
+                        "b": 5,
+                    },
+                    paper_bgcolor=(
+                        "rgba(0,0,0,0)"
+                    ),
+                    plot_bgcolor=(
+                        "rgba(0,0,0,0)"
+                    ),
+                    font={
+                        "family": (
+                            "Segoe UI, Arial, sans-serif"
+                        ),
+                        "color": "#334155",
+                        "size": 12,
+                    },
+                    legend={
+                        "title": {
+                            "text": "",
+                        },
+                        "orientation": "h",
+                        "yanchor": "top",
+                        "y": -0.02,
+                        "xanchor": "center",
+                        "x": 0.5,
+                        "font": {
+                            "size": 12,
+                            "color": "#334155",
+                        },
+                    },
+                    hoverlabel={
+                        "bgcolor": "#FFFFFF",
+                        "bordercolor": "#D9E2EC",
+                        "font": {
+                            "color": "#102D57",
+                            "size": 12,
+                        },
+                    },
+                    annotations=[
+                        {
+                            "text": (
+                                f"<b>{total_formatado}</b>"
+                                "<br><span style='font-size:11px'>"
+                                "GWh no período"
+                                "</span>"
+                            ),
+                            "x": 0                       "y": 0.5,
+                            "showarrow": False,
+                            "align": "center",
+                            "font": {
+                                "size": 16,
+                                "color": "#102D57",
+                            },
+                        }
+                    ],
+                )
+    
+                st.plotly_chart(
+                    fig_participacao,
+                    width="stretch",
+                    height=325,
+                    config={
+                        "displayModeBar": False,
+                        "responsive": True,
+                    },
+                    key=(
+                        "grafico_participacao_"
+                        f"{tipo_mensal_codigo}"
+                    ),
+                )
+    
+            else:
+                st.info(
+                    "Não há valores de curtailment para "
+                    "o tipo selecionado."
+                )
+    
+            
 
 @st.cache_data(
     show_spinner=False,
