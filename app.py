@@ -26,6 +26,7 @@ from src.pipeline import preparar_dados_aplicacao
 from src.analise_subsistemas import (
     calcular_kpis_curtailment,
     preparar_curtailment_mensal_subsistemas,
+    preparar_perfil_horario_curtailment,
 )
 # ============================================================
 # CONFIGURAÇÃO
@@ -1976,6 +1977,7 @@ def renderizar_pagina_subsistemas(
                     ]
                     / curtailment_total_gwh
                 )
+                limite_rotulo_externo = 5.0
 
                 participacoes = (
                     participacao_subsistemas[
@@ -2172,7 +2174,51 @@ def renderizar_pagina_subsistemas(
                     "Não há valores de curtailment para "
                     "o tipo selecionado."
                 )
+    # ============================================================
+    # PERFIL HORÁRIO DE CURTAILMENT
+    # ============================================================
     
+    with st.container(
+        border=True,
+        key="card_heatmap_subsistemas",
+    ):
+        (
+            coluna_titulo_heatmap,
+            coluna_tipo_heatmap,
+        ) = st.columns(
+            [
+                5,
+                1.15,
+            ],
+            vertical_alignment="center",
+        )
+    
+        with coluna_titulo_heatmap:
+            st.html(
+                """
+                <div class="titulo-card-grafico">
+                    Perfil horário de curtailment
+                </div>
+                """
+            )
+    
+        with coluna_tipo_heatmap:
+            tipo_heatmap_rotulo = st.selectbox(
+                "Tipo de curtailment do perfil horário",
+                options=[
+                    "Todos",
+                    "Energético",
+                    "Elétrico",
+                    "Confiabilidade",
+                ],
+                key="subsistemas_tipo_heatmap",
+                label_visibility="collapsed",
+            )
+    
+        tipo_heatmap_codigo = TIPOS_CURTAILMENT[
+            tipo_heatmap_rotulo
+        ]
+
             
 
 @st.cache_data(
