@@ -615,3 +615,170 @@ def preparar_curtailment_mensal_subsistemas(
     )
 
     return base_mensal
+
+def preparar_perfil_horario_curtailment(
+    df,
+    tipo_curtailment,
+):
+    """
+    Prepara o perfil horário médio de curtailment
+    por subsistema.
+
+    Parâmetros
+    ----------
+    df : pandas.DataFrame
+        Base calculada de curtailment.
+    tipo_curtailment : str
+        Tipo considerado na análise. São aceitos:
+        TODOS, ENE, REL e CNF.
+
+    Retorno
+    -------
+    pandas.DataFrame
+        Tabela com subsistemas nas linhas, horas nas
+        colunas e curtailment médio em MW nos valores.
+    """
+
+    if not isinstance(
+        df,
+        pd.DataFrame,
+    ):
+        raise TypeError(
+            "df deve ser um DataFrame."
+        )
+
+    if df.empty:
+        raise ValueError(
+            "A base informada está vazia."
+        )
+
+    colunas_obrigatorias = {
+        "din_instante",
+        "id_subsistema",
+        "cod_razaorestricao",
+        "val_curtailment",
+    }
+
+    colunas_ausentes = (
+        colunas_obrigatorias
+        - set(df.columns)
+    )
+
+    if colunas_ausentes:
+        raise ValueError(
+            "A base não possui as colunas obrigatórias: "
+            f"{sorted(colunas_ausentes)}."
+        )
+
+    tipo_normalizado = (
+        str(tipo_curtailment)
+        .strip()
+        .upper()
+    )
+
+    tipos_permitidos = {
+        "TODOS",
+        "ENE",
+        "REL",
+        "CNF",
+    }
+
+    if tipo_normalizado not in tipos_permitidos:
+        raise ValueError(
+            "O tipo de curtailment deve ser TODOS, "
+            "ENE, REL ou CNF."
+        )
+
+    df_aux = df.copy()
+
+    df_aux["din_instante"] = pd.to_datetime(
+        df_aux["din_instante"],
+        errors="coerce",
+    )
+
+    df_aux["val_curtailment"] = pd.to_numeric(
+        df_aux["val_curtailment"],
+        errors="coerce",
+    )
+
+    df_aux["tipo_curtailment"] = (
+        df_aux["cod_razaorestricao"]
+        .astype("string")
+        .str.strip()
+        .str.upper()
+    )
+
+    df_aux["id_subsistema"] = (
+        df_aux["id_subsistema"]
+        .astype("string")
+        .str.strip()
+        .str.upper()
+    )
+
+    df_aux = df_aux.dropna(
+        subset=[
+            "din_instante",
+            "id_subsistema",
+            "val_curtailment",
+        ]
+    ).copy()
+
+    if tipo_normalizado != "TODOS":
+        df_aux = df_aux[
+            df_aux["tipo_curtailment"]
+            == tipo_normalizado
+        ].copy()
+
+    ordem_subsistemas = [
+        "N",
+        "NE",
+        "SE",
+        "S",
+    ]
+
+    if df_aux.empty:
+        return pd.DataFrame(
+            0.0,
+            index=ordem_subsistemas,
+            columns=range(24),
+        )
+
+    df_aux["hora"] = (
+        df_aux["din_instante"]
+        .dt.hour
+    )
+
+    tabela_horaria = (
+        df_aux
+        .groupby(
+            [
+                "id_subsistema",
+                "hora",
+            ],
+            observed=True,
+        )["val_curtailment"]
+        .mean()
+        .unstack(
+            fill_value=0.0
+        )
+    )
+
+    tabela_horaria = tabela_horaria.reindex(
+        index=ordem_subsistemas,
+        fill_value=0.0,
+    )
+
+    tabela_horaria = tabela_horaria.reindex(
+        columns=range(24),
+        fill_value=0.0,
+    )
+
+    tabela_horaria.index.name = (
+        "id_subsistema"
+    )
+
+    tabela_horaria.columns.name = (
+        "hora"
+    )
+
+    return tabela_horaria
