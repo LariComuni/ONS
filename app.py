@@ -2147,12 +2147,12 @@ def renderizar_pagina_subsistemas(
                                 rotation=0,
                                 domain={
                                     "x": [
-                                        0.0,
-                                        1.0,
+                                        0.05,
+                                        0.95,
                                     ],
                                     "y": [
-                                        0.24,
-                                        1.0,
+                                        0.00,
+                                        0.78,
                                     ],
                                 },
                                 marker={
@@ -2203,8 +2203,8 @@ def renderizar_pagina_subsistemas(
                                 margin={
                                     "l": 55,
                                     "r": 55,
-                                    "t": 55,
-                                    "b": 65,
+                                    "t": 65,
+                                    "b": 10,
                                 },
                                 uniformtext={
                                     "minsize": 9,
@@ -2225,17 +2225,15 @@ def renderizar_pagina_subsistemas(
                                     },
                                     "orientation": "h",
                                     "yanchor": "bottom",
-                                    "y": 0.0,
+                                    "y": 1.05,
                                     "xanchor": "center",
                                     "x": 0.5,
                                     "font": {
-                                        "size": 12,
+                                        "size": 13,
                                         "color": "#334155",
                                     },
                                     "itemsizing": "constant",
                                     "traceorder": "normal",
-                                    "entrywidth": 105,
-                                    "entrywidthmode": "pixels",
                                 },
                                 hoverlabel={
                                     "bgcolor": "#FFFFFF",
@@ -2255,7 +2253,7 @@ def renderizar_pagina_subsistemas(
                                             "</span>"
                                         ),
                                         "x": 0.5,
-                                        "y": 0.62,
+                                        "y": 0.39,
                                         "showarrow": False,
                                         "align": "center",
                                         "font": {
