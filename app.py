@@ -610,16 +610,25 @@ st.markdown(
         /* GRÁFICO CURT */
         .titulo-card-grafico {
             color: #102d57;
-            font-size: 1rem;
-            font-weight: 700;
+            font-size: 1.15rem;
+            font-weight: 750;
             line-height: 1.25;
+        }
+
+        .st-key-graficos_subsistemas {
+            width: min(1500px, calc(100vw - 3rem));
+        
+            margin-top: 0;
+            margin-right: auto;
+            margin-bottom: 1.5rem;
+            margin-left: auto;
         }
         
         .st-key-card_grafico_mensal,
         .st-key-card_grafico_participacao {
-            min-height: 410px;
+            min-height: 390px;
         
-            padding: 0.35rem;
+            padding: 0.75rem 0.85rem 0.4rem;
         
             background-color: #ffffff;
         
@@ -636,6 +645,24 @@ st.markdown(
         div[data-testid="stVerticalBlockBorderWrapper"] {
             border: 0;
             box-shadow: none;
+        }
+
+        .st-key-card_grafico_mensal
+        div[data-testid="stSelectbox"] {
+            width: 100%;
+            max-width: 190px;
+            margin-left: auto;
+        }
+        
+        .st-key-card_grafico_mensal
+        div[data-baseweb="select"] {
+            min-height: 38px;
+        }
+        
+        .st-key-card_grafico_mensal
+        div[data-baseweb="select"] > div {
+            min-height: 38px;
+            font-size: 0.82rem;
         }
         
         .grafico-placeholder {
@@ -1493,16 +1520,19 @@ def renderizar_pagina_subsistemas(
     # GRÁFICOS DE CURTAILMENT POR SUBSISTEMA
     # ============================================================
     
-    (
-        coluna_grafico_mensal,
-        coluna_grafico_participacao,
-    ) = st.columns(
-        [
-            1.75,
-            1,
-        ],
-        gap="medium",
-    )
+    with st.container(
+        key="graficos_subsistemas",
+    ):
+        (
+            coluna_grafico_mensal,
+            coluna_grafico_participacao,
+        ) = st.columns(
+            [
+                1.75,
+                1,
+            ],
+            gap="medium",
+        )
     
     with coluna_grafico_mensal:
         with st.container(
@@ -1514,8 +1544,8 @@ def renderizar_pagina_subsistemas(
                 coluna_tipo,
             ) = st.columns(
                 [
-                    1.7,
-                    1,
+                    4,
+                    1.15,
                 ],
                 vertical_alignment="bottom",
             )
@@ -1540,6 +1570,7 @@ def renderizar_pagina_subsistemas(
                         "Confiabilidade",
                     ],
                     key="subsistemas_tipo_mensal",
+                    label_visibility="collapsed",
                 )
     
             tipo_mensal_codigo = TIPOS_CURTAILMENT[
@@ -1736,7 +1767,7 @@ def renderizar_pagina_subsistemas(
             
             fig_mensal.update_layout(
                 barmode="stack",
-                height=350,
+                height=325,
                 margin={
                     "l": 10,
                     "r": 10,
@@ -1762,7 +1793,8 @@ def renderizar_pagina_subsistemas(
                     "xanchor": "center",
                     "x": 0.5,
                     "font": {
-                        "size": 11,
+                        "size": 13,
+                        "color": "#334155",
                     },
                 },
                 hoverlabel={
@@ -1808,7 +1840,7 @@ def renderizar_pagina_subsistemas(
             st.plotly_chart(
                 fig_mensal,
                 width="stretch",
-                height=350,
+                height=325,
                 config={
                     "displayModeBar": False,
                     "responsive": True,
