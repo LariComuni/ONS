@@ -666,6 +666,17 @@ st.markdown(
             margin-left: auto;
         }
         
+        .st-key-linha_superior_graficos,
+        .st-key-linha_inferior_graficos {
+            width: 100%;
+            margin: 0;
+            padding: 0;
+        }
+        
+        .st-key-linha_inferior_graficos {
+            margin-top: 1rem;
+        }
+        
         .st-key-card_grafico_mensal,
         .st-key-card_grafico_participacao {
             min-height: 390px;
@@ -709,12 +720,8 @@ st.markdown(
 
         .st-key-card_heatmap_subsistemas {
             width: 100%;
-        
-            margin-top: 1rem;
-            margin-right: 0;
-            margin-bottom: 1.5rem;
-            margin-left: 0;
-        
+            
+            margin: 0;
             padding: 0.75rem 0.85rem 0.45rem;
         
             background-color: #ffffff;
@@ -1599,912 +1606,917 @@ def renderizar_pagina_subsistemas(
     with st.container(
         key="graficos_subsistemas",
     ):
-        (
-            coluna_grafico_mensal,
-            coluna_grafico_participacao,
-        ) = st.columns(
-            [
-                1.75,
-                1,
-            ],
-            gap="medium",
-        )
-    
-        with coluna_grafico_mensal:
-            with st.container(
-                border=True,
-                key="card_grafico_mensal",
+        with st.container(
+            key="linha_superior_graficos",
             ):
                 (
-                    coluna_titulo,
-                    coluna_tipo,
+                    coluna_grafico_mensal,
+                    coluna_grafico_participacao,
                 ) = st.columns(
                     [
-                        4,
-                        1.15,
+                        1.75,
+                        1,
                     ],
-                    vertical_alignment="bottom",
+                    gap="medium",
                 )
-        
-                with coluna_titulo:
-                    st.markdown(
-                        """
-                        <div class="titulo-card-grafico">
-                            Curtailment mensal por subsistema
-                        </div>
-                        """,
-                        unsafe_allow_html=True,
-                    )
-        
-                with coluna_tipo:
-                    tipo_mensal_rotulo = st.selectbox(
-                        "Tipo de curtailment",
-                        options=[
-                            "Todos",
-                            "Energético",
-                            "Elétrico",
-                            "Confiabilidade",
-                        ],
-                        key="subsistemas_tipo_mensal",
-                        label_visibility="collapsed",
-                    )
-        
-                tipo_mensal_codigo = TIPOS_CURTAILMENT[
-                    tipo_mensal_rotulo
-                ]
-        
-                try:
-                    base_mensal = (
-                        preparar_curtailment_mensal_subsistemas(
-                            df=df_curtailment_subsistemas,
-                            tipo_curtailment=tipo_mensal_codigo,
-                        )
-                    )
-        
-                except (
-                    TypeError,
-                    ValueError,
-                    KeyError,
-                ) as erro:
-                    st.warning(
-                        "Não foi possível preparar o curtailment "
-                        "mensal para o tipo selecionado."
-                    )
-        
-                    st.caption(
-                        str(erro)
-                    )
-        
-                    base_mensal = pd.DataFrame(
-                        columns=[
-                            "mes",
-                            "id_subsistema",
-                            "curtailment_gwh",
-                        ]
-                    )
-        
-                ordem_subsistemas = [
-                    "N",
-                    "NE",
-                    "SE",
-                    "S",
-                ]
-        
-                data_inicial = pd.Timestamp(
-                    year=filtros_subsistemas[
-                        "ano_inicial"
-                    ],
-                    month=filtros_subsistemas[
-                        "mes_inicial"
-                    ],
-                    day=1,
-                )
-        
-                data_final = pd.Timestamp(
-                    year=filtros_subsistemas[
-                        "ano_final"
-                    ],
-                    month=filtros_subsistemas[
-                        "mes_final"
-                    ],
-                    day=1,
-                )
-        
-                meses_disponiveis = pd.date_range(
-                    start=data_inicial,
-                    end=data_final,
-                    freq="MS",
-                )
-        
-                indice_completo = pd.MultiIndex.from_product(
-                    [
-                        meses_disponiveis,
-                        ordem_subsistemas,
-                    ],
-                    names=[
-                        "mes",
-                        "id_subsistema",
-                    ],
-                )
-        
-                base_mensal_completa = (
-                    base_mensal
-                    .set_index(
-                        [
-                            "mes",
-                            "id_subsistema",
-                        ]
-                    )
-                    .reindex(
-                        indice_completo,
-                        fill_value=0.0,
-                    )
-                    .reset_index()
-                )
-    
-                rotulos_subsistemas = {
-                    "N": "Norte",
-                    "NE": "Nordeste",
-                    "SE": "Sudeste/Centro-Oeste",
-                    "S": "Sul",
-                }
-                
-                cores_subsistemas = {
-                    "N": "#86BBD8",
-                    "NE": "#2F6690",
-                    "SE": "#3FA7A3",
-                    "S": "#8172B3",
-                }
-                
-                dados_plot_mensal = (
-                    base_mensal_completa
-                    .copy()
-                )
-                
-                dados_plot_mensal["mes_rotulo"] = (
-                    dados_plot_mensal["mes"]
-                    .dt.strftime("%m/%Y")
-                )
-                
-                dados_plot_mensal["subsistema_rotulo"] = (
-                    dados_plot_mensal["id_subsistema"]
-                    .map(
-                        rotulos_subsistemas
-                    )
-                )
-                
-                ordem_meses = (
-                    dados_plot_mensal[
-                        [
-                            "mes",
-                            "mes_rotulo",
-                        ]
-                    ]
-                    .drop_duplicates()
-                    .sort_values(
-                        "mes"
-                    )[
-                        "mes_rotulo"
-                    ]
-                    .tolist()
-                )
-                
-                ordem_subsistemas_rotulos = [
-                    "Norte",
-                    "Nordeste",
-                    "Sudeste/Centro-Oeste",
-                    "Sul",
-                ]
-                
-                cores_subsistemas_rotulos = {
-                    rotulos_subsistemas[codigo]: cor
-                    for codigo, cor
-                    in cores_subsistemas.items()
-                }
-                
-                fig_mensal = px.bar(
-                    dados_plot_mensal,
-                    x="mes_rotulo",
-                    y="curtailment_gwh",
-                    color="subsistema_rotulo",
-                    category_orders={
-                        "mes_rotulo": ordem_meses,
-                        "subsistema_rotulo": (
-                            ordem_subsistemas_rotulos
-                        ),
-                    },
-                    color_discrete_map=(
-                        cores_subsistemas_rotulos
-                    ),
-                    labels={
-                        "mes_rotulo": "Mês",
-                        "curtailment_gwh": (
-                            "Curtailment (GWh)"
-                        ),
-                        "subsistema_rotulo": (
-                            "Subsistema"
-                        ),
-                    },
-                    custom_data=[
-                        "subsistema_rotulo",
-                    ],
-                )
-                
-                fig_mensal.update_traces(
-                    marker_line_color="#FFFFFF",
-                    marker_line_width=0.7,
-                    hovertemplate=(
-                        "<b>%{customdata[0]}</b>"
-                        "<br>Mês: %{x}"
-                        "<br>Curtailment: %{y:,.2f} GWh"
-                        "<extra></extra>"
-                    ),
-                )
-                
-                fig_mensal.update_layout(
-                    barmode="stack",
-                    height=325,
-                    margin={
-                        "l": 10,
-                        "r": 10,
-                        "t": 52,
-                        "b": 10,
-                    },
-                    paper_bgcolor="rgba(0,0,0,0)",
-                    plot_bgcolor="rgba(0,0,0,0)",
-                    font={
-                        "family": (
-                            "Segoe UI, Arial, sans-serif"
-                        ),
-                        "color": "#334155",
-                        "size": 12,
-                    },
-                    legend={
-                        "title": {
-                            "text": "",
-                        },
-                        "orientation": "h",
-                        "yanchor": "bottom",
-                        "y": 1.02,
-                        "xanchor": "center",
-                        "x": 0.5,
-                        "font": {
-                            "size": 13,
-                            "color": "#334155",
-                        },
-                    },
-                    hoverlabel={
-                        "bgcolor": "#FFFFFF",
-                        "bordercolor": "#D9E2EC",
-                        "font": {
-                            "color": "#102D57",
-                            "size": 12,
-                        },
-                    },
-                    bargap=0.25,
-                )
-                
-                fig_mensal.update_xaxes(
-                    title=None,
-                    showgrid=False,
-                    showline=False,
-                    tickfont={
-                        "size": 11,
-                        "color": "#64748B",
-                    },
-                    fixedrange=True,
-                )
-                
-                fig_mensal.update_yaxes(
-                    title="Curtailment (GWh)",
-                    gridcolor="rgba(148, 163, 184, 0.20)",
-                    griddash="dot",
-                    zeroline=False,
-                    showline=False,
-                    tickfont={
-                        "size": 10,
-                        "color": "#64748B",
-                    },
-                    title_font={
-                        "size": 11,
-                        "color": "#475569",
-                    },
-                    tickformat=",.0f",
-                    fixedrange=True,
-                )
-                
-                st.plotly_chart(
-                    fig_mensal,
-                    width="stretch",
-                    height=325,
-                    config={
-                        "displayModeBar": False,
-                        "responsive": True,
-                    },
-                    key=(
-                        "grafico_mensal_"
-                        f"{tipo_mensal_codigo}"
-                    ),
-                )
-    
-    
-        with coluna_grafico_participacao:
-            with st.container(
-                border=True,
-                key="card_grafico_participacao",
-            ):
-                rotulo_tipo_participacao = {
-                    "TODOS": "Todos os tipos",
-                    "ENE": "Energético",
-                    "REL": "Elétrico",
-                    "CNF": "Confiabilidade",
-                }.get(
-                    tipo_mensal_codigo,
-                    tipo_mensal_rotulo,
-                )
-                
-                titulo_participacao_html = (
-                    '<div class="cabecalho-card-grafico">'
-                    '<div class="titulo-card-grafico">'
-                    'Participação do curtailment'
-                    '</div>'
-                    '<span class="selo-tipo-curtailment">'
-                    f'{rotulo_tipo_participacao}'
-                    '</span>'
-                    '</div>'
-                )
-                
-                st.markdown(
-                    titulo_participacao_html,
-                    unsafe_allow_html=True,
-                )
-                
-                participacao_subsistemas = (
-                    base_mensal_completa
-                    .groupby(
-                        "id_subsistema",
-                        as_index=False,
-                        observed=True,
-                    )
-                    .agg(
-                        curtailment_gwh=(
-                            "curtailment_gwh",
-                            "sum",
-                        )
-                    )
-                )
-        
-                participacao_subsistemas[
-                    "subsistema_rotulo"
-                ] = (
-                    participacao_subsistemas[
-                        "id_subsistema"
-                    ]
-                    .map(
-                        rotulos_subsistemas
-                    )
-                )
-        
-                participacao_subsistemas = (
-                    participacao_subsistemas[
-                        participacao_subsistemas[
-                            "curtailment_gwh"
-                        ] > 0
-                    ]
-                    .copy()
-                )
-        
-                curtailment_total_gwh = (
-                    participacao_subsistemas[
-                        "curtailment_gwh"
-                    ]
-                    .sum()
-                )
-        
-                if curtailment_total_gwh > 0:
-                    participacao_subsistemas[
-                        "participacao_pct"
-                    ] = (
-                        100
-                        * participacao_subsistemas[
-                            "curtailment_gwh"
-                        ]
-                        / curtailment_total_gwh
-                    )
-    
-                    ordem_codigos_subsistemas = [
-                        "N",
-                        "NE",
-                        "SE",
-                        "S",
-                    ]
-                    
-                    participacao_subsistemas[
-                        "id_subsistema"
-                    ] = pd.Categorical(
-                        participacao_subsistemas[
-                            "id_subsistema"
-                        ],
-                        categories=ordem_codigos_subsistemas,
-                        ordered=True,
-                    )
-                    
-                    participacao_subsistemas = (
-                        participacao_subsistemas
-                        .sort_values(
-                            "id_subsistema"
-                        )
-                        .reset_index(
-                            drop=True
-                        )
-                    )
-                    
-                    limite_rotulo_externo = 5.0
-    
-                    participacoes = (
-                        participacao_subsistemas[
-                            "participacao_pct"
-                        ]
-                        .fillna(0.0)
-                        .astype(float)
-                        .tolist()
-                    )
-    
-                    nomes_subsistemas = (
-                        participacao_subsistemas[
-                            "subsistema_rotulo"
-                        ]
-                        .astype(str)
-                        .tolist()
-                    )
-                    
-                    posicoes_rotulos = [
+            
+                with coluna_grafico_mensal:
+                    with st.container(
+                        border=True,
+                        key="card_grafico_mensal",
+                    ):
                         (
-                            "inside"
-                            if participacao >= 5.0
-                            else "outside"
+                            coluna_titulo,
+                            coluna_tipo,
+                        ) = st.columns(
+                            [
+                                4,
+                                1.15,
+                            ],
+                            vertical_alignment="bottom",
                         )
-                        for participacao in participacoes
-                    ]
-                    
-                    textos_percentuais = [
-                        (
-                            f"{participacao:.1f}%"
-                            if participacao >= limite_rotulo_externo
-                            else (
-                                f"{subsistema}<br>{participacao:.1f}%"
+                
+                        with coluna_titulo:
+                            st.markdown(
+                                """
+                                <div class="titulo-card-grafico">
+                                    Curtailment mensal por subsistema
+                                </div>
+                                """,
+                                unsafe_allow_html=True,
                             )
-                        )
-                        for subsistema, participacao
-                        in zip(
-                            nomes_subsistemas,
-                            participacoes,
-                        )
-                    ]
-                    
-                    destaque_fatias = [
-                        0.0
-                        for _ in participacoes
-                    ]
-        
-                    fig_participacao = px.pie(
-                        participacao_subsistemas,
-                        names="subsistema_rotulo",
-                        values="curtailment_gwh",
-                        hole=0.62,
-                        category_orders={
-                            "subsistema_rotulo": (
-                                ordem_subsistemas_rotulos
-                            ),
-                        },
-                        color="subsistema_rotulo",
-                        color_discrete_map=(
-                            cores_subsistemas_rotulos
-                        ),
-                    )
-        
-                    fig_participacao.update_traces(
-                        sort=False,
-                        direction="clockwise",
-                        rotation=0,
-                        domain={
-                            "x": [
-                                0.0,
-                                1.0,
-                            ],
-                            "y": [
-                                0.24,
-                                1.0,
-                            ],
-                        },
-                        marker={
-                            "line": {
-                                "color": "#FFFFFF",
-                                "width": 0.5,
-                            },
-                        },
-                        text=textos_percentuais,
-                        textinfo="text",
-                        textposition=posicoes_rotulos,
-                        insidetextorientation="horizontal",
-                        insidetextfont={
-                            "size": 12,
-                            "color": "#FFFFFF",
-                        },
-                        outsidetextfont={
-                            "size": 11,
-                            "color": "#334155",
-                        },
-                        hovertemplate=(
-                            "<b>%{label}</b>"
-                            "<br>Curtailment: %{value:,.2f} GWh"
-                            "<br>Participação: %{percent:.1%}"
-                            "<extra></extra>"
-                        ),
-                        automargin=True,
-                    )
-        
-                    total_formatado = (
-                        f"{curtailment_total_gwh:,.1f}"
-                        .replace(
-                            ",",
-                            "X",
-                        )
-                        .replace(
-                            ".",
-                            ",",
-                        )
-                        .replace(
-                            "X",
-                            ".",
-                        )
-                    )
-        
-                    fig_participacao.update_layout(
-                        height=365,
-                        margin={
-                            "l": 55,
-                            "r": 55,
-                            "t": 55,
-                            "b": 65,
-                        },
-                        uniformtext={
-                            "minsize": 9,
-                            "mode": "show",
-                        },
-                        paper_bgcolor="rgba(0,0,0,0)",
-                        plot_bgcolor="rgba(0,0,0,0)",
-                        font={
-                            "family": (
-                                "Segoe UI, Arial, sans-serif"
-                            ),
-                            "color": "#334155",
-                            "size": 12,
-                        },
-                        legend={
-                            "title": {
-                                "text": "",
-                            },
-                            "orientation": "h",
-                            "yanchor": "bottom",
-                            "y": 0.0,
-                            "xanchor": "center",
-                            "x": 0.5,
-                            "font": {
-                                "size": 12,
-                                "color": "#334155",
-                            },
-                            "itemsizing": "constant",
-                            "traceorder": "normal",
-                            "entrywidth": 105,
-                            "entrywidthmode": "pixels",
-                        },
-                        hoverlabel={
-                            "bgcolor": "#FFFFFF",
-                            "bordercolor": "#D9E2EC",
-                            "font": {
-                                "color": "#102D57",
-                                "size": 12,
-                            },
-                        },
-                        annotations=[
-                            {
-                                "text": (
-                                    f"<b>{total_formatado}</b>"
-                                    "<br>"
-                                    "<span style='font-size:11px'>"
-                                    "GWh no período"
-                                    "</span>"
-                                ),
-                                "x": 0.5,
-                                "y": 0.62,
-                                "showarrow": False,
-                                "align": "center",
-                                "font": {
-                                    "size": 16,
-                                    "color": "#102D57",
-                                },
-                            }
-                        ],
-                    )
-        
-                    st.plotly_chart(
-                        fig_participacao,
-                        width="stretch",
-                        height=325,
-                        config={
-                            "displayModeBar": False,
-                            "responsive": True,
-                        },
-                        key=(
-                            "grafico_participacao_"
-                            f"{tipo_mensal_codigo}"
-                        ),
-                    )
-        
-                else:
-                    st.info(
-                        "Não há valores de curtailment para "
-                        "o tipo selecionado."
-                    )
-
-    (
-        coluna_heatmap,
-        coluna_direita_inferior,
-    ) = st.columns(
-        [
-            1.75,
-            1,
-        ],
-        gap="medium",
-    )
-    
-    with coluna_heatmap:
-            with st.container(
-                border=True,
-                key="card_heatmap_subsistemas",
-            ):
-                (
-                    coluna_titulo_heatmap,
-                    coluna_tipo_heatmap,
-                ) = st.columns(
-                    [
-                        5,
-                        1.15,
-                    ],
-                    vertical_alignment="center",
-                )
-            
-                with coluna_titulo_heatmap:
-                    st.html(
-                        """
-                        <div class="titulo-card-grafico">
-                            Perfil horário de curtailment
-                        </div>
-                        """
-                    )
-            
-                with coluna_tipo_heatmap:
-                    tipo_heatmap_rotulo = st.selectbox(
-                        "Tipo de curtailment do perfil horário",
-                        options=[
-                            "Todos",
-                            "Energético",
-                            "Elétrico",
-                            "Confiabilidade",
-                        ],
-                        key="subsistemas_tipo_heatmap",
-                        label_visibility="collapsed",
-                    )
-            
-                tipo_heatmap_codigo = TIPOS_CURTAILMENT[
-                    tipo_heatmap_rotulo
-                ]
-            
-                # ========================================================
-                # PREPARAÇÃO DOS DADOS DO HEATMAP
-                # ========================================================
-            
-                try:
-                    tabela_heatmap = (
-                        preparar_perfil_horario_curtailment(
-                            df=df_curtailment_subsistemas,
-                            tipo_curtailment=(
-                                tipo_heatmap_codigo
-                            ),
-                        )
-                    )
-            
-                except (
-                    TypeError,
-                    ValueError,
-                    KeyError,
-                ) as erro:
-                    st.warning(
-                        "Não foi possível preparar o perfil horário "
-                        "de curtailment."
-                    )
-            
-                    st.caption(
-                        str(erro)
-                    )
-            
-                    tabela_heatmap = pd.DataFrame(
-                        0.0,
-                        index=[
+                
+                        with coluna_tipo:
+                            tipo_mensal_rotulo = st.selectbox(
+                                "Tipo de curtailment",
+                                options=[
+                                    "Todos",
+                                    "Energético",
+                                    "Elétrico",
+                                    "Confiabilidade",
+                                ],
+                                key="subsistemas_tipo_mensal",
+                                label_visibility="collapsed",
+                            )
+                
+                        tipo_mensal_codigo = TIPOS_CURTAILMENT[
+                            tipo_mensal_rotulo
+                        ]
+                
+                        try:
+                            base_mensal = (
+                                preparar_curtailment_mensal_subsistemas(
+                                    df=df_curtailment_subsistemas,
+                                    tipo_curtailment=tipo_mensal_codigo,
+                                )
+                            )
+                
+                        except (
+                            TypeError,
+                            ValueError,
+                            KeyError,
+                        ) as erro:
+                            st.warning(
+                                "Não foi possível preparar o curtailment "
+                                "mensal para o tipo selecionado."
+                            )
+                
+                            st.caption(
+                                str(erro)
+                            )
+                
+                            base_mensal = pd.DataFrame(
+                                columns=[
+                                    "mes",
+                                    "id_subsistema",
+                                    "curtailment_gwh",
+                                ]
+                            )
+                
+                        ordem_subsistemas = [
                             "N",
                             "NE",
                             "SE",
                             "S",
-                        ],
-                        columns=range(24),
-                    )
+                        ]
+                
+                        data_inicial = pd.Timestamp(
+                            year=filtros_subsistemas[
+                                "ano_inicial"
+                            ],
+                            month=filtros_subsistemas[
+                                "mes_inicial"
+                            ],
+                            day=1,
+                        )
+                
+                        data_final = pd.Timestamp(
+                            year=filtros_subsistemas[
+                                "ano_final"
+                            ],
+                            month=filtros_subsistemas[
+                                "mes_final"
+                            ],
+                            day=1,
+                        )
+                
+                        meses_disponiveis = pd.date_range(
+                            start=data_inicial,
+                            end=data_final,
+                            freq="MS",
+                        )
+                
+                        indice_completo = pd.MultiIndex.from_product(
+                            [
+                                meses_disponiveis,
+                                ordem_subsistemas,
+                            ],
+                            names=[
+                                "mes",
+                                "id_subsistema",
+                            ],
+                        )
+                
+                        base_mensal_completa = (
+                            base_mensal
+                            .set_index(
+                                [
+                                    "mes",
+                                    "id_subsistema",
+                                ]
+                            )
+                            .reindex(
+                                indice_completo,
+                                fill_value=0.0,
+                            )
+                            .reset_index()
+                        )
             
-                # ========================================================
-                # RÓTULOS PARA EXIBIÇÃO
-                # ========================================================
+                        rotulos_subsistemas = {
+                            "N": "N",
+                            "NE": "NE",
+                            "SE": "SE",
+                            "S": "S",
+                        }
+                        
+                        cores_subsistemas = {
+                            "N": "#86BBD8",
+                            "NE": "#2F6690",
+                            "SE": "#3FA7A3",
+                            "S": "#8172B3",
+                        }
+                        
+                        dados_plot_mensal = (
+                            base_mensal_completa
+                            .copy()
+                        )
+                        
+                        dados_plot_mensal["mes_rotulo"] = (
+                            dados_plot_mensal["mes"]
+                            .dt.strftime("%m/%Y")
+                        )
+                        
+                        dados_plot_mensal["subsistema_rotulo"] = (
+                            dados_plot_mensal["id_subsistema"]
+                            .map(
+                                rotulos_subsistemas
+                            )
+                        )
+                        
+                        ordem_meses = (
+                            dados_plot_mensal[
+                                [
+                                    "mes",
+                                    "mes_rotulo",
+                                ]
+                            ]
+                            .drop_duplicates()
+                            .sort_values(
+                                "mes"
+                            )[
+                                "mes_rotulo"
+                            ]
+                            .tolist()
+                        )
+                        
+                        ordem_subsistemas_rotulos = [
+                            "N",
+                            "NE",
+                            "SE",
+                            "S",
+                        ]
+                        
+                        cores_subsistemas_rotulos = {
+                            rotulos_subsistemas[codigo]: cor
+                            for codigo, cor
+                            in cores_subsistemas.items()
+                        }
+                        
+                        fig_mensal = px.bar(
+                            dados_plot_mensal,
+                            x="mes_rotulo",
+                            y="curtailment_gwh",
+                            color="subsistema_rotulo",
+                            category_orders={
+                                "mes_rotulo": ordem_meses,
+                                "subsistema_rotulo": (
+                                    ordem_subsistemas_rotulos
+                                ),
+                            },
+                            color_discrete_map=(
+                                cores_subsistemas_rotulos
+                            ),
+                            labels={
+                                "mes_rotulo": "Mês",
+                                "curtailment_gwh": (
+                                    "Curtailment (GWh)"
+                                ),
+                                "subsistema_rotulo": (
+                                    "Subsistema"
+                                ),
+                            },
+                            custom_data=[
+                                "subsistema_rotulo",
+                            ],
+                        )
+                        
+                        fig_mensal.update_traces(
+                            marker_line_color="#FFFFFF",
+                            marker_line_width=0.7,
+                            hovertemplate=(
+                                "<b>%{customdata[0]}</b>"
+                                "<br>Mês: %{x}"
+                                "<br>Curtailment: %{y:,.2f} GWh"
+                                "<extra></extra>"
+                            ),
+                        )
+                        
+                        fig_mensal.update_layout(
+                            barmode="stack",
+                            height=325,
+                            margin={
+                                "l": 10,
+                                "r": 10,
+                                "t": 52,
+                                "b": 10,
+                            },
+                            paper_bgcolor="rgba(0,0,0,0)",
+                            plot_bgcolor="rgba(0,0,0,0)",
+                            font={
+                                "family": (
+                                    "Segoe UI, Arial, sans-serif"
+                                ),
+                                "color": "#334155",
+                                "size": 12,
+                            },
+                            legend={
+                                "title": {
+                                    "text": "",
+                                },
+                                "orientation": "h",
+                                "yanchor": "bottom",
+                                "y": 1.02,
+                                "xanchor": "center",
+                                "x": 0.5,
+                                "font": {
+                                    "size": 13,
+                                    "color": "#334155",
+                                },
+                            },
+                            hoverlabel={
+                                "bgcolor": "#FFFFFF",
+                                "bordercolor": "#D9E2EC",
+                                "font": {
+                                    "color": "#102D57",
+                                    "size": 12,
+                                },
+                            },
+                            bargap=0.25,
+                        )
+                        
+                        fig_mensal.update_xaxes(
+                            title=None,
+                            showgrid=False,
+                            showline=False,
+                            tickfont={
+                                "size": 11,
+                                "color": "#64748B",
+                            },
+                            fixedrange=True,
+                        )
+                        
+                        fig_mensal.update_yaxes(
+                            title="Curtailment (GWh)",
+                            gridcolor="rgba(148, 163, 184, 0.20)",
+                            griddash="dot",
+                            zeroline=False,
+                            showline=False,
+                            tickfont={
+                                "size": 10,
+                                "color": "#64748B",
+                            },
+                            title_font={
+                                "size": 11,
+                                "color": "#475569",
+                            },
+                            tickformat=",.0f",
+                            fixedrange=True,
+                        )
+                        
+                        st.plotly_chart(
+                            fig_mensal,
+                            width="stretch",
+                            height=325,
+                            config={
+                                "displayModeBar": False,
+                                "responsive": True,
+                            },
+                            key=(
+                                "grafico_mensal_"
+                                f"{tipo_mensal_codigo}"
+                            ),
+                        )
             
-                rotulos_heatmap_subsistemas = {
-                    "N": "Norte",
-                    "NE": "Nordeste",
-                    "SE": "Sudeste/Centro-Oeste",
-                    "S": "Sul",
-                }
             
-                tabela_heatmap_plot = tabela_heatmap.copy()
+                with coluna_grafico_participacao:
+                    with st.container(
+                        border=True,
+                        key="card_grafico_participacao",
+                    ):
+                        rotulo_tipo_participacao = {
+                            "TODOS": "Todos os tipos",
+                            "ENE": "Energético",
+                            "REL": "Elétrico",
+                            "CNF": "Confiabilidade",
+                        }.get(
+                            tipo_mensal_codigo,
+                            tipo_mensal_rotulo,
+                        )
+                        
+                        titulo_participacao_html = (
+                            '<div class="cabecalho-card-grafico">'
+                            '<div class="titulo-card-grafico">'
+                            'Participação do curtailment'
+                            '</div>'
+                            '<span class="selo-tipo-curtailment">'
+                            f'{rotulo_tipo_participacao}'
+                            '</span>'
+                            '</div>'
+                        )
+                        
+                        st.markdown(
+                            titulo_participacao_html,
+                            unsafe_allow_html=True,
+                        )
+                        
+                        participacao_subsistemas = (
+                            base_mensal_completa
+                            .groupby(
+                                "id_subsistema",
+                                as_index=False,
+                                observed=True,
+                            )
+                            .agg(
+                                curtailment_gwh=(
+                                    "curtailment_gwh",
+                                    "sum",
+                                )
+                            )
+                        )
+                
+                        participacao_subsistemas[
+                            "subsistema_rotulo"
+                        ] = (
+                            participacao_subsistemas[
+                                "id_subsistema"
+                            ]
+                            .map(
+                                rotulos_subsistemas
+                            )
+                        )
+                
+                        participacao_subsistemas = (
+                            participacao_subsistemas[
+                                participacao_subsistemas[
+                                    "curtailment_gwh"
+                                ] > 0
+                            ]
+                            .copy()
+                        )
+                
+                        curtailment_total_gwh = (
+                            participacao_subsistemas[
+                                "curtailment_gwh"
+                            ]
+                            .sum()
+                        )
+                
+                        if curtailment_total_gwh > 0:
+                            participacao_subsistemas[
+                                "participacao_pct"
+                            ] = (
+                                100
+                                * participacao_subsistemas[
+                                    "curtailment_gwh"
+                                ]
+                                / curtailment_total_gwh
+                            )
             
-                tabela_heatmap_plot.index = [
-                    rotulos_heatmap_subsistemas.get(
-                        subsistema,
-                        subsistema,
-                    )
-                    for subsistema
-                    in tabela_heatmap_plot.index
-                ]
+                            ordem_codigos_subsistemas = [
+                                "N",
+                                "NE",
+                                "SE",
+                                "S",
+                            ]
+                            
+                            participacao_subsistemas[
+                                "id_subsistema"
+                            ] = pd.Categorical(
+                                participacao_subsistemas[
+                                    "id_subsistema"
+                                ],
+                                categories=ordem_codigos_subsistemas,
+                                ordered=True,
+                            )
+                            
+                            participacao_subsistemas = (
+                                participacao_subsistemas
+                                .sort_values(
+                                    "id_subsistema"
+                                )
+                                .reset_index(
+                                    drop=True
+                                )
+                            )
+                            
+                            limite_rotulo_externo = 5.0
             
-                # ========================================================
-                # CONSTRUÇÃO DO HEATMAP
-                # ========================================================
+                            participacoes = (
+                                participacao_subsistemas[
+                                    "participacao_pct"
+                                ]
+                                .fillna(0.0)
+                                .astype(float)
+                                .tolist()
+                            )
             
-                fig_heatmap = px.imshow(
-                    tabela_heatmap_plot,
-                    x=list(
-                        range(24)
-                    ),
-                    y=tabela_heatmap_plot.index,
-                    color_continuous_scale=[
-                        [
-                            0.00,
-                            "#FFF7F9",
-                        ],
-                        [
-                            0.15,
-                            "#FCE1E8",
-                        ],
-                        [
-                            0.35,
-                            "#F7BAC9",
-                        ],
-                        [
-                            0.55,
-                            "#ED809B",
-                        ],
-                        [
-                            0.75,
-                            "#D94C70",
-                        ],
-                        [
-                            1.00,
-                            "#A61E4D",
-                        ],
+                            nomes_subsistemas = (
+                                participacao_subsistemas[
+                                    "subsistema_rotulo"
+                                ]
+                                .astype(str)
+                                .tolist()
+                            )
+                            
+                            posicoes_rotulos = [
+                                (
+                                    "inside"
+                                    if participacao >= 5.0
+                                    else "outside"
+                                )
+                                for participacao in participacoes
+                            ]
+                            
+                            textos_percentuais = [
+                                (
+                                    f"{participacao:.1f}%"
+                                    if participacao >= limite_rotulo_externo
+                                    else (
+                                        f"{subsistema}<br>{participacao:.1f}%"
+                                    )
+                                )
+                                for subsistema, participacao
+                                in zip(
+                                    nomes_subsistemas,
+                                    participacoes,
+                                )
+                            ]
+                            
+                            destaque_fatias = [
+                                0.0
+                                for _ in participacoes
+                            ]
+                
+                            fig_participacao = px.pie(
+                                participacao_subsistemas,
+                                names="subsistema_rotulo",
+                                values="curtailment_gwh",
+                                hole=0.62,
+                                category_orders={
+                                    "subsistema_rotulo": (
+                                        ordem_subsistemas_rotulos
+                                    ),
+                                },
+                                color="subsistema_rotulo",
+                                color_discrete_map=(
+                                    cores_subsistemas_rotulos
+                                ),
+                            )
+                
+                            fig_participacao.update_traces(
+                                sort=False,
+                                direction="clockwise",
+                                rotation=0,
+                                domain={
+                                    "x": [
+                                        0.0,
+                                        1.0,
+                                    ],
+                                    "y": [
+                                        0.24,
+                                        1.0,
+                                    ],
+                                },
+                                marker={
+                                    "line": {
+                                        "color": "#FFFFFF",
+                                        "width": 0.5,
+                                    },
+                                },
+                                text=textos_percentuais,
+                                textinfo="text",
+                                textposition=posicoes_rotulos,
+                                insidetextorientation="horizontal",
+                                insidetextfont={
+                                    "size": 12,
+                                    "color": "#FFFFFF",
+                                },
+                                outsidetextfont={
+                                    "size": 11,
+                                    "color": "#334155",
+                                },
+                                hovertemplate=(
+                                    "<b>%{label}</b>"
+                                    "<br>Curtailment: %{value:,.2f} GWh"
+                                    "<br>Participação: %{percent:.1%}"
+                                    "<extra></extra>"
+                                ),
+                                automargin=True,
+                            )
+                
+                            total_formatado = (
+                                f"{curtailment_total_gwh:,.1f}"
+                                .replace(
+                                    ",",
+                                    "X",
+                                )
+                                .replace(
+                                    ".",
+                                    ",",
+                                )
+                                .replace(
+                                    "X",
+                                    ".",
+                                )
+                            )
+                
+                            fig_participacao.update_layout(
+                                height=365,
+                                margin={
+                                    "l": 55,
+                                    "r": 55,
+                                    "t": 55,
+                                    "b": 65,
+                                },
+                                uniformtext={
+                                    "minsize": 9,
+                                    "mode": "show",
+                                },
+                                paper_bgcolor="rgba(0,0,0,0)",
+                                plot_bgcolor="rgba(0,0,0,0)",
+                                font={
+                                    "family": (
+                                        "Segoe UI, Arial, sans-serif"
+                                    ),
+                                    "color": "#334155",
+                                    "size": 12,
+                                },
+                                legend={
+                                    "title": {
+                                        "text": "",
+                                    },
+                                    "orientation": "h",
+                                    "yanchor": "bottom",
+                                    "y": 0.0,
+                                    "xanchor": "center",
+                                    "x": 0.5,
+                                    "font": {
+                                        "size": 12,
+                                        "color": "#334155",
+                                    },
+                                    "itemsizing": "constant",
+                                    "traceorder": "normal",
+                                    "entrywidth": 105,
+                                    "entrywidthmode": "pixels",
+                                },
+                                hoverlabel={
+                                    "bgcolor": "#FFFFFF",
+                                    "bordercolor": "#D9E2EC",
+                                    "font": {
+                                        "color": "#102D57",
+                                        "size": 12,
+                                    },
+                                },
+                                annotations=[
+                                    {
+                                        "text": (
+                                            f"<b>{total_formatado}</b>"
+                                            "<br>"
+                                            "<span style='font-size:11px'>"
+                                            "GWh no período"
+                                            "</span>"
+                                        ),
+                                        "x": 0.5,
+                                        "y": 0.62,
+                                        "showarrow": False,
+                                        "align": "center",
+                                        "font": {
+                                            "size": 16,
+                                            "color": "#102D57",
+                                        },
+                                    }
+                                ],
+                            )
+                
+                            st.plotly_chart(
+                                fig_participacao,
+                                width="stretch",
+                                height=325,
+                                config={
+                                    "displayModeBar": False,
+                                    "responsive": True,
+                                },
+                                key=(
+                                    "grafico_participacao_"
+                                    f"{tipo_mensal_codigo}"
+                                ),
+                            )
+                
+                        else:
+                            st.info(
+                                "Não há valores de curtailment para "
+                                "o tipo selecionado."
+                            )
+        with st.container(
+            key="linha_inferior_graficos",
+            ):
+                (
+                    coluna_heatmap,
+                    coluna_direita_inferior,
+                ) = st.columns(
+                    [
+                        1.75,
+                        1,
                     ],
-                    aspect="auto",
-                    labels={
-                        "x": "Hora do dia",
-                        "y": "",
-                        "color": "MW médio",
-                    },
+                    gap="medium",
                 )
-            
-                fig_heatmap.update_traces(
-                    xgap=3,
-                    ygap=5,
-                    hovertemplate=(
-                        "<b>%{y}</b>"
-                        "<br>Hora: %{x}:00"
-                        "<br>Curtailment médio: "
-                        "%{z:,.2f} MW"
-                        "<extra></extra>"
-                    ),
-                )
-            
-                fig_heatmap.update_layout(
-                    height=300,
-                    margin={
-                        "l": 15,
-                        "r": 30,
-                        "t": 25,
-                        "b": 25,
-                    },
-                    paper_bgcolor="rgba(0,0,0,0)",
-                    plot_bgcolor="rgba(0,0,0,0)",
-                    font={
-                        "family": (
-                            "Segoe UI, Arial, sans-serif"
-                        ),
-                        "color": "#334155",
-                        "size": 12,
-                    },
-                    coloraxis_colorbar={
-                        "title": {
-                            "text": "MW médio",
-                            "side": "right",
-                        },
-                        "thickness": 13,
-                        "len": 0.78,
-                        "x": 1.01,
-                        "tickfont": {
-                            "size": 10,
-                            "color": "#64748B",
-                        },
-                    },
-                    hoverlabel={
-                        "bgcolor": "#FFFFFF",
-                        "bordercolor": "#D9E2EC",
-                        "font": {
-                            "color": "#102D57",
-                            "size": 12,
-                        },
-                    },
-                )
-            
-                fig_heatmap.update_xaxes(
-                    title="Hora do dia",
-                    tickmode="linear",
-                    dtick=1,
-                    side="bottom",
-                    showgrid=False,
-                    showline=False,
-                    tickfont={
-                        "size": 10,
-                        "color": "#64748B",
-                    },
-                    title_font={
-                        "size": 11,
-                        "color": "#475569",
-                    },
-                    fixedrange=True,
-                )
-            
-                fig_heatmap.update_yaxes(
-                    title=None,
-                    showgrid=False,
-                    showline=False,
-                    tickfont={
-                        "size": 12,
-                        "color": "#334155",
-                    },
-                    autorange="reversed",
-                    fixedrange=True,
-                )
-            
-                st.plotly_chart(
-                    fig_heatmap,
-                    width="stretch",
-                    height=300,
-                    config={
-                        "displayModeBar": False,
-                        "responsive": True,
-                    },
-                    key=(
-                        "heatmap_subsistemas_"
-                        f"{tipo_heatmap_codigo}"
-                    ),
-                ) 
-            
-    
-    with coluna_direita_inferior:
-        pass         
+                
+                with coluna_heatmap:
+                        with st.container(
+                            border=True,
+                            key="card_heatmap_subsistemas",
+                        ):
+                            (
+                                coluna_titulo_heatmap,
+                                coluna_tipo_heatmap,
+                            ) = st.columns(
+                                [
+                                    5,
+                                    1.15,
+                                ],
+                                vertical_alignment="center",
+                            )
+                        
+                            with coluna_titulo_heatmap:
+                                st.html(
+                                    """
+                                    <div class="titulo-card-grafico">
+                                        Perfil horário de curtailment
+                                    </div>
+                                    """
+                                )
+                        
+                            with coluna_tipo_heatmap:
+                                tipo_heatmap_rotulo = st.selectbox(
+                                    "Tipo de curtailment do perfil horário",
+                                    options=[
+                                        "Todos",
+                                        "Energético",
+                                        "Elétrico",
+                                        "Confiabilidade",
+                                    ],
+                                    key="subsistemas_tipo_heatmap",
+                                    label_visibility="collapsed",
+                                )
+                        
+                            tipo_heatmap_codigo = TIPOS_CURTAILMENT[
+                                tipo_heatmap_rotulo
+                            ]
+                        
+                            # ========================================================
+                            # PREPARAÇÃO DOS DADOS DO HEATMAP
+                            # ========================================================
+                        
+                            try:
+                                tabela_heatmap = (
+                                    preparar_perfil_horario_curtailment(
+                                        df=df_curtailment_subsistemas,
+                                        tipo_curtailment=(
+                                            tipo_heatmap_codigo
+                                        ),
+                                    )
+                                )
+                        
+                            except (
+                                TypeError,
+                                ValueError,
+                                KeyError,
+                            ) as erro:
+                                st.warning(
+                                    "Não foi possível preparar o perfil horário "
+                                    "de curtailment."
+                                )
+                        
+                                st.caption(
+                                    str(erro)
+                                )
+                        
+                                tabela_heatmap = pd.DataFrame(
+                                    0.0,
+                                    index=[
+                                        "N",
+                                        "NE",
+                                        "SE",
+                                        "S",
+                                    ],
+                                    columns=range(24),
+                                )
+                        
+                            # ========================================================
+                            # RÓTULOS PARA EXIBIÇÃO
+                            # ========================================================
+                        
+                            rotulos_heatmap_subsistemas = {
+                                "N": "N",
+                                "NE": "NE",
+                                "SE": "SE",
+                                "S": "S",
+                            }
+                        
+                            tabela_heatmap_plot = tabela_heatmap.copy()
+                        
+                            tabela_heatmap_plot.index = [
+                                rotulos_heatmap_subsistemas.get(
+                                    subsistema,
+                                    subsistema,
+                                )
+                                for subsistema
+                                in tabela_heatmap_plot.index
+                            ]
+                        
+                            # ========================================================
+                            # CONSTRUÇÃO DO HEATMAP
+                            # ========================================================
+                        
+                            fig_heatmap = px.imshow(
+                                tabela_heatmap_plot,
+                                x=list(
+                                    range(24)
+                                ),
+                                y=tabela_heatmap_plot.index,
+                                color_continuous_scale=[
+                                    [
+                                        0.00,
+                                        "#FFF7F9",
+                                    ],
+                                    [
+                                        0.15,
+                                        "#FCE1E8",
+                                    ],
+                                    [
+                                        0.35,
+                                        "#F7BAC9",
+                                    ],
+                                    [
+                                        0.55,
+                                        "#ED809B",
+                                    ],
+                                    [
+                                        0.75,
+                                        "#D94C70",
+                                    ],
+                                    [
+                                        1.00,
+                                        "#A61E4D",
+                                    ],
+                                ],
+                                aspect="auto",
+                                labels={
+                                    "x": "Hora do dia",
+                                    "y": "",
+                                    "color": "MW médio",
+                                },
+                            )
+                        
+                            fig_heatmap.update_traces(
+                                xgap=3,
+                                ygap=5,
+                                hovertemplate=(
+                                    "<b>%{y}</b>"
+                                    "<br>Hora: %{x}:00"
+                                    "<br>Curtailment médio: "
+                                    "%{z:,.2f} MW"
+                                    "<extra></extra>"
+                                ),
+                            )
+                        
+                            fig_heatmap.update_layout(
+                                height=300,
+                                margin={
+                                    "l": 5,
+                                    "r": 25,
+                                    "t": 20,
+                                    "b": 25,
+                                },
+                                paper_bgcolor="rgba(0,0,0,0)",
+                                plot_bgcolor="rgba(0,0,0,0)",
+                                font={
+                                    "family": (
+                                        "Segoe UI, Arial, sans-serif"
+                                    ),
+                                    "color": "#334155",
+                                    "size": 12,
+                                },
+                                coloraxis_colorbar={
+                                    "title": {
+                                        "text": "MW médio",
+                                        "side": "right",
+                                    },
+                                    "thickness": 13,
+                                    "len": 0.78,
+                                    "x": 1.01,
+                                    "tickfont": {
+                                        "size": 10,
+                                        "color": "#64748B",
+                                    },
+                                },
+                                hoverlabel={
+                                    "bgcolor": "#FFFFFF",
+                                    "bordercolor": "#D9E2EC",
+                                    "font": {
+                                        "color": "#102D57",
+                                        "size": 12,
+                                    },
+                                },
+                            )
+                        
+                            fig_heatmap.update_xaxes(
+                                title="Hora do dia",
+                                tickmode="linear",
+                                dtick=1,
+                                side="bottom",
+                                showgrid=False,
+                                showline=False,
+                                tickfont={
+                                    "size": 10,
+                                    "color": "#64748B",
+                                },
+                                title_font={
+                                    "size": 11,
+                                    "color": "#475569",
+                                },
+                                fixedrange=True,
+                            )
+                        
+                            fig_heatmap.update_yaxes(
+                                title=None,
+                                showgrid=False,
+                                showline=False,
+                                tickfont={
+                                    "size": 13,
+                                    "color": "#334155",
+                                },
+                                autorange="reversed",
+                                fixedrange=True,
+                            )
+                        
+                            st.plotly_chart(
+                                fig_heatmap,
+                                width="stretch",
+                                height=300,
+                                config={
+                                    "displayModeBar": False,
+                                    "responsive": True,
+                                },
+                                key=(
+                                    "heatmap_subsistemas_"
+                                    f"{tipo_heatmap_codigo}"
+                                ),
+                            ) 
+                        
+                
+                with coluna_direita_inferior:
+                    pass         
 
 @st.cache_data(
     show_spinner=False,
