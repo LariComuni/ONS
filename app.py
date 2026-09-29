@@ -2122,7 +2122,7 @@ def renderizar_pagina_subsistemas(
                         "l": 65,
                         "r": 65,
                         "t": 65,
-                        "b": 55,
+                        "b": 75,
                     },
                     uniformtext={
                     "minsize": 9,
@@ -2142,21 +2142,23 @@ def renderizar_pagina_subsistemas(
                         "size": 12,
                     },
                     legend={
-                            "title": {
-                                "text": "",
-                            },
-                            "orientation": "h",
-                            "yanchor": "top",
-                            "y": -0.03,
-                            "xanchor": "center",
-                            "x": 0.5,
-                            "font": {
-                                "size": 13,
-                                "color": "#334155",
-                            },
-                            "itemsizing": "constant",
-                            "traceorder": "normal",
+                        "title": {
+                            "text": "",
                         },
+                        "orientation": "h",
+                        "yanchor": "bottom",
+                        "y": -0.16,
+                        "xanchor": "center",
+                        "x": 0.5,
+                        "font": {
+                            "size": 13,
+                            "color": "#334155",
+                        },
+                        "itemsizing": "constant",
+                        "traceorder": "normal",
+                        "entrywidth": 95,
+                        "entrywidthmode": "pixels",
+                    },
                     hoverlabel={
                         "bgcolor": "#FFFFFF",
                         "bordercolor": "#D9E2EC",
