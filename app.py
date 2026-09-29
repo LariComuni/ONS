@@ -2259,7 +2259,7 @@ def renderizar_pagina_subsistemas(
         gap="medium",
     )
     
-        with coluna_heatmap:
+    with coluna_heatmap:
             with st.container(
                 border=True,
                 key="card_heatmap_subsistemas",
@@ -2500,11 +2500,11 @@ def renderizar_pagina_subsistemas(
                         "heatmap_subsistemas_"
                         f"{tipo_heatmap_codigo}"
                     ),
-                )
+                ) 
             
     
-        with coluna_direita_inferior:
-            pass      
+    with coluna_direita_inferior:
+        pass         
 
 @st.cache_data(
     show_spinner=False,
