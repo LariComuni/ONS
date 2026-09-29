@@ -1977,6 +1977,34 @@ def renderizar_pagina_subsistemas(
                     ]
                     / curtailment_total_gwh
                 )
+
+                ordem_codigos_subsistemas = [
+                    "N",
+                    "NE",
+                    "SE",
+                    "S",
+                ]
+                
+                participacao_subsistemas[
+                    "id_subsistema"
+                ] = pd.Categorical(
+                    participacao_subsistemas[
+                        "id_subsistema"
+                    ],
+                    categories=ordem_codigos_subsistemas,
+                    ordered=True,
+                )
+                
+                participacao_subsistemas = (
+                    participacao_subsistemas
+                    .sort_values(
+                        "id_subsistema"
+                    )
+                    .reset_index(
+                        drop=True
+                    )
+                )
+                
                 limite_rotulo_externo = 5.0
 
                 participacoes = (
@@ -1985,6 +2013,14 @@ def renderizar_pagina_subsistemas(
                     ]
                     .fillna(0.0)
                     .astype(float)
+                    .tolist()
+                )
+
+                nomes_subsistemas = (
+                    participacao_subsistemas[
+                        "subsistema_rotulo"
+                    ]
+                    .astype(str)
                     .tolist()
                 )
                 
@@ -2000,27 +2036,21 @@ def renderizar_pagina_subsistemas(
                 textos_percentuais = [
                     (
                         f"{participacao:.1f}%"
-                        if participacao >= 5.0
+                        if participacao >= limite_rotulo_externo
                         else (
                             f"{subsistema}<br>{participacao:.1f}%"
                         )
                     )
                     for subsistema, participacao
                     in zip(
-                        participacao_subsistemas[
-                            "subsistema_rotulo"
-                        ],
+                        nomes_subsistemas,
                         participacoes,
                     )
                 ]
                 
                 destaque_fatias = [
-                    (
-                        0.025
-                        if participacao < limite_rotulo_externo
-                        else 0.0
-                    )
-                    for participacao in participacoes
+                    0.0
+                    for _ in participacoes
                 ]
     
                 fig_participacao = px.pie(
@@ -2042,11 +2072,11 @@ def renderizar_pagina_subsistemas(
                 fig_participacao.update_traces(
                     sort=False,
                     direction="clockwise",
-                    pull=destaque_fatias,
+                    rotation=0,
                     marker={
                         "line": {
                             "color": "#FFFFFF",
-                            "width": 0.6,
+                            "width": 0.5,
                         },
                     },
                     text=textos_percentuais,
@@ -2089,9 +2119,9 @@ def renderizar_pagina_subsistemas(
                 fig_participacao.update_layout(
                     height=325,
                     margin={
-                        "l": 60,
-                        "r": 60,
-                        "t": 40,
+                        "l": 65,
+                        "r": 65,
+                        "t": 65,
                         "b": 55,
                     },
                     uniformtext={
@@ -2218,6 +2248,208 @@ def renderizar_pagina_subsistemas(
         tipo_heatmap_codigo = TIPOS_CURTAILMENT[
             tipo_heatmap_rotulo
         ]
+    
+        # ========================================================
+        # PREPARAÇÃO DOS DADOS DO HEATMAP
+        # ========================================================
+    
+        try:
+            tabela_heatmap = (
+                preparar_perfil_horario_curtailment(
+                    df=df_curtailment_subsistemas,
+                    tipo_curtailment=(
+                        tipo_heatmap_codigo
+                    ),
+                )
+            )
+    
+        except (
+            TypeError,
+            ValueError,
+            KeyError,
+        ) as erro:
+            st.warning(
+                "Não foi possível preparar o perfil horário "
+                "de curtailment."
+            )
+    
+            st.caption(
+                str(erro)
+            )
+    
+            tabela_heatmap = pd.DataFrame(
+                0.0,
+                index=[
+                    "N",
+                    "NE",
+                    "SE",
+                    "S",
+                ],
+                columns=range(24),
+            )
+    
+        # ========================================================
+        # RÓTULOS PARA EXIBIÇÃO
+        # ========================================================
+    
+        rotulos_heatmap_subsistemas = {
+            "N": "Norte",
+            "NE": "Nordeste",
+            "SE": "Sudeste/Centro-Oeste",
+            "S": "Sul",
+        }
+    
+        tabela_heatmap_plot = tabela_heatmap.copy()
+    
+        tabela_heatmap_plot.index = [
+            rotulos_heatmap_subsistemas.get(
+                subsistema,
+                subsistema,
+            )
+            for subsistema
+            in tabela_heatmap_plot.index
+        ]
+    
+        # ========================================================
+        # CONSTRUÇÃO DO HEATMAP
+        # ========================================================
+    
+        fig_heatmap = px.imshow(
+            tabela_heatmap_plot,
+            x=list(
+                range(24)
+            ),
+            y=tabela_heatmap_plot.index,
+            color_continuous_scale=[
+                [
+                    0.00,
+                    "#FFF7F9",
+                ],
+                [
+                    0.15,
+                    "#FCE1E8",
+                ],
+                [
+                    0.35,
+                    "#F7BAC9",
+                ],
+                [
+                    0.55,
+                    "#ED809B",
+                ],
+                [
+                    0.75,
+                    "#D94C70",
+                ],
+                [
+                    1.00,
+                    "#A61E4D",
+                ],
+            ],
+            aspect="auto",
+            labels={
+                "x": "Hora do dia",
+                "y": "",
+                "color": "MW médio",
+            },
+        )
+    
+        fig_heatmap.update_traces(
+            xgap=3,
+            ygap=5,
+            hovertemplate=(
+                "<b>%{y}</b>"
+                "<br>Hora: %{x}:00"
+                "<br>Curtailment médio: "
+                "%{z:,.2f} MW"
+                "<extra></extra>"
+            ),
+        )
+    
+        fig_heatmap.update_layout(
+            height=330,
+            margin={
+                "l": 15,
+                "r": 30,
+                "t": 25,
+                "b": 25,
+            },
+            paper_bgcolor="rgba(0,0,0,0)",
+            plot_bgcolor="rgba(0,0,0,0)",
+            font={
+                "family": (
+                    "Segoe UI, Arial, sans-serif"
+                ),
+                "color": "#334155",
+                "size": 12,
+            },
+            coloraxis_colorbar={
+                "title": {
+                    "text": "MW médio",
+                    "side": "right",
+                },
+                "thickness": 13,
+                "len": 0.78,
+                "x": 1.01,
+                "tickfont": {
+                    "size": 10,
+                    "color": "#64748B",
+                },
+            },
+            hoverlabel={
+                "bgcolor": "#FFFFFF",
+                "bordercolor": "#D9E2EC",
+                "font": {
+                    "color": "#102D57",
+                    "size": 12,
+                },
+            },
+        )
+    
+        fig_heatmap.update_xaxes(
+            title="Hora do dia",
+            tickmode="linear",
+            dtick=1,
+            side="bottom",
+            showgrid=False,
+            showline=False,
+            tickfont={
+                "size": 10,
+                "color": "#64748B",
+            },
+            title_font={
+                "size": 11,
+                "color": "#475569",
+            },
+            fixedrange=True,
+        )
+    
+        fig_heatmap.update_yaxes(
+            title=None,
+            showgrid=False,
+            showline=False,
+            tickfont={
+                "size": 12,
+                "color": "#334155",
+            },
+            autorange="reversed",
+            fixedrange=True,
+        )
+    
+        st.plotly_chart(
+            fig_heatmap,
+            width="stretch",
+            height=330,
+            config={
+                "displayModeBar": False,
+                "responsive": True,
+            },
+            key=(
+                "heatmap_subsistemas_"
+                f"{tipo_heatmap_codigo}"
+            ),
+        )
+        
 
             
 
