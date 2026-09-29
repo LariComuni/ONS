@@ -1976,31 +1976,49 @@ def renderizar_pagina_subsistemas(
                     ]
                     / curtailment_total_gwh
                 )
-                
-                limite_rotulo_externo = 5.0
 
-                posicoes_rotulos = [
-                    (
-                        "outside"
-                        if participacao < limite_rotulo_externo
-                        else "inside"
-                    )
-                    for participacao
-                    in participacao_subsistemas[
+                participacoes = (
+                    participacao_subsistemas[
                         "participacao_pct"
                     ]
+                    .fillna(0.0)
+                    .astype(float)
+                    .tolist()
+                )
+                
+                posicoes_rotulos = [
+                    (
+                        "inside"
+                        if participacao >= 5.0
+                        else "outside"
+                    )
+                    for participacao in participacoes
+                ]
+                
+                textos_percentuais = [
+                    (
+                        f"{participacao:.1f}%"
+                        if participacao >= 5.0
+                        else (
+                            f"{subsistema}<br>{participacao:.1f}%"
+                        )
+                    )
+                    for subsistema, participacao
+                    in zip(
+                        participacao_subsistemas[
+                            "subsistema_rotulo"
+                        ],
+                        participacoes,
+                    )
                 ]
                 
                 destaque_fatias = [
                     (
-                        0.04
+                        0.025
                         if participacao < limite_rotulo_externo
-                        else 0
+                        else 0.0
                     )
-                    for participacao
-                    in participacao_subsistemas[
-                        "participacao_pct"
-                    ]
+                    for participacao in participacoes
                 ]
     
                 fig_participacao = px.pie(
@@ -2026,18 +2044,19 @@ def renderizar_pagina_subsistemas(
                     marker={
                         "line": {
                             "color": "#FFFFFF",
-                            "width": 2,
+                            "width": 0.6,
                         },
                     },
-                    textinfo="percent",
-                    texttemplate="%{percent:.1%}",
+                    text=textos_percentuais,
+                    textinfo="text",
                     textposition=posicoes_rotulos,
+                    insidetextorientation="horizontal",
                     insidetextfont={
                         "size": 12,
                         "color": "#FFFFFF",
                     },
                     outsidetextfont={
-                        "size": 12,
+                        "size": 11,
                         "color": "#334155",
                     },
                     hovertemplate=(
@@ -2046,6 +2065,7 @@ def renderizar_pagina_subsistemas(
                         "<br>Participação: %{percent:.1%}"
                         "<extra></extra>"
                     ),
+                    automargin=True,
                 )
     
                 total_formatado = (
@@ -2067,13 +2087,13 @@ def renderizar_pagina_subsistemas(
                 fig_participacao.update_layout(
                     height=325,
                     margin={
-                        "l": 30,
-                        "r": 30,
-                        "t": 25,
-                        "b": 52,
+                        "l": 60,
+                        "r": 60,
+                        "t": 40,
+                        "b": 55,
                     },
                     uniformtext={
-                    "minsize": 10,
+                    "minsize": 9,
                     "mode": "show",
                     },
                     paper_bgcolor=(
