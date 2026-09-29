@@ -2669,7 +2669,7 @@ def renderizar_pagina_subsistemas(
                                     "color": "#334155",
                                 },
                             },
-                            label={
+                            hoverlabel={
                                 "bgcolor": "#FFFFFF",
                                 "bordercolor": "#D9E2EC",
                                 "font": {
