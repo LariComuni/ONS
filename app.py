@@ -990,6 +990,27 @@ def formatar_competencia(
 
     return f"{mes:02d}/{ano}"
 
+def formatar_numero_brasileiro(
+    valor,
+    casas_decimais=1,
+):
+    """
+    Formata um número usando separadores no padrão brasileiro.
+
+    Exemplos
+    --------
+    21976.8 -> 21.976,8
+    19.423  -> 19,42
+    """
+
+    if pd.isna(
+        valor
+    ):
+        return "—"
+
+    valor_formatado = (f"{valor:,.{casas_decimais}f}")
+
+    return (valor_formatado.replace(",","X").replace(".",",").replace("X","."))
 
 def validar_periodo_interface(
     ano_inicial,
