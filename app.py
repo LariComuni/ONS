@@ -2813,178 +2813,176 @@ def renderizar_pagina_subsistemas(
                         
                              st.caption(str(erro))
                         
-                            tabela_heatmap = pd.DataFrame(
-                                0.0,
-                                 index=[
-                                     "N",
-                                     "NE",
-                                     "SE",
-                                     "S",
-                                 ],
-                                columns=range(24),
+                        tabela_heatmap = pd.DataFrame(
+                             0.0,
+                             index=[
+                                 "N",
+                                 "NE",
+                                 "SE",
+                                 "S",
+                               ],
+                            columns=range(24),
+                        )
+                        
+                        # ========================================================
+                        # RÓTULOS PARA EXIBIÇÃO
+                        # ========================================================
+                        
+                        rotulos_heatmap_subsistemas = {
+                            "N": "N",
+                            "NE": "NE",
+                            "SE": "SE",
+                            "S": "S",
+                        }
+                        
+                        tabela_heatmap_plot = tabela_heatmap.copy()
+                        
+                        tabela_heatmap_plot.index = [
+                            rotulos_heatmap_subsistemas.get(
+                                subsistema,
+                                subsistema,
                             )
+                            for subsistemain tabela_heatmap_plot.index]
                         
-                            # ========================================================
-                            # RÓTULOS PARA EXIBIÇÃO
-                            # ========================================================
+                        # ========================================================
+                        # CONSTRUÇÃO DO HEATMAP
+                        # ========================================================
                         
-                            rotulos_heatmap_subsistemas = {
-                                "N": "N",
-                                "NE": "NE",
-                                "SE": "SE",
-                                "S": "S",
-                            }
-                        
-                            tabela_heatmap_plot = tabela_heatmap.copy()
-                        
-                            tabela_heatmap_plot.index = [
-                                rotulos_heatmap_subsistemas.get(
-                                    subsistema,
-                                    subsistema,
-                                )
-                                for subsistema
-                                in tabela_heatmap_plot.index
-                            ]
-                        
-                            # ========================================================
-                            # CONSTRUÇÃO DO HEATMAP
-                            # ========================================================
-                        
-                            fig_heatmap = px.imshow(
-                                tabela_heatmap_plot,
-                                x=list(
-                                    range(24)
-                                ),
-                                y=tabela_heatmap_plot.index,
-                                color_continuous_scale=[
-                                    [
-                                        0.00,
-                                        "#FFF7F9",
-                                    ],
-                                    [
-                                        0.15,
-                                        "#FCE1E8",
-                                    ],
-                                    [
-                                        0.35,
-                                        "#F7BAC9",
-                                    ],
-                                    [
-                                        0.55,
-                                        "#ED809B",
-                                    ],
-                                    [
-                                        0.75,
-                                        "#D94C70",
-                                    ],
-                                    [
-                                        1.00,
-                                        "#A61E4D",
-                                    ],
+                        fig_heatmap = px.imshow(
+                            tabela_heatmap_plot,
+                            x=list(
+                                range(24)
+                            ),
+                            y=tabela_heatmap_plot.index,
+                            color_continuous_scale=[
+                                [
+                                    0.00,
+                                    "#FFF7F9",
                                 ],
-                                aspect="auto",
-                                labels={
-                                    "x": "Hora do dia",
-                                    "y": "",
-                                    "color": "MW médio",
-                                },
-                            )
+                                [
+                                    0.15,
+                                    "#FCE1E8",
+                                ],
+                                [
+                                    0.35,
+                                    "#F7BAC9",
+                                ],
+                                [
+                                    0.55,
+                                    "#ED809B",
+                                ],
+                                [
+                                    0.75,
+                                    "#D94C70",
+                                ],
+                                [
+                                    1.00,
+                                    "#A61E4D",
+                                ],
+                            ],
+                            aspect="auto",
+                            labels={
+                                "x": "Hora do dia",
+                                "y": "",
+                                "color": "MW médio",
+                            },
+                        )
                         
-                            fig_heatmap.update_traces(
-                                xgap=3,
-                                ygap=5,
-                                hovertemplate=(
-                                    "<b>%{y}</b>"
-                                    "<br>Hora: %{x}:00"
-                                    "<br>Curtailment médio: "
-                                    "%{z:,.2f} MW"
-                                    "<extra></extra>"
+                        fig_heatmap.update_traces(
+                            xgap=3,
+                            ygap=5,
+                            hovertemplate=(
+                                "<b>%{y}</b>"
+                                "<br>Hora: %{x}:00"
+                                "<br>Curtailment médio: "
+                                "%{z:,.2f} MW"
+                                "<extra></extra>"
+                            ),
+                        )
+                        
+                        fig_heatmap.update_layout(
+                            height=300,
+                            margin={
+                                "l": 5,
+                                "r": 25,
+                                "t": 20,
+                                "b": 25,
+                            },
+                            paper_bgcolor="rgba(0,0,0,0)",
+                            plot_bgcolor="rgba(0,0,0,0)",
+                            font={
+                                "family": (
+                                    "Segoe UI, Arial, sans-serif"
                                 ),
-                            )
-                        
-                            fig_heatmap.update_layout(
-                                height=300,
-                                margin={
-                                    "l": 5,
-                                    "r": 25,
-                                    "t": 20,
-                                    "b": 25,
+                                "color": "#334155",
+                                "size": 12,
+                            },
+                            coloraxis_colorbar={
+                                "title": {
+                                    "text": "MW médio",
+                                    "side": "right",
                                 },
-                                paper_bgcolor="rgba(0,0,0,0)",
-                                plot_bgcolor="rgba(0,0,0,0)",
-                                font={
-                                    "family": (
-                                        "Segoe UI, Arial, sans-serif"
-                                    ),
-                                    "color": "#334155",
-                                    "size": 12,
-                                },
-                                coloraxis_colorbar={
-                                    "title": {
-                                        "text": "MW médio",
-                                        "side": "right",
-                                    },
-                                    "thickness": 13,
-                                    "len": 0.78,
-                                    "x": 1.01,
-                                    "tickfont": {
-                                        "size": 10,
-                                        "color": "#64748B",
-                                    },
-                                },
-                                hoverlabel={
-                                    "bgcolor": "#FFFFFF",
-                                    "bordercolor": "#D9E2EC",
-                                    "font": {
-                                        "color": "#102D57",
-                                        "size": 12,
-                                    },
-                                },
-                            )
-                        
-                            fig_heatmap.update_xaxes(
-                                title="Hora do dia",
-                                tickmode="linear",
-                                dtick=1,
-                                side="bottom",
-                                showgrid=False,
-                                showline=False,
-                                tickfont={
+                                "thickness": 13,
+                                "len": 0.78,
+                                "x": 1.01,
+                                "tickfont": {
                                     "size": 10,
                                     "color": "#64748B",
                                 },
-                                title_font={
-                                    "size": 11,
-                                    "color": "#475569",
+                            },
+                            hoverlabel={
+                                "bgcolor": "#FFFFFF",
+                                "bordercolor": "#D9E2EC",
+                                "font": {
+                                    "color": "#102D57",
+                                    "size": 12,
                                 },
-                                fixedrange=True,
-                            )
+                            },
+                        )
                         
-                            fig_heatmap.update_yaxes(
-                                title=None,
-                                showgrid=False,
-                                showline=False,
-                                tickfont={
-                                    "size": 13,
-                                    "color": "#334155",
-                                },
-                                autorange="reversed",
-                                fixedrange=True,
-                            )
+                        fig_heatmap.update_xaxes(
+                            title="Hora do dia",
+                            tickmode="linear",
+                            dtick=1,
+                            side="bottom",
+                            showgrid=False,
+                            showline=False,
+                            tickfont={
+                                "size": 10,
+                                "color": "#64748B",
+                            },
+                            title_font={
+                                "size": 11,
+                                "color": "#475569",
+                            },
+                            fixedrange=True,
+                        )
                         
-                            st.plotly_chart(
-                                fig_heatmap,
-                                width="stretch",
-                                height=300,
-                                config={
-                                    "displayModeBar": False,
-                                    "responsive": True,
-                                },
-                                key=(
-                                    "heatmap_subsistemas_"
-                                    f"{tipo_heatmap_codigo}"
-                                ),
-                            ) 
+                        fig_heatmap.update_yaxes(
+                            title=None,
+                            showgrid=False,
+                            showline=False,
+                            tickfont={
+                                "size": 13,
+                                "color": "#334155",
+                            },
+                            autorange="reversed",
+                            fixedrange=True,
+                        )
+                        
+                        st.plotly_chart(
+                            fig_heatmap,
+                            width="stretch",
+                            height=300,
+                            config={
+                                "displayModeBar": False,
+                                "responsive": True,
+                            },
+                            key=(
+                                "heatmap_subsistemas_"
+                                f"{tipo_heatmap_codigo}"
+                            ),
+                        ) 
                         
                 
                 with coluna_direita_inferior:
