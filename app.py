@@ -1894,6 +1894,7 @@ def renderizar_pagina_subsistemas(
                         (
                             coluna_titulo,
                             coluna_tipo,
+                            coluna_download,
                         ) = st.columns(
                             [
                                 4,
