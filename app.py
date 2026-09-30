@@ -2740,6 +2740,7 @@ def renderizar_pagina_subsistemas(
                             },
                             key="grafico_corte_subsistema_tipo",
                         )
+    
     # ============================================================
     # RESUMO POR SUBSISTEMA
     # ============================================================
@@ -2792,7 +2793,139 @@ def renderizar_pagina_subsistemas(
                 .copy()
             )
     
-            # Formatação e st.dataframe() entram aqui.    
+            tabela_exibicao[
+                "Curtailment (GWh)"
+            ] = tabela_exibicao[
+                "Curtailment (GWh)"
+            ].map(
+                lambda valor: (
+                    formatar_numero_brasileiro(
+                        valor,
+                        casas_decimais=1,
+                    )
+                )
+            )
+    
+            tabela_exibicao[
+                "Geração Esperada (GWh)"
+            ] = tabela_exibicao[
+                "Geração Esperada (GWh)"
+            ].map(
+                lambda valor: (
+                    formatar_numero_brasileiro(
+                        valor,
+                        casas_decimais=1,
+                    )
+                )
+            )
+    
+            tabela_exibicao[
+                "Corte (%)"
+            ] = tabela_exibicao[
+                "Corte (%)"
+            ].map(
+                lambda valor: (
+                    (
+                        formatar_numero_brasileiro(
+                            valor,
+                            casas_decimais=2,
+                        )
+                        + "%"
+                    )
+                    if pd.notna(valor)
+                    else "—"
+                )
+            )
+    
+            tabela_exibicao[
+                "Participação (%)"
+            ] = tabela_exibicao[
+                "Participação (%)"
+            ].map(
+                lambda valor: (
+                    (
+                        formatar_numero_brasileiro(
+                            valor,
+                            casas_decimais=2,
+                        )
+                        + "%"
+                    )
+                    if pd.notna(valor)
+                    else "—"
+                )
+            )
+    
+            st.dataframe(
+                tabela_exibicao,
+                width="stretch",
+                hide_index=True,
+                column_config={
+                    "Subsistema": (
+                        st.column_config.TextColumn(
+                            "Subsistema",
+                            width="small",
+                        )
+                    ),
+                    "Curtailment (GWh)": (
+                        st.column_config.TextColumn(
+                            "Curtailment (GWh)",
+                            help=(
+                                "Energia total restringida "
+                                "no período."
+                            ),
+                            width="medium",
+                        )
+                    ),
+                    "Geração Esperada (GWh)": (
+                        st.column_config.TextColumn(
+                            "Geração esperada (GWh)",
+                            help=(
+                                "Geração esperada total "
+                                "no período."
+                            ),
+                            width="medium",
+                        )
+                    ),
+                    "Corte (%)": (
+                        st.column_config.TextColumn(
+                            "Corte (%)",
+                            help=(
+                                "Curtailment dividido pela "
+                                "geração esperada."
+                            ),
+                            width="small",
+                        )
+                    ),
+                    "Participação (%)": (
+                        st.column_config.TextColumn(
+                            "Participação (%)",
+                            help=(
+                                "Participação do subsistema "
+                                "no curtailment total."
+                            ),
+                            width="small",
+                        )
+                    ),
+                    "Tipo Predominante": (
+                        st.column_config.TextColumn(
+                            "Tipo predominante",
+                            width="medium",
+                        )
+                    ),
+                    "Mês Crítico": (
+                        st.column_config.TextColumn(
+                            "Mês crítico",
+                            width="small",
+                        )
+                    ),
+                    "Hora Crítica": (
+                        st.column_config.TextColumn(
+                            "Hora crítica",
+                            width="small",
+                        )
+                    ),
+                },
+            )   
 
 
 @st.cache_data(show_spinner=False,)
