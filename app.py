@@ -2811,9 +2811,7 @@ def renderizar_pagina_subsistemas(
                                    "de curtailment."
                              )
                         
-                            st.caption(
-                                 str(erro)
-                             )
+                             st.caption(str(erro))
                         
                             tabela_heatmap = pd.DataFrame(
                                 0.0,
