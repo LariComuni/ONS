@@ -666,7 +666,8 @@ st.markdown(
         }
 
         .st-key-download_mensal,
-        .st-key-download_heatmap {
+        .st-key-download_heatmap,
+        .st-key-download_corte {
             display: flex;
             align-items: center;
             justify-content: flex-end;
@@ -676,7 +677,9 @@ st.markdown(
         .st-key-download_mensal
         div[data-testid="stDownloadButton"],
         .st-key-download_heatmap
-        div[data-testid="stDownloadButton"] {
+        div[data-testid="stDownloadButton"],
+        .st-key-download_corte
+        div[data-testid="stDownloadButton"]{
             display: flex;
             align-items: center;
             justify-content: flex-end;
@@ -686,6 +689,8 @@ st.markdown(
         .st-key-download_mensal
         div[data-testid="stDownloadButton"] button,
         .st-key-download_heatmap
+        div[data-testid="stDownloadButton"] button,
+        .st-key-download_corte
         div[data-testid="stDownloadButton"] button {
             position: relative;
         
@@ -725,7 +730,9 @@ st.markdown(
         .st-key-download_mensal
         div[data-testid="stDownloadButton"] button:hover,
         .st-key-download_heatmap
-        div[data-testid="stDownloadButton"] button:hover {
+        div[data-testid="stDownloadButton"] button:hover,
+        .st-key-download_corte
+        div[data-testid="stDownloadButton"] button:hover{
             background-color: #6b9de8 !important;
         
             border: 0 !important;
@@ -739,6 +746,8 @@ st.markdown(
         .st-key-download_mensal
         div[data-testid="stDownloadButton"] button:active,
         .st-key-download_heatmap
+        div[data-testid="stDownloadButton"] button:active,
+        .st-key-download_corte
         div[data-testid="stDownloadButton"] button:active {
             background-color: #5d8ed7 !important;
             transform: translateY(0);
@@ -747,6 +756,8 @@ st.markdown(
         .st-key-download_mensal
         div[data-testid="stDownloadButton"] button:focus-visible,
         .st-key-download_heatmap
+        div[data-testid="stDownloadButton"] button:focus-visible, 
+        .st-key-download_corte
         div[data-testid="stDownloadButton"] button:focus-visible {
             outline: 3px solid rgba(122, 170, 240, 0.35);
             outline-offset: 2px;
@@ -761,6 +772,10 @@ st.markdown(
         .st-key-download_heatmap
         div[data-testid="stDownloadButton"] button p,
         .st-key-download_heatmap
+        div[data-testid="stDownloadButton"] button span, 
+        .st-key-download_corte
+        div[data-testid="stDownloadButton"] button p,
+        .st-key-download_corte
         div[data-testid="stDownloadButton"] button span {
             visibility: hidden;
         
@@ -776,6 +791,8 @@ st.markdown(
         .st-key-download_mensal
         div[data-testid="stDownloadButton"] button::before,
         .st-key-download_heatmap
+        div[data-testid="stDownloadButton"] button::before,
+        .st-key-download_corte
         div[data-testid="stDownloadButton"] button::before {
             content: "";
         
@@ -2990,13 +3007,9 @@ def renderizar_pagina_subsistemas(
                         border=True,
                         key="card_corte_subsistema",
                     ):
-                        st.html(
-                            """
-                            <div class="titulo-card-grafico">
-                                Corte por subsistema e tipo
-                            </div>
-                            """
-                        )
+                        # ====================================================
+                        # DADOS E DOWNLOAD DO GRÁFICO DE CORTE
+                        # ====================================================
                 
                         try:
                             tabela_corte_tipo = (
@@ -3005,11 +3018,194 @@ def renderizar_pagina_subsistemas(
                                 )
                             )
                 
+                            tabela_download_corte = (
+                                tabela_corte_tipo
+                                .pivot_table(
+                                    index=[
+                                        "id_subsistema",
+                                        "geracao_esperada_mwh",
+                                    ],
+                                    columns="tipo_curtailment",
+                                    values="curtailment_mwh",
+                                    aggfunc="sum",
+                                    fill_value=0.0,
+                                )
+                                .reset_index()
+                            )
+                
+                            for codigo in [
+                                "ENE",
+                                "REL",
+                                "CNF",
+                            ]:
+                                if (
+                                    codigo
+                                    not in tabela_download_corte.columns
+                                ):
+                                    tabela_download_corte[
+                                        codigo
+                                    ] = 0.0
+                
+                            tabela_download_corte[
+                                "Curtailment Todos (MWh)"
+                            ] = (
+                                tabela_download_corte["ENE"]
+                                + tabela_download_corte["REL"]
+                                + tabela_download_corte["CNF"]
+                            )
+                
+                            mascara_geracao_positiva = (
+                                tabela_download_corte[
+                                    "geracao_esperada_mwh"
+                                ] > 0
+                            )
+                
+                            for codigo in [
+                                "ENE",
+                                "REL",
+                                "CNF",
+                            ]:
+                                coluna_corte = (
+                                    f"Corte {codigo} (%)"
+                                )
+                
+                                tabela_download_corte[
+                                    coluna_corte
+                                ] = 0.0
+                
+                                tabela_download_corte.loc[
+                                    mascara_geracao_positiva,
+                                    coluna_corte,
+                                ] = (
+                                    100
+                                    * tabela_download_corte.loc[
+                                        mascara_geracao_positiva,
+                                        codigo,
+                                    ]
+                                    / tabela_download_corte.loc[
+                                        mascara_geracao_positiva,
+                                        "geracao_esperada_mwh",
+                                    ]
+                                )
+                
+                            tabela_download_corte[
+                                "Corte Todos (%)"
+                            ] = 0.0
+                
+                            tabela_download_corte.loc[
+                                mascara_geracao_positiva,
+                                "Corte Todos (%)",
+                            ] = (
+                                100
+                                * tabela_download_corte.loc[
+                                    mascara_geracao_positiva,
+                                    "Curtailment Todos (MWh)",
+                                ]
+                                / tabela_download_corte.loc[
+                                    mascara_geracao_positiva,
+                                    "geracao_esperada_mwh",
+                                ]
+                            )
+                
+                            dados_download_corte = (
+                                tabela_download_corte
+                                .rename(
+                                    columns={
+                                        "id_subsistema": (
+                                            "Subsistema"
+                                        ),
+                                        "geracao_esperada_mwh": (
+                                            "Geração Esperada (MWh)"
+                                        ),
+                                        "ENE": (
+                                            "Curtailment ENE (MWh)"
+                                        ),
+                                        "REL": (
+                                            "Curtailment REL (MWh)"
+                                        ),
+                                        "CNF": (
+                                            "Curtailment CNF (MWh)"
+                                        ),
+                                    }
+                                )
+                            )
+                
+                            dados_download_corte = (
+                                dados_download_corte[
+                                    [
+                                        "Subsistema",
+                                        "Curtailment ENE (MWh)",
+                                        "Curtailment REL (MWh)",
+                                        "Curtailment CNF (MWh)",
+                                        "Curtailment Todos (MWh)",
+                                        "Geração Esperada (MWh)",
+                                        "Corte ENE (%)",
+                                        "Corte REL (%)",
+                                      "Corte CNF (%)",
+                                        "Corte Todos (%)",
+                                    ]
+                                ]
+                            )
+                
+                            ordem_download_subsistemas = {
+                                "N": 1,
+                                "NE": 2,
+                                "SE": 3,
+                                "S": 4,
+                            }
+                
+                            dados_download_corte[
+                                "ordem_subsistema"
+                            ] = (
+                                dados_download_corte[
+                                    "Subsistema"
+                                ]
+                                .map(
+                                    ordem_download_subsistemas
+                                )
+                                .fillna(99)
+                            )
+                
+                            dados_download_corte = (
+                                dados_download_corte
+                                .sort_values(
+                                    "ordem_subsistema"
+                                )
+                                .drop(
+                                    columns="ordem_subsistema"
+                                )
+                                .reset_index(
+                                    drop=True
+                                )
+                            )
+                
+                            arquivo_corte_xlsx = (
+                                gerar_excel_dataframe(
+                                    df=dados_download_corte,
+                                    nome_planilha=(
+                                        "Corte por subsistema"
+                                    ),
+                                )
+                            )
+                
                         except (
                             TypeError,
                             ValueError,
                             KeyError,
                         ) as erro:
+                            arquivo_corte_xlsx = None
+                
+                            tabela_corte_tipo = pd.DataFrame(
+                                columns=[
+                                    "id_subsistema",
+                                    "tipo_curtailment",
+                                    "tipo_rotulo",
+                                    "curtailment_mwh",
+                                    "geracao_esperada_mwh",
+                                    "corte_pct",
+                                ]
+                            )
+                
                             st.warning(
                                 "Não foi possível preparar o corte "
                                 "por subsistema e tipo."
@@ -3019,15 +3215,64 @@ def renderizar_pagina_subsistemas(
                                 str(erro)
                             )
                 
-                            tabela_corte_tipo = pd.DataFrame(
-                                columns=[
-                                    "id_subsistema",
-                                    "tipo_curtailment",
-                                    "corte_pct",
-                                    "tipo_rotulo",
-                                ]
+                        # ====================================================
+                        # CABEÇALHO E DOWNLOAD
+                        # ====================================================
+                
+                        (
+                            coluna_titulo_corte,
+                            coluna_download_corte,
+                        ) = st.columns(
+                            [
+                                5,
+                                0.45,
+                            ],
+                            vertical_alignment="center",
+                        )
+                
+                        with coluna_titulo_corte:
+                            st.html(
+                                """
+                                <div class="titulo-card-grafico">
+                                    Corte por subsistema e tipo
+                                </div>
+                                """
                             )
                 
+                        with coluna_download_corte:
+                            with st.container(
+                                key="download_corte",
+                            ):
+                                if arquivo_corte_xlsx is not None:
+                                    nome_arquivo_corte = (
+                                        "SINmulator_"
+                                        "corte_por_subsistema_"
+                                        f"{filtros_subsistemas['ano_inicial']}-"
+                                        f"{filtros_subsistemas['mes_inicial']:02d}_"
+                                        f"{filtros_subsistemas['ano_final']}-"
+                                        f"{filtros_subsistemas['mes_final']:02d}"
+                                        ".xlsx"
+                                    )
+                
+                                    st.download_button(
+                                        label="Baixar",
+                                        data=arquivo_corte_xlsx,
+                                        file_name=nome_arquivo_corte,
+                                        mime=(
+                                            "application/vnd.openxmlformats-"
+                                            "officedocument.spreadsheetml.sheet"
+                                        ),
+                                        help=(
+                                            "Baixar os dados de corte por "
+                                            "subsistema e tipo"
+                                        ),
+                                        key="botao_download_corte",
+                                    )
+
+                        # ====================================================
+                        # CONSTRUÇÃO DO GRÁFICO
+                        # ====================================================
+
                         cores_tipos = {
                             "Energético": "#E57373",
                             "Elétrico": "#F5A65B",
