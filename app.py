@@ -638,6 +638,66 @@ st.markdown(
             font-weight: 750;
             line-height: 1.2;
         }
+
+        .st-key-download_mensal {
+            display: flex;
+            align-items: center;
+            justify-content: flex-end;
+        
+            width: 100%;
+        }
+        
+        .st-key-download_mensal
+        div[data-testid="stDownloadButton"] {
+            display: flex;
+            justify-content: flex-end;
+        
+            width: 100%;
+        }
+        
+        .st-key-download_mensal
+        div[data-testid="stDownloadButton"] button {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+        
+            width: 38px;
+            min-width: 38px;
+            height: 38px;
+            min-height: 38px;
+        
+            padding: 0;
+        
+            color: #ffffff;
+            background-color: #74a7ef;
+        
+            border: 0;
+            border-radius: 50%;
+        
+            box-shadow:
+                0 3px 8px rgba(45, 94, 157, 0.28);
+        }
+        
+        .st-key-download_mensal
+        div[data-testid="stDownloadButton"] button:hover {
+            color: #ffffff;
+            background-color: #5f96e7;
+        
+            border: 0;
+        
+            box-shadow:
+                0 5px 12px rgba(45, 94, 157, 0.34);
+        }
+        
+        .st-key-download_mensal
+        div[data-testid="stDownloadButton"] button p {
+            margin: 0;
+        
+            color: #ffffff;
+            font-size: 1.2rem;
+            font-weight: 700;
+            line-height: 1;
+}
         
         .selo-tipo-curtailment {
             display: inline-flex;
@@ -1792,6 +1852,45 @@ def renderizar_pagina_subsistemas(
                         border=True,
                         key="card_grafico_mensal",
                     ):
+                        # ==========================================
+                        # DOWNLOAD CO CURTAILMENT MENSAL
+                        # ==========================================
+
+                        try:
+                            dados_download_mensal = (
+                                preparar_download_curtailment_mensal(
+                                    df_curtailment_subsistemas
+                                )
+                            )
+                        
+                            arquivo_mensal_xlsx = (
+                                gerar_excel_dataframe(
+                                    df=dados_download_mensal,
+                                    nome_planilha=(
+                                        "Curtailment mensal"
+                                    ),
+                                )
+                            )
+                        
+                        except (
+                            TypeError,
+                            ValueError,
+                            KeyError,
+                        ) as erro:
+                            arquivo_mensal_xlsx = None
+                        
+                            st.warning(
+                                "Não foi possível preparar o arquivo "
+                                "do curtailment mensal."
+                            )
+                        
+                            st.caption(
+                                str(erro)
+                            )
+                        
+                        # ========================================
+                        # CABEÇALHO DO GRÁFICO
+                        # ========================================
                         (
                             coluna_titulo,
                             coluna_tipo,
@@ -1825,10 +1924,38 @@ def renderizar_pagina_subsistemas(
                                 key="subsistemas_tipo_mensal",
                                 label_visibility="collapsed",
                             )
+
+                        with coluna_download:
+                            with st.container(
+                                key="download_mensal",
+                            ):
+                                if arquivo_mensal_xlsx is not None:
+                                    nome_arquivo_mensal = (
+                                        "SINmulator_"
+                                        "curtailment_mensal_"
+                                        f"{filtros_subsistemas['ano_inicial']}-"
+                                        f"{filtros_subsistemas['mes_inicial']:02d}_"
+                                        f"{filtros_subsistemas['ano_final']}-"
+                                        f"{filtros_subsistemas['mes_final']:02d}"
+                                        ".xlsx"
+                                    )
+                        
+                                    st.download_button(
+                                        label="↓",
+                                        data=arquivo_mensal_xlsx,
+                                        file_name=nome_arquivo_mensal,
+                                        mime=(
+                                            "application/vnd.openxmlformats-"
+                                            "officedocument.spreadsheetml.sheet"
+                                        ),
+                                        help=(
+                                            "Baixar o curtailment mensal por "
+                                            "subsistema e tipo"
+                                        ),
+                                        key="botao_download_mensal",
+                                    )
                 
-                        tipo_mensal_codigo = TIPOS_CURTAILMENT[
-                            tipo_mensal_rotulo
-                        ]
+                        tipo_mensal_codigo = TIPOS_CURTAILMENT[tipo_mensal_rotulo]
                 
                         try:
                             base_mensal = (
