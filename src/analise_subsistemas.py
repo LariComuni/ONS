@@ -1008,30 +1008,194 @@ def preparar_download_perfil_horario(
     df,
 ):
     """
-    Prepara os dados do perfil horário de curtailment
-    para exportação.
+    Prepara o perfil horário médio de curtailment
+    por subsistema e tipo para exportação.
 
-    Para cada subsistema e hora, são calculados os valores
-    médios de curtailment em MW para ENE, REL, CNF e todos
-    os tipos.
-
-    Parâmetros
-    ----------
-    df : pandas.DataFrame
-        Base calculada de curtailment.
+    Primeiro, o curtailment é agregado por instante,
+    subsistema e tipo. Depois, calcula-se a potência
+    média em MW para cada hora do dia.
 
     Retorno
     -------
     pandas.DataFrame
-        Tabela com uma linha por subsistema e hora.
+        Tabela com uma linha por subsistema e hora,
+        contendo ENE, REL, CNF e Todos em MW médio.
     """
 
-    tipos_curtailment = {
-        "ENE": "Curtailment ENE médio (MW)",
-        "REL": "Curtailment REL médio (MW)",
-        "CNF": "Curtailment CNF médio (MW)",
-        "TODOS": "Curtailment Todos médio (MW)",
+    if not isinstance(
+        df,
+        pd.DataFrame,
+    ):
+        raise TypeError(
+            "df deve ser um DataFrame."
+        )
+
+    if df.empty:
+        raise ValueError(
+            "A base informada está vazia."
+        )
+
+    colunas_obrigatorias = {
+        "din_instante",
+        "id_subsistema",
+        "cod_razaorestricao",
+        "val_curtailment",
     }
+
+    colunas_ausentes = (
+        colunas_obrigatorias
+        - set(df.columns)
+    )
+
+    if colunas_ausentes:
+        raise ValueError(
+            "A base não possui as colunas obrigatórias: "
+            f"{sorted(colunas_ausentes)}."
+        )
+
+    df_aux = df.copy()
+
+    df_aux["din_instante"] = pd.to_datetime(
+        df_aux["din_instante"],
+        errors="coerce",
+    )
+
+    df_aux["val_curtailment"] = pd.to_numeric(
+        df_aux["val_curtailment"],
+        errors="coerce",
+    )
+
+    df_aux["id_subsistema"] = (
+        df_aux["id_subsistema"]
+        .astype("string")
+        .str.strip()
+        .str.upper()
+    )
+
+    df_aux["tipo_curtailment"] = (
+        df_aux["cod_razaorestricao"]
+        .astype("string")
+        .str.strip()
+        .str.upper()
+    )
+
+    df_aux = df_aux.dropna(
+        subset=[
+            "din_instante",
+            "id_subsistema",
+            "val_curtailment",
+        ]
+    ).copy()
+
+    tipos_permitidos = [
+        "ENE",
+        "REL",
+        "CNF",
+    ]
+
+    df_aux = df_aux[
+        df_aux["tipo_curtailment"]
+        .isin(
+            tipos_permitidos
+        )
+    ].copy()
+
+    if df_aux.empty:
+        raise ValueError(
+            "Não foram encontrados registros "
+            "ENE, REL ou CNF."
+        )
+
+    df_aux["val_curtailment"] = (
+        df_aux["val_curtailment"]
+        .clip(lower=0)
+    )
+
+    # Soma as usinas em cada instante,
+    # subsistema e tipo de restrição.
+
+    base_instante_tipo = (
+        df_aux
+        .groupby(
+            [
+                "din_instante",
+                "id_subsistema",
+                "tipo_curtailment",
+            ],
+            as_index=False,
+            observed=True,
+        )
+        .agg(
+            curtailment_mw=(
+                "val_curtailment",
+                "sum",
+            )
+        )
+    )
+
+    # Transforma os tipos em colunas.
+
+    base_instante = (
+        base_instante_tipo
+        .pivot_table(
+            index=[
+                "din_instante",
+                "id_subsistema",
+            ],
+            columns="tipo_curtailment",
+            values="curtailment_mw",
+            aggfunc="sum",
+            fill_value=0.0,
+        )
+        .reset_index()
+    )
+
+    for codigo in tipos_permitidos:
+        if codigo not in base_instante.columns:
+            base_instante[codigo] = 0.0
+
+    base_instante["TODOS"] = (
+        base_instante["ENE"]
+        + base_instante["REL"]
+        + base_instante["CNF"]
+    )
+
+    base_instante["hora"] = (
+        base_instante["din_instante"]
+        .dt.hour
+    )
+
+    # Média da potência agregada em cada hora do dia.
+
+    perfil_horario = (
+        base_instante
+        .groupby(
+            [
+                "id_subsistema",
+                "hora",
+            ],
+            as_index=False,
+            observed=True,
+        )
+        .agg(
+            ENE=(
+                "ENE",
+                "mean",
+            ),
+            REL=(
+                "REL",
+                "mean",
+            ),
+            CNF=(
+                "CNF",
+                "mean",
+            ),
+            TODOS=(
+                "TODOS",
+                "mean",
+            ),
+        )
+    )
 
     ordem_subsistemas = [
         "N",
@@ -1040,24 +1204,53 @@ def preparar_download_perfil_horario(
         "S",
     ]
 
-    indice_completo = pd.MultiIndex.from_product([ordem_subsistemas,range(24),],names=["Subsistema","Hora"],)
+    indice_completo = pd.MultiIndex.from_product(
+        [
+            ordem_subsistemas,
+            range(24),
+        ],
+        names=[
+            "id_subsistema",
+            "hora",
+        ],
+    )
 
-    tabela_download = pd.DataFrame(index=indice_completo)
+    perfil_horario = (
+        perfil_horario
+        .set_index(
+            [
+                "id_subsistema",
+                "hora",
+            ]
+        )
+        .reindex(
+            indice_completo,
+            fill_value=0.0,
+        )
+        .reset_index()
+    )
 
-    for codigo, nome_coluna in (tipos_curtailment.items()):
-        tabela_tipo = (preparar_perfil_horario_curtailment(df=df,tipo_curtailment=codigo))
+    perfil_horario = perfil_horario.rename(
+        columns={
+            "id_subsistema": "Subsistema",
+            "hora": "Hora",
+            "ENE": "Curtailment ENE médio (MW)",
+            "REL": "Curtailment REL médio (MW)",
+            "CNF": "Curtailment CNF médio (MW)",
+            "TODOS": "Curtailment Todos médio (MW)",
+        }
+    )
 
-        serie_tipo = (tabela_tipo.reindex(index=ordem_subsistemas,columns=range(24),fill_value=0.0).stack(future_stack=True))
+    perfil_horario["Hora"] = (
+        perfil_horario["Hora"]
+        .map(
+            lambda hora: (
+                f"{int(hora):02d}:00"
+            )
+        )
+    )
 
-        serie_tipo.index = (serie_tipo.index.set_names(["Subsistema","Hora"]))
-
-        tabela_download[nome_coluna] = serie_tipo.reindex(indice_completo,fill_value=0.0)
-
-    tabela_download = (tabela_download.reset_index())
-
-    tabela_download["Hora"] = (tabela_download["Hora"].map(lambda hora: f"{int(hora):02d}:00"))
-
-    return tabela_download
+    return perfil_horario
 
 def preparar_corte_subsistema_tipo(
     df,
