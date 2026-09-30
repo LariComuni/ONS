@@ -797,6 +797,102 @@ st.markdown(
         
             box-sizing: border-box;
         }
+
+        .tabela-resumo-wrapper {
+            width: 100%;
+            margin-top: 0.8rem;
+        
+            overflow-x: auto;
+        
+            border: 1px solid #e2e8f0;
+            border-radius: 9px;
+        }
+        
+        .tabela-resumo-subsistemas {
+            width: 100%;
+        
+            border-collapse: collapse;
+            border-spacing: 0;
+        
+            color: #334155;
+            background-color: #ffffff;
+        
+            font-family:
+                "Segoe UI",
+                Arial,
+                sans-serif;
+            font-size: 0.82rem;
+        }
+        
+        .tabela-resumo-subsistemas th {
+            padding: 0.7rem 0.75rem;
+        
+            color: #64748b;
+            background-color: #f8fafc;
+        
+            border-right: 1px solid #e2e8f0;
+            border-bottom: 1px solid #dbe3ec;
+        
+            font-size: 0.76rem;
+            font-weight: 600;
+            text-align: left;
+            white-space: nowrap;
+        }
+        
+        .tabela-resumo-subsistemas th:last-child {
+            border-right: 0;
+        }
+        
+        .tabela-resumo-subsistemas td {
+            padding: 0.72rem 0.75rem;
+        
+            border-right: 1px solid #edf1f5;
+            border-bottom: 1px solid #edf1f5;
+        
+            vertical-align: middle;
+            white-space: nowrap;
+        }
+        
+        .tabela-resumo-subsistemas td:last-child {
+            border-right: 0;
+        }
+        
+        .tabela-resumo-subsistemas
+        tbody tr:last-child td {
+            border-bottom: 0;
+        }
+        
+        .tabela-resumo-subsistemas
+        tbody tr:hover {
+            background-color: #f8fbfe;
+        }
+        
+        .subsistema-tabela {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.55rem;
+        
+            color: #263b53;
+            font-weight: 600;
+        }
+        
+        .subsistema-cor {
+            display: inline-block;
+            flex: 0 0 auto;
+        
+            width: 11px;
+            height: 11px;
+        
+            border: 1px solid rgba(15, 42, 70, 0.08);
+            border-radius: 50%;
+        
+            box-shadow:
+                0 1px 3px rgba(15, 42, 70, 0.12);
+        }
+        
+        .numero-tabela {
+            font-variant-numeric: tabular-nums;
+        }
                 
         .grafico-placeholder {
             display: flex;
@@ -2876,76 +2972,83 @@ def renderizar_pagina_subsistemas(
                 )
             )
     
-            st.dataframe(
-                tabela_exibicao,
-                width="stretch",
-                hide_index=True,
-                column_config={
-                    "Subsistema": (
-                        st.column_config.TextColumn(
-                            "Subsistema",
-                            width="small",
-                        )
-                    ),
-                    "Curtailment (GWh)": (
-                        st.column_config.TextColumn(
-                            "Curtailment (GWh)",
-                            help=(
-                                "Energia total restringida "
-                                "no período."
-                            ),
-                            width="medium",
-                        )
-                    ),
-                    "Geração Esperada (GWh)": (
-                        st.column_config.TextColumn(
-                            "Geração esperada (GWh)",
-                            help=(
-                                "Geração esperada total "
-                                "no período."
-                            ),
-                            width="medium",
-                        )
-                    ),
-                    "Corte (%)": (
-                        st.column_config.TextColumn(
-                            "Corte (%)",
-                            help=(
-                                "Curtailment dividido pela "
-                                "geração esperada."
-                            ),
-                            width="small",
-                        )
-                    ),
-                    "Participação (%)": (
-                        st.column_config.TextColumn(
-                            "Participação (%)",
-                            help=(
-                                "Participação do subsistema "
-                                "no curtailment total."
-                            ),
-                            width="small",
-                        )
-                    ),
-                    "Tipo Predominante": (
-                        st.column_config.TextColumn(
-                            "Tipo predominante",
-                            width="medium",
-                        )
-                    ),
-                    "Mês Crítico": (
-                        st.column_config.TextColumn(
-                            "Mês crítico",
-                            width="small",
-                        )
-                    ),
-                    "Hora Crítica": (
-                        st.column_config.TextColumn(
-                            "Hora crítica",
-                            width="small",
-                        )
-                    ),
-                },
+            cores_subsistemas_tabela = {
+                "N": "#F3A6B8",
+                "NE": "#5F8FB5",
+                "SE": "#68BDB7",
+                "S": "#9B8AC4",
+            }
+            
+            linhas_tabela = []
+            
+            for _, linha in tabela_exibicao.iterrows():
+                subsistema = str(
+                    linha["Subsistema"]
+                )
+            
+                cor_subsistema = (
+                    cores_subsistemas_tabela.get(
+                        subsistema,
+                        "#94A3B8",
+                    )
+                )
+            
+                linhas_tabela.append(
+                    (
+                        "<tr>"
+                        "<td>"
+                        '<div class="subsistema-tabela">'
+                        '<span class="subsistema-cor" '
+                        f'style="background-color:{cor_subsistema};">'
+                        "</span>"
+                        f"<span>{subsistema}</span>"
+                        "</div>"
+                        "</td>"
+                        f'<td class="numero-tabela">'
+                        f'{linha["Curtailment (GWh)"]}'
+                        "</td>"
+                        f'<td class="numero-tabela">'
+                        f'{linha["Geração Esperada (GWh)"]}'
+                        "</td>"
+                        f'<td class="numero-tabela">'
+                        f'{linha["Corte (%)"]}'
+                        "</td>"
+                        f'<td class="numero-tabela">'
+                        f'{linha["Participação (%)"]}'
+                        "</td>"
+                        f"<td>{linha['Tipo Predominante']}</td>"
+                        f"<td>{linha['Mês Crítico']}</td>"
+                        f"<td>{linha['Hora Crítica']}</td>"
+                        "</tr>"
+                    )
+                )
+            
+            html_tabela_resumo = (
+                '<div class="tabela-resumo-wrapper">'
+                '<table class="tabela-resumo-subsistemas">'
+                "<thead>"
+                "<tr>"
+                "<th>Subsistema</th>"
+                "<th>Curtailment (GWh)</th>"
+                "<th>Geração esperada (GWh)</th>"
+                "<th>Corte (%)</th>"
+                "<th>Participação (%)</th>"
+                "<th>Tipo predominante</th>"
+                "<th>Mês crítico</th>"
+                "<th>Hora crítica</th>"
+                "</tr>"
+                "</thead>"
+                "<tbody>"
+                + "".join(
+                    linhas_tabela
+                )
+                + "</tbody>"
+                "</table>"
+                "</div>"
+            )
+            
+            st.html(
+                html_tabela_resumo
             )   
 
 
