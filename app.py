@@ -427,6 +427,31 @@ st.markdown(
             font-weight: 600;
         }
 
+        /* Spinner apenas da aba Subsistemas */
+
+        .st-key-filtros_subsistemas
+        div[data-testid="stStatusWidget"],
+        .st-key-filtros_subsistemas
+        div[data-testid="stSpinner"] {
+            margin-top: 0.3rem;
+            margin-bottom: 0;
+        }
+        
+        .st-key-filtros_subsistemas
+        div[data-testid="stSpinner"] p {
+            margin: 0;
+        
+            color: #475569;
+            font-size: 0.82rem !important;
+            line-height: 1.3;
+        }
+        
+        .st-key-filtros_subsistemas
+        div[data-testid="stSpinner"] svg {
+            width: 1rem;
+            height: 1rem;
+        }
+
         .resumo-subsistemas-filtros {
             display: flex;
             align-items: center;
@@ -662,24 +687,24 @@ st.markdown(
             align-items: center;
             justify-content: center;
         
-            width: 40px;
-            min-width: 40px;
-            max-width: 40px;
+            width: 38px;
+            min-width: 38px;
+            max-width: 38px;
         
-            height: 40px;
-            min-height: 40px;
-            max-height: 40px;
+            height: 38px;
+            min-height: 38px;
+            max-height: 38px;
         
             padding: 0 !important;
         
             color: #ffffff !important;
-            background-color: #5d95e8 !important;
+            background-color: #74a7ef !important;
         
             border: 0 !important;
             border-radius: 50% !important;
         
             box-shadow:
-                0 3px 8px rgba(45, 94, 157, 0.26);
+                0 3px 8px rgba(45, 94, 157, 0.28);
         
             cursor: pointer;
         
@@ -692,7 +717,7 @@ st.markdown(
         .st-key-download_mensal
         div[data-testid="stDownloadButton"] button:hover {
             color: #ffffff !important;
-            background-color: #4d86dc !important;
+            background-color: #5f96e7 !important;
         
             border: 0 !important;
         
@@ -704,35 +729,52 @@ st.markdown(
         
         .st-key-download_mensal
         div[data-testid="stDownloadButton"] button:active {
-            background-color: #4278c8 !important;
+            background-color: #4f86d3 !important;
             transform: translateY(0);
         }
         
         .st-key-download_mensal
         div[data-testid="stDownloadButton"] button:focus-visible {
-            outline: 3px solid rgba(93, 149, 232, 0.3);
+            outline: 3px solid rgba(116, 167, 239, 0.35);
             outline-offset: 2px;
         }
-        
+
         .st-key-download_mensal
         div[data-testid="stDownloadButton"] button p {
-            display: block;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
         
             margin: 0;
             padding: 0;
         
+            font-size: 0;
+            line-height: 1;
+        }
+
+        .st-key-download_mensal
+        div[data-testid="stDownloadButton"]
+        span[data-testid="stIconMaterial"],
+        .st-key-download_mensal
+        div[data-testid="stDownloadButton"]
+        span.material-symbols-rounded,
+        .st-key-download_mensal
+        div[data-testid="stDownloadButton"]
+        span.material-symbols-outlined {
+            display: inline-flex !important;
+            align-items: center;
+            justify-content: center;
+        
+            margin: 0 !important;
+            padding: 0 !important;
+        
             color: #ffffff !important;
         
-            font-family:
-                "Segoe UI Symbol",
-                Arial,
-                sans-serif;
+            font-size: 22px !important;
+            font-weight: 400 !important;
+            line-height: 1 !important;
         
-            font-size: 1.55rem;
-            font-weight: 700;
-            line-height: 1;
-        
-            transform: translateY(-1px);
+            transform: translateY(0);
         }
         
         /* Formata o ícone Material. */
@@ -1981,13 +2023,14 @@ def renderizar_pagina_subsistemas(
                                     )
                         
                                     st.download_button(
-                                        label="↓",
+                                        label="Baixar",
                                         data=arquivo_mensal_xlsx,
                                         file_name=nome_arquivo_mensal,
                                         mime=(
                                             "application/vnd.openxmlformats-"
                                             "officedocument.spreadsheetml.sheet"
                                         ),
+                                        icon=":material/download:",
                                         help=(
                                             "Baixar o curtailment mensal por "
                                             "subsistema e tipo"
