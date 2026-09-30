@@ -2842,7 +2842,7 @@ def renderizar_pagina_subsistemas(
                                 subsistema,
                                 subsistema,
                             )
-                            for subsistemain tabela_heatmap_plot.index]
+                            for subsistema in tabela_heatmap_plot.index]
                         
                         # ========================================================
                         # CONSTRUÇÃO DO HEATMAP
