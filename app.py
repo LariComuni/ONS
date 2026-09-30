@@ -2775,7 +2775,7 @@ def renderizar_pagina_subsistemas(
                         )
                         
                         fig_corte_tipo.update_layout(
-                            height=300,
+                            height=305,
                             margin={
                                 "l": 5,
                                 "r": 15,
