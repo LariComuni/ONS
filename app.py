@@ -2677,111 +2677,116 @@ def renderizar_pagina_subsistemas(
                 )
                 
                 with coluna_heatmap:
-                        with st.container(
-                            border=True,
-                            key="card_heatmap_subsistemas",
-                        ):
-                            # ====================================================
-                            # DOWNLOAD DO PERFIL HORÁRIO
-                            # ====================================================
-                    
-                            try:
-                                dados_download_heatmap = (
-                                    preparar_download_perfil_horario(
-                                        df_curtailment_subsistemas
-                                    )
-                                )
-                    
-                                arquivo_heatmap_xlsx = (
-                                    gerar_excel_dataframe(
-                                        df=dados_download_heatmap,
-                                        nome_planilha="Perfil horário",
-                                    )
-                                )
-                    
-                            except (
-                                TypeError,
-                                ValueError,
-                                KeyError,
-                            ) as erro:
-                                arquivo_heatmap_xlsx = None
-                    
-                                st.warning(
-                                    "Não foi possível preparar o arquivo "
-                                    "do perfil horário."
-                                )
+                    with st.container(
+                        border=True,
+                        key="card_heatmap_subsistemas",
+                    ):
+                        # ====================================================
+                        # DOWNLOAD DO PERFIL HORÁRIO
+                        # ====================================================
                 
-                            st.caption(str(erro))
-                            
-                            (
-                                coluna_titulo_heatmap,
-                                coluna_tipo_heatmap,
-                                coluna_download_heatmap,
-                            ) = st.columns(
-                                [
-                                    5,
-                                    1.15,
-                                    0.45,
-                                ],
-                                vertical_alignment="center",
+                        try:
+                            dados_download_heatmap = (
+                                preparar_download_perfil_horario(
+                                    df_curtailment_subsistemas
+                                )
                             )
-                        
-                            with coluna_titulo_heatmap:
-                                st.html(
-                                    """
-                                    <div class="titulo-card-grafico">
-                                        Perfil horário de curtailment
-                                    </div>
-                                    """
+                
+                            arquivo_heatmap_xlsx = (
+                                gerar_excel_dataframe(
+                                    df=dados_download_heatmap,
+                                    nome_planilha="Perfil horário",
                                 )
+                            )
+                
+                        except (
+                            TypeError,
+                            ValueError,
+                            KeyError,
+                        ) as erro:
+                            arquivo_heatmap_xlsx = None
+                
+                            st.warning(
+                                "Não foi possível preparar o arquivo "
+                                "do perfil horário."
+                            )
+                
+                            st.caption(
+                                str(erro)
+                            )
+                
+                        # ====================================================
+                        # CABEÇALHO DO HEATMAP
+                        # ====================================================
+                
+                        (
+                            coluna_titulo_heatmap,
+                            coluna_tipo_heatmap,
+                            coluna_download_heatmap,
+                        ) = st.columns(
+                            [
+                                5,
+                                1.15,
+                                0.45,
+                            ],
+                            vertical_alignment="center",
+                        )
                         
-                            with coluna_tipo_heatmap:
-                                tipo_heatmap_rotulo = st.selectbox(
-                                    "Tipo de curtailment do perfil horário",
-                                    options=[
-                                        "Todos",
-                                        "Energético",
-                                        "Elétrico",
-                                        "Confiabilidade",
-                                    ],
-                                    key="subsistemas_tipo_heatmap",
-                                    label_visibility="collapsed",
-                                )
-                                
-                            with coluna_download_heatmap:
-                                with st.container(
-                                    key="download_heatmap",
-                                ):
-                                    if arquivo_heatmap_xlsx is not None:
-                                        nome_arquivo_heatmap = (
-                                            "SINmulator_"
-                                            "perfil_horario_"
-                                            f"{filtros_subsistemas['ano_inicial']}-"
-                                            f"{filtros_subsistemas['mes_inicial']:02d}_"
-                                            f"{filtros_subsistemas['ano_final']}-"
-                                            f"{filtros_subsistemas['mes_final']:02d}"
-                                            ".xlsx"
-                                        )
-                            
-                                        st.download_button(
-                                            label="Baixar",
-                                            data=arquivo_heatmap_xlsx,
-                                            file_name=nome_arquivo_heatmap,
-                                            mime=(
-                                                "application/vnd.openxmlformats-"
-                                                "officedocument.spreadsheetml.sheet"
-                                            ),
-                                            help=(
-                                                "Baixar o perfil horário médio por "
-                                                "subsistema e tipo"
-                                            ),
-                                            key="botao_download_heatmap",
-                                        )
-                        
-                            tipo_heatmap_codigo = TIPOS_CURTAILMENT[
-                                tipo_heatmap_rotulo
-                            ]
-                        
+                        with coluna_titulo_heatmap:
+                            st.html(
+                                """
+                                <div class="titulo-card-grafico">
+                                    Perfil horário de curtailment
+                                </div>
+                                """
+                            )
+                
+                        with coluna_tipo_heatmap:
+                            tipo_heatmap_rotulo = st.selectbox(
+                                "Tipo de curtailment do perfil horário",
+                                options=[
+                                    "Todos",
+                                    "Energético",
+                                    "Elétrico",
+                                    "Confiabilidade",
+                                ],
+                                key="subsistemas_tipo_heatmap",
+                                label_visibility="collapsed",
+                            )
+                
+                        with coluna_download_heatmap:
+                            with st.container(
+                                key="download_heatmap",
+                            ):
+                                if arquivo_heatmap_xlsx is not None:
+                                    nome_arquivo_heatmap = (
+                                        "SINmulator_"
+                                        "perfil_horario_"
+                                        f"{filtros_subsistemas['ano_inicial']}-"
+                                        f"{filtros_subsistemas['mes_inicial'\]:02d}_"
+                                        f"{filtros_subsistemas['ano_final']}-"
+                                        f"{filtros_subsistemas['mes_final'\]:02d}"
+                                        ".xlsx"
+                                    )
+                
+                                    st.download_button(
+                                        label="Baixar",
+                                        data=arquivo_heatmap_xlsx,
+                                        file_name=nome_arquivo_heatmap,
+                                        mime=(
+                                            "application/vnd.openxmlformats-"
+                                            "officedocument.spreadsheetml.sheet"
+                                        ),
+                                        help=(
+                                            "Baixar o perfil horário médio "
+                                            "por subsistema e tipo"
+                                        ),
+                                        key="botao_download_heatmap",
+                                    )
+                
+                        tipo_heatmap_codigo = TIPOS_CURTAILMENT[
+                            tipo_heatmap_rotulo
+                        ]
                             # ========================================================
                             # PREPARAÇÃO DOS DADOS DO HEATMAP
                             # ========================================================
