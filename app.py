@@ -683,28 +683,32 @@ st.markdown(
         
         .st-key-download_mensal
         div[data-testid="stDownloadButton"] button {
+            position: relative;
+        
             display: inline-flex;
             align-items: center;
             justify-content: center;
         
-            width: 38px;
-            min-width: 38px;
-            max-width: 38px;
+            width: 42px;
+            min-width: 42px;
+            max-width: 42px;
         
-            height: 38px;
-            min-height: 38px;
-            max-height: 38px;
+            height: 42px;
+            min-height: 42px;
+            max-height: 42px;
         
             padding: 0 !important;
         
             color: #ffffff !important;
-            background-color: #74a7ef !important;
+            background-color: #7aaaf0 !important;
         
             border: 0 !important;
             border-radius: 50% !important;
         
+            overflow: hidden;
+        
             box-shadow:
-                0 3px 8px rgba(45, 94, 157, 0.28);
+                0 4px 9px rgba(45, 94, 157, 0.28);
         
             cursor: pointer;
         
@@ -716,65 +720,76 @@ st.markdown(
         
         .st-key-download_mensal
         div[data-testid="stDownloadButton"] button:hover {
-            color: #ffffff !important;
-            background-color: #5f96e7 !important;
+            background-color: #6b9de8 !important;
         
             border: 0 !important;
         
             box-shadow:
-                0 5px 12px rgba(45, 94, 157, 0.34);
+                0 6px 13px rgba(45, 94, 157, 0.34);
         
             transform: translateY(-1px);
         }
         
         .st-key-download_mensal
         div[data-testid="stDownloadButton"] button:active {
-            background-color: #4f86d3 !important;
+            background-color: #5d8ed7 !important;
             transform: translateY(0);
         }
         
         .st-key-download_mensal
         div[data-testid="stDownloadButton"] button:focus-visible {
-            outline: 3px solid rgba(116, 167, 239, 0.35);
+            outline: 3px solid rgba(122, 170, 240, 0.35);
             outline-offset: 2px;
         }
-
+        
+        /* Esconde o texto original, mantendo o botão acessível. */
+        
         .st-key-download_mensal
-        div[data-testid="stDownloadButton"] button p {
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
+        div[data-testid="stDownloadButton"] button p,
+        .st-key-download_mensal
+        div[data-testid="stDownloadButton"] button span {
+            visibility: hidden;
+        
+            width: 0;
+            height: 0;
         
             margin: 0;
             padding: 0;
-        
-            font-size: 0;
-            line-height: 1;
         }
-
+        
+        /* Ícone branco de download. */
+        
         .st-key-download_mensal
-        div[data-testid="stDownloadButton"]
-        span[data-testid="stIconMaterial"],
-        .st-key-download_mensal
-        div[data-testid="stDownloadButton"]
-        span.material-symbols-rounded,
-        .st-key-download_mensal
-        div[data-testid="stDownloadButton"]
-        span.material-symbols-outlined {
-            display: inline-flex !important;
-            align-items: center;
-            justify-content: center;
+        div[data-testid="stDownloadButton"] button::before {
+            content: "";
         
-            margin: 0 !important;
-            padding: 0 !important;
+            position: absolute;
+            z-index: 2;
         
-            color: #ffffff !important;
+            top: 9px;
+            left: 9px;
         
-            font-size: 22px !important;
-            font-weight: 400 !important;
-            line-height: 1 !important;
+            width: 24px;
+            height: 24px;
         
-            transform: translateY(0);
+            background-color: #ffffff;
+        
+            -webkit-mask-image:
+                url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='black' d='M10.4 3h3.2v10.1l3.75-3.75 2.25 2.25L12 19.2 4.4 11.6l2.25-2.25 3.75 3.75V3zM5 20h14v3H5z'/%3E%3C/svg%3E");
+        
+            mask-image:
+                url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='black' d='M10.4 3h3.2v10.1l3.75-3.75 2.25 2.25L12 19.2 4.4 11.6l2.25-2.25 3.75 3.75V3zM5 20h14v3H5z'/%3E%3C/svg%3E");
+        
+            -webkit-mask-repeat: no-repeat;
+            mask-repeat: no-repeat;
+        
+            -webkit-mask-position: center;
+            mask-position: center;
+        
+            -webkit-mask-size: contain;
+            mask-size: contain;
+        
+            pointer-events: none;
         }
         
         /* Formata o ícone Material. */
@@ -2027,10 +2042,9 @@ def renderizar_pagina_subsistemas(
                                         data=arquivo_mensal_xlsx,
                                         file_name=nome_arquivo_mensal,
                                         mime=(
-                                            "application/vnd.openxmlformats-"
-                                            "officedocument.spreadsheetml.sheet"
+                                            "application/vnd.openxmlformats-officedocument."
+                                            "spreadsheetml.sheet"
                                         ),
-                                        icon=":material/download:",
                                         help=(
                                             "Baixar o curtailment mensal por "
                                             "subsistema e tipo"
