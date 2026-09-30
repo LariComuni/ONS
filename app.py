@@ -2787,44 +2787,44 @@ def renderizar_pagina_subsistemas(
                         tipo_heatmap_codigo = TIPOS_CURTAILMENT[
                             tipo_heatmap_rotulo
                         ]
-                            # ========================================================
-                            # PREPARAÇÃO DOS DADOS DO HEATMAP
-                            # ========================================================
+                        # ========================================================
+                        # PREPARAÇÃO DOS DADOS DO HEATMAP
+                        # ========================================================
                         
-                            try:
-                                tabela_heatmap = (
-                                    preparar_perfil_horario_curtailment(
-                                        df=df_curtailment_subsistemas,
-                                        tipo_curtailment=(
-                                            tipo_heatmap_codigo
-                                        ),
-                                    )
+                        try:
+                            tabela_heatmap = (
+                                preparar_perfil_horario_curtailment(
+                                     df=df_curtailment_subsistemas,
+                                    tipo_curtailment=(
+                                        tipo_heatmap_codigo
+                                    ),
                                 )
+                            )
                         
-                            except (
-                                TypeError,
-                                ValueError,
-                                KeyError,
-                            ) as erro:
-                                st.warning(
-                                    "Não foi possível preparar o perfil horário "
-                                    "de curtailment."
-                                )
+                        except (
+                             TypeError,
+                             ValueError,
+                              KeyError,
+                        ) as erro:
+                             st.warning(
+                                   "Não foi possível preparar o perfil horário "
+                                   "de curtailment."
+                             )
                         
-                                st.caption(
-                                    str(erro)
-                                )
+                            st.caption(
+                                 str(erro)
+                             )
                         
-                                tabela_heatmap = pd.DataFrame(
-                                    0.0,
-                                    index=[
-                                        "N",
-                                        "NE",
-                                        "SE",
-                                        "S",
-                                    ],
-                                    columns=range(24),
-                                )
+                            tabela_heatmap = pd.DataFrame(
+                                0.0,
+                                 index=[
+                                     "N",
+                                     "NE",
+                                     "SE",
+                                     "S",
+                                 ],
+                                columns=range(24),
+                            )
                         
                             # ========================================================
                             # RÓTULOS PARA EXIBIÇÃO
