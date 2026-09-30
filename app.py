@@ -752,12 +752,9 @@ st.markdown(
 
         .st-key-card_corte_subsistema {
             width: 100%;
+            min-height: 100%;
         
-            margin-top: 1rem;
-            margin-right: 0;
-            margin-bottom: 1.5rem;
-            margin-left: 0;
-        
+            margin: 0;
             padding: 0.75rem 0.85rem 0.45rem;
         
             background-color: #ffffff;
@@ -773,6 +770,8 @@ st.markdown(
         
         .st-key-card_corte_subsistema
         div[data-testid="stVerticalBlockBorderWrapper"] {
+            height: 100%;
+        
             border: 0;
             box-shadow: none;
         }
