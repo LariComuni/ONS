@@ -714,8 +714,6 @@ st.markdown(
             outline-offset: 2px;
         }
         
-        /* Oculta o texto "Baixar", mantendo-o para acessibilidade. */
-        
         .st-key-download_mensal
         div[data-testid="stDownloadButton"] button p {
             display: block;
@@ -738,16 +736,6 @@ st.markdown(
         }
         
         /* Formata o ícone Material. */
-        
-        .st-key-download_mensal
-        div[data-testid="stDownloadButton"]
-        span[data-testid="stIconMaterial"] {
-            margin: 0 !important;
-        
-            color: #ffffff !important;
-            font-size: 22px !important;
-            line-height: 1 !important;
-        }
         
         .selo-tipo-curtailment {
             display: inline-flex;
