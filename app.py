@@ -10,7 +10,7 @@ Regras das bases:
 
 from datetime import date
 from pathlib import Path
-
+from io import BytesIO
 import pandas as pd
 import plotly.express as px
 import matplotlib.pyplot as plt
@@ -26,6 +26,7 @@ from src.pipeline import preparar_dados_aplicacao
 from src.analise_subsistemas import (
     calcular_kpis_curtailment,
     preparar_curtailment_mensal_subsistemas,
+    preparar_download_curtailment_mensal,
     preparar_perfil_horario_curtailment,
     preparar_corte_subsistema_tipo,  
     preparar_resumo_subsistemas,
@@ -3074,6 +3075,83 @@ def preparar_resumo_subsistemas_aplicacao(
     return preparar_resumo_subsistemas(
         df_curtailment
     )
+
+@st.cache_data(show_spinner=False)
+def gerar_excel_dataframe(
+    df,
+    nome_planilha,
+):
+    """
+    Gera um arquivo XLSX em memória a partir
+    de um DataFrame.
+    """
+
+    if not isinstance(
+        df,
+        pd.DataFrame,
+    ):
+        raise TypeError(
+            "df deve ser um DataFrame."
+        )
+
+    buffer = BytesIO()
+
+    nome_planilha_excel = str(
+        nome_planilha
+    )[:31]
+
+    with pd.ExcelWriter(
+        buffer,
+        engine="openpyxl",
+    ) as escritor:
+        df.to_excel(
+            escritor,
+            sheet_name=nome_planilha_excel,
+            index=False,
+        )
+
+        planilha = escritor.book[
+            nome_planilha_excel
+        ]
+
+        planilha.freeze_panes = "A2"
+        planilha.auto_filter.ref = (
+            planilha.dimensions
+        )
+
+        for coluna in planilha.columns:
+            maior_largura = 0
+
+            letra_coluna = (
+                coluna[0].column_letter
+            )
+
+            for celula in coluna:
+                if celula.value is None:
+                    continue
+
+                maior_largura = max(
+                    maior_largura,
+                    len(
+                        str(
+                            celula.value
+                        )
+                    ),
+                )
+
+            planilha.column_dimensions[
+                letra_coluna
+            ].width = min(
+                max(
+                    maior_largura + 2,
+                    12,
+                ),
+                36,
+            )
+
+    buffer.seek(0)
+
+    return buffer.getvalue()
 
 def formatar_percentual(
     valor,
