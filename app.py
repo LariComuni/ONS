@@ -2763,9 +2763,9 @@ def renderizar_pagina_subsistemas(
                                         "SINmulator_"
                                         "perfil_horario_"
                                         f"{filtros_subsistemas['ano_inicial']}-"
-                                        f"{filtros_subsistemas['mes_inicial'\]:02d}_"
+                                        f"{filtros_subsistemas['mes_inicial']:02d}_"
                                         f"{filtros_subsistemas['ano_final']}-"
-                                        f"{filtros_subsistemas['mes_final'\]:02d}"
+                                        f"{filtros_subsistemas['mes_final']:02d}"
                                         ".xlsx"
                                     )
                 
