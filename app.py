@@ -1899,6 +1899,7 @@ def renderizar_pagina_subsistemas(
                             [
                                 4,
                                 1.15,
+                                0.38,
                             ],
                             vertical_alignment="bottom",
                         )
