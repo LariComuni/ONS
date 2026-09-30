@@ -718,7 +718,23 @@ st.markdown(
         
         .st-key-download_mensal
         div[data-testid="stDownloadButton"] button p {
-            display: none;
+            display: block;
+        
+            margin: 0;
+            padding: 0;
+        
+            color: #ffffff !important;
+        
+            font-family:
+                "Segoe UI Symbol",
+                Arial,
+                sans-serif;
+        
+            font-size: 1.55rem;
+            font-weight: 700;
+            line-height: 1;
+        
+            transform: translateY(-1px);
         }
         
         /* Formata o ícone Material. */
