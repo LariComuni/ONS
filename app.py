@@ -28,6 +28,7 @@ from src.analise_subsistemas import (
     preparar_curtailment_mensal_subsistemas,
     preparar_download_curtailment_mensal,
     preparar_perfil_horario_curtailment,
+    preparar_download_perfil_horario,
     preparar_corte_subsistema_tipo,  
     preparar_resumo_subsistemas,
 )
@@ -664,24 +665,27 @@ st.markdown(
             line-height: 1.2;
         }
 
-        .st-key-download_mensal {
+        .st-key-download_mensal,
+        .st-key-download_heatmap {
             display: flex;
             align-items: center;
             justify-content: flex-end;
-        
             width: 100%;
         }
         
         .st-key-download_mensal
+        div[data-testid="stDownloadButton"],
+        .st-key-download_heatmap
         div[data-testid="stDownloadButton"] {
             display: flex;
             align-items: center;
             justify-content: flex-end;
-        
             width: 100%;
         }
         
         .st-key-download_mensal
+        div[data-testid="stDownloadButton"] button,
+        .st-key-download_heatmap
         div[data-testid="stDownloadButton"] button {
             position: relative;
         
@@ -719,6 +723,8 @@ st.markdown(
         }
         
         .st-key-download_mensal
+        div[data-testid="stDownloadButton"] button:hover,
+        .st-key-download_heatmap
         div[data-testid="stDownloadButton"] button:hover {
             background-color: #6b9de8 !important;
         
@@ -731,22 +737,30 @@ st.markdown(
         }
         
         .st-key-download_mensal
+        div[data-testid="stDownloadButton"] button:active,
+        .st-key-download_heatmap
         div[data-testid="stDownloadButton"] button:active {
             background-color: #5d8ed7 !important;
             transform: translateY(0);
         }
         
         .st-key-download_mensal
+        div[data-testid="stDownloadButton"] button:focus-visible,
+        .st-key-download_heatmap
         div[data-testid="stDownloadButton"] button:focus-visible {
             outline: 3px solid rgba(122, 170, 240, 0.35);
             outline-offset: 2px;
         }
         
-        /* Esconde o texto original, mantendo o botão acessível. */
+        /* Esconde o conteúdo original do botão. */
         
         .st-key-download_mensal
         div[data-testid="stDownloadButton"] button p,
         .st-key-download_mensal
+        div[data-testid="stDownloadButton"] button span,
+        .st-key-download_heatmap
+        div[data-testid="stDownloadButton"] button p,
+        .st-key-download_heatmap
         div[data-testid="stDownloadButton"] button span {
             visibility: hidden;
         
@@ -760,6 +774,8 @@ st.markdown(
         /* Ícone branco de download. */
         
         .st-key-download_mensal
+        div[data-testid="stDownloadButton"] button::before,
+        .st-key-download_heatmap
         div[data-testid="stDownloadButton"] button::before {
             content: "";
         
@@ -2665,13 +2681,47 @@ def renderizar_pagina_subsistemas(
                             border=True,
                             key="card_heatmap_subsistemas",
                         ):
+                            # ====================================================
+                            # DOWNLOAD DO PERFIL HORÁRIO
+                            # ====================================================
+                    
+                            try:
+                                dados_download_heatmap = (
+                                    preparar_download_perfil_horario(
+                                        df_curtailment_subsistemas
+                                    )
+                                )
+                    
+                                arquivo_heatmap_xlsx = (
+                                    gerar_excel_dataframe(
+                                        df=dados_download_heatmap,
+                                        nome_planilha="Perfil horário",
+                                    )
+                                )
+                    
+                            except (
+                                TypeError,
+                                ValueError,
+                                KeyError,
+                            ) as erro:
+                                arquivo_heatmap_xlsx = None
+                    
+                                st.warning(
+                                    "Não foi possível preparar o arquivo "
+                                    "do perfil horário."
+                                )
+                
+                            st.caption(str(erro))
+                            
                             (
                                 coluna_titulo_heatmap,
                                 coluna_tipo_heatmap,
+                                coluna_download_heatmap,
                             ) = st.columns(
                                 [
                                     5,
                                     1.15,
+                                    0.45,
                                 ],
                                 vertical_alignment="center",
                             )
@@ -2697,6 +2747,36 @@ def renderizar_pagina_subsistemas(
                                     key="subsistemas_tipo_heatmap",
                                     label_visibility="collapsed",
                                 )
+                                
+                            with coluna_download_heatmap:
+                                with st.container(
+                                    key="download_heatmap",
+                                ):
+                                    if arquivo_heatmap_xlsx is not None:
+                                        nome_arquivo_heatmap = (
+                                            "SINmulator_"
+                                            "perfil_horario_"
+                                            f"{filtros_subsistemas['ano_inicial']}-"
+                                            f"{filtros_subsistemas['mes_inicial']:02d}_"
+                                            f"{filtros_subsistemas['ano_final']}-"
+                                            f"{filtros_subsistemas['mes_final']:02d}"
+                                            ".xlsx"
+                                        )
+                            
+                                        st.download_button(
+                                            label="Baixar",
+                                            data=arquivo_heatmap_xlsx,
+                                            file_name=nome_arquivo_heatmap,
+                                            mime=(
+                                                "application/vnd.openxmlformats-"
+                                                "officedocument.spreadsheetml.sheet"
+                                            ),
+                                            help=(
+                                                "Baixar o perfil horário médio por "
+                                                "subsistema e tipo"
+                                            ),
+                                            key="botao_download_heatmap",
+                                        )
                         
                             tipo_heatmap_codigo = TIPOS_CURTAILMENT[
                                 tipo_heatmap_rotulo
