@@ -1004,6 +1004,61 @@ def preparar_perfil_horario_curtailment(
 
     return tabela_horaria
 
+def preparar_download_perfil_horario(
+    df,
+):
+    """
+    Prepara os dados do perfil horário de curtailment
+    para exportação.
+
+    Para cada subsistema e hora, são calculados os valores
+    médios de curtailment em MW para ENE, REL, CNF e todos
+    os tipos.
+
+    Parâmetros
+    ----------
+    df : pandas.DataFrame
+        Base calculada de curtailment.
+
+    Retorno
+    -------
+    pandas.DataFrame
+        Tabela com uma linha por subsistema e hora.
+    """
+
+    tipos_curtailment = {
+        "ENE": "Curtailment ENE médio (MW)",
+        "REL": "Curtailment REL médio (MW)",
+        "CNF": "Curtailment CNF médio (MW)",
+        "TODOS": "Curtailment Todos médio (MW)",
+    }
+
+    ordem_subsistemas = [
+        "N",
+        "NE",
+        "SE",
+        "S",
+    ]
+
+    indice_completo = pd.MultiIndex.from_product([ordem_subsistemas,range(24),],names=["Subsistema","Hora"],)
+
+    tabela_download = pd.DataFrame(index=indice_completo)
+
+    for codigo, nome_coluna in (tipos_curtailment.items()):
+        tabela_tipo = (preparar_perfil_horario_curtailment(df=df,tipo_curtailment=codigo))
+
+        serie_tipo = (tabela_tipo.reindex(index=ordem_subsistemas,columns=range(24),fill_value=0.0).stack(future_stack=True))
+
+        serie_tipo.index = (serie_tipo.index.set_names(["Subsistema","Hora"]))
+
+        tabela_download[nome_coluna] = serie_tipo.reindex(indice_completo,fill_value=0.0)
+
+    tabela_download = (tabela_download.reset_index())
+
+    tabela_download["Hora"] = (tabela_download["Hora"].map(lambda hora: f"{int(hora):02d}:00"))
+
+    return tabela_download
+
 def preparar_corte_subsistema_tipo(
     df,
 ):
