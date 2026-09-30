@@ -2720,7 +2720,7 @@ def renderizar_pagina_subsistemas(
                             TypeError,
                             ValueError,
                             KeyError,
-                        ) as erro:
+                        ) as erro_download_heatmap:
                             arquivo_heatmap_xlsx = None
                 
                             st.warning(
@@ -2729,7 +2729,9 @@ def renderizar_pagina_subsistemas(
                             )
                 
                             st.caption(
-                                str(erro)
+                                str(
+                                    erro_download_heatmap
+                                )
                             )
                 
                         # ====================================================
@@ -2829,17 +2831,6 @@ def renderizar_pagina_subsistemas(
                              )
                         
                              st.caption(str(erro))
-                        
-                        tabela_heatmap = pd.DataFrame(
-                             0.0,
-                             index=[
-                                 "N",
-                                 "NE",
-                                 "SE",
-                                 "S",
-                               ],
-                            columns=range(24),
-                        )
                         
                         # ========================================================
                         # RÓTULOS PARA EXIBIÇÃO
