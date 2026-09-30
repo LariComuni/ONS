@@ -616,6 +616,227 @@ def preparar_curtailment_mensal_subsistemas(
 
     return base_mensal
 
+def preparar_download_curtailment_mensal(
+    df,
+):
+    """
+    Prepara os dados mensais de curtailment por subsistema
+    e tipo para exportação.
+
+    Os registros representam intervalos de 30 minutos.
+    A conversão utilizada é:
+
+    MW * 0.5 / 1000 = GWh
+
+    Parâmetros
+    ----------
+    df : pandas.DataFrame
+        Base calculada de curtailment.
+
+    Retorno
+    -------
+    pandas.DataFrame
+        Tabela mensal com colunas separadas para ENE,
+        REL e CNF.
+    """
+
+    if not isinstance(
+        df,
+        pd.DataFrame,
+    ):
+        raise TypeError(
+            "df deve ser um DataFrame."
+        )
+
+    if df.empty:
+        raise ValueError(
+            "A base informada está vazia."
+        )
+
+    colunas_obrigatorias = {
+        "din_instante",
+        "id_subsistema",
+        "cod_razaorestricao",
+        "val_curtailment",
+    }
+
+    colunas_ausentes = (
+        colunas_obrigatorias
+        - set(df.columns)
+    )
+
+    if colunas_ausentes:
+        raise ValueError(
+            "A base não possui as colunas obrigatórias: "
+            f"{sorted(colunas_ausentes)}."
+        )
+
+    df_aux = df.copy()
+
+    df_aux["din_instante"] = pd.to_datetime(
+        df_aux["din_instante"],
+        errors="coerce",
+    )
+
+    df_aux["val_curtailment"] = pd.to_numeric(
+        df_aux["val_curtailment"],
+        errors="coerce",
+    )
+
+    df_aux["id_subsistema"] = (
+        df_aux["id_subsistema"]
+        .astype("string")
+        .str.strip()
+        .str.upper()
+    )
+
+    df_aux["tipo_curtailment"] = (
+        df_aux["cod_razaorestricao"]
+        .astype("string")
+        .str.strip()
+        .str.upper()
+    )
+
+    df_aux = df_aux.dropna(
+        subset=[
+            "din_instante",
+            "id_subsistema",
+            "val_curtailment",
+        ]
+    ).copy()
+
+    df_aux = df_aux[
+        df_aux["tipo_curtailment"]
+        .isin(
+            [
+                "ENE",
+                "REL",
+                "CNF",
+            ]
+        )
+    ].copy()
+
+    if df_aux.empty:
+        raise ValueError(
+            "Não foram encontrados registros ENE, REL ou CNF."
+        )
+
+    df_aux["mes"] = (
+        df_aux["din_instante"]
+        .dt.to_period("M")
+        .dt.to_timestamp()
+    )
+
+    df_aux["curtailment_gwh"] = (
+        df_aux["val_curtailment"]
+        .clip(lower=0)
+        * 0.5
+        / 1000
+    )
+
+    base_agrupada = (
+        df_aux
+        .groupby(
+            [
+                "mes",
+                "id_subsistema",
+                "tipo_curtailment",
+            ],
+            as_index=False,
+            observed=True,
+        )
+        .agg(
+            curtailment_gwh=(
+                "curtailment_gwh",
+                "sum",
+            )
+        )
+    )
+
+    tabela_download = (
+        base_agrupada
+        .pivot_table(
+            index=[
+                "mes",
+                "id_subsistema",
+            ],
+            columns="tipo_curtailment",
+            values="curtailment_gwh",
+            aggfunc="sum",
+            fill_value=0.0,
+        )
+        .reset_index()
+    )
+
+    for codigo in [
+        "ENE",
+        "REL",
+        "CNF",
+    ]:
+        if codigo not in tabela_download.columns:
+            tabela_download[codigo] = 0.0
+    
+    tabela_download["TODOS"] = (tabela_download["ENE"] + tabela_download["REL"] + tabela_download["CNF"])
+
+    ordem_subsistemas = {
+        "N": 1,
+        "NE": 2,
+        "SE": 3,
+        "S": 4,
+    }
+
+    tabela_download["ordem_subsistema"] = (
+        tabela_download["id_subsistema"]
+        .map(
+            ordem_subsistemas
+        )
+        .fillna(99)
+    )
+
+    tabela_download = (
+        tabela_download
+        .sort_values(
+            [
+                "mes",
+                "ordem_subsistema",
+            ]
+        )
+        .drop(
+            columns="ordem_subsistema"
+        )
+        .reset_index(
+            drop=True
+        )
+    )
+
+    tabela_download["Mês"] = (
+        tabela_download["mes"]
+        .dt.strftime("%m/%Y")
+    )
+
+    tabela_download = tabela_download.rename(
+        columns={
+            "id_subsistema": "Subsistema",
+            "ENE": "Curtailment ENE (GWh)",
+            "REL": "Curtailment REL (GWh)",
+            "CNF": "Curtailment CNF (GWh)",
+            "TODOS": "Curtailment Todos (GWh)",
+        }
+    )
+
+    tabela_download = tabela_download[
+        [
+            "Mês",
+            "Subsistema",
+            "Curtailment ENE (GWh)",
+            "Curtailment REL (GWh)",
+            "Curtailment CNF (GWh)",
+            "Curtailment Todos (GWh)",
+        ]
+    ]
+
+    return tabela_download
+
 def preparar_perfil_horario_curtailment(
     df,
     tipo_curtailment,
