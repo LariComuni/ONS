@@ -650,6 +650,7 @@ st.markdown(
         .st-key-download_mensal
         div[data-testid="stDownloadButton"] {
             display: flex;
+            align-items: center;
             justify-content: flex-end;
         
             width: 100%;
@@ -661,43 +662,76 @@ st.markdown(
             align-items: center;
             justify-content: center;
         
-            width: 38px;
-            min-width: 38px;
-            height: 38px;
-            min-height: 38px;
+            width: 40px;
+            min-width: 40px;
+            max-width: 40px;
         
-            padding: 0;
+            height: 40px;
+            min-height: 40px;
+            max-height: 40px;
         
-            color: #ffffff;
-            background-color: #74a7ef;
+            padding: 0 !important;
         
-            border: 0;
-            border-radius: 50%;
+            color: #ffffff !important;
+            background-color: #5d95e8 !important;
+        
+            border: 0 !important;
+            border-radius: 50% !important;
         
             box-shadow:
-                0 3px 8px rgba(45, 94, 157, 0.28);
+                0 3px 8px rgba(45, 94, 157, 0.26);
+        
+            cursor: pointer;
+        
+            transition:
+                background-color 0.15s ease,
+                box-shadow 0.15s ease,
+                transform 0.15s ease;
         }
         
         .st-key-download_mensal
         div[data-testid="stDownloadButton"] button:hover {
-            color: #ffffff;
-            background-color: #5f96e7;
+            color: #ffffff !important;
+            background-color: #4d86dc !important;
         
-            border: 0;
+            border: 0 !important;
         
             box-shadow:
                 0 5px 12px rgba(45, 94, 157, 0.34);
+        
+            transform: translateY(-1px);
         }
         
         .st-key-download_mensal
-        div[data-testid="stDownloadButton"] button p {
-            margin: 0;
+        div[data-testid="stDownloadButton"] button:active {
+            background-color: #4278c8 !important;
+            transform: translateY(0);
+        }
         
-            color: #ffffff;
-            font-size: 1.2rem;
-            font-weight: 700;
-            line-height: 1;
-}
+        .st-key-download_mensal
+        div[data-testid="stDownloadButton"] button:focus-visible {
+            outline: 3px solid rgba(93, 149, 232, 0.3);
+            outline-offset: 2px;
+        }
+        
+        /* Oculta o texto "Baixar", mantendo-o para acessibilidade. */
+        
+        .st-key-download_mensal
+        div[data-testid="stDownloadButton"] button p {
+            display: none;
+        }
+        
+        /* Formata o ícone Material. */
+        
+        .st-key-download_mensal
+        div[data-testid="stDownloadButton"]
+        span[data-testid="stIconMaterial"] {
+            margin: 0 !important;
+        
+            color: #ffffff !important;
+            font-size: 22px !important;
+            line-height: 1 !important;
+        }
         
         .selo-tipo-curtailment {
             display: inline-flex;
