@@ -2124,13 +2124,12 @@ def renderizar_pagina_subsistemas(
                         )
                 
                         with coluna_titulo:
-                            st.markdown(
+                            st.html(
                                 """
                                 <div class="titulo-card-grafico">
                                     Curtailment mensal por subsistema
                                 </div>
-                                """,
-                                unsafe_allow_html=True,
+                                """
                             )
                 
                         with coluna_tipo:
