@@ -3809,9 +3809,9 @@ def renderizar_pagina_subsistemas(
                         "analise_subsistemas_"
                         f"{nome_granularidade_arquivo}_"
                         f"{filtros_subsistemas['ano_inicial']}-"
-                        f"{filtros_subsistemas['mes_inicial'\]:02d}_"
+                        f"{filtros_subsistemas['mes_inicial']:02d}_"
                         f"{filtros_subsistemas['ano_final']}-"
-                        f"{filtros_subsistemas['mes_final'\]:02d}"
+                        f"{filtros_subsistemas['mes_final']:02d}"
                         ".xlsx"
                     )
     
