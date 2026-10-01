@@ -10,7 +10,7 @@ Regras das bases:
 from datetime import date
 from pathlib import Path
 from io import BytesIO
-
+nave
 import pandas as pd
 import plotly.express as px
 import matplotlib.pyplot as plt
@@ -182,6 +182,52 @@ st.markdown(
         
             color: inherit;
             font-size: 1rem;
+            line-height: 1;
+        }
+
+        .sin-navbar-item-elera {
+            min-width: 138px;
+        }
+        
+        .sin-navbar-logo-elera {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+        
+            flex: 0 0 auto;
+        
+            width: 27px;
+            height: 27px;
+        
+            overflow: hidden;
+        
+            background-color: #ffffff;
+        
+            border: 1px solid rgba(255, 255, 255, 0.35);
+            border-radius: 50%;
+        
+            box-sizing: border-box;
+        }
+        
+        .sin-navbar-logo-elera img {
+            display: block;
+        
+            width: 25px;
+            height: 25px;
+        
+            object-fit: contain;
+            object-position: center;
+        
+            border-radius: 50%;
+        }
+        
+        .sin-navbar-logo-elera-fallback {
+            color: #f97316;
+            font-family:
+                "Segoe UI Symbol",
+                Arial,
+                sans-serif;
+            font-size: 1.1rem;
             line-height: 1;
         }
 
@@ -1202,6 +1248,10 @@ st.markdown(
             .sin-navbar-item {
                 min-width: auto;
                 padding: 0.55rem 0.75rem;
+            }
+            
+            .sin-navbar-item-elera {
+                min-width: auto;
             }
         }
     </style>
@@ -4046,6 +4096,37 @@ classe_subsistemas = (
     else "sin-navbar-item"
 )
 
+classe_ativos_elera = (
+    "sin-navbar-item sin-navbar-item-ativo "
+    "sin-navbar-item-elera"
+    if pagina_ativa == "ativos_elera"
+    else (
+        "sin-navbar-item "
+        "sin-navbar-item-elera")
+)
+
+logo_elera_base64 = carregar_imagem_base64(CAMINHO_LOGO_ELERA)
+
+if logo_elera_base64 is not None:
+    html_logo_elera = (
+        '<span class="sin-navbar-logo-elera">'
+        '<img '
+        f'src="{logo_elera_base64}" '
+        'alt="" '
+        'aria-hidden="true">'
+        '</span>'
+    )
+
+else:
+    html_logo_elera = (
+        '<span '
+        'class="sin-navbar-logo-elera '
+        'sin-navbar-logo-elera-fallback" '
+        'aria-hidden="true">'
+        '☀'
+        '</span>'
+    )
+
 html_navbar = (
     '<div class="sin-navbar">'
     '<div class="sin-navbar-marca">'
@@ -4073,6 +4154,13 @@ html_navbar = (
     '&#9638;'
     '</span>'
     '<span>Subsistemas</span>'
+    '</a>'
+
+    f'<a class="{classe_ativos_elera}" '
+    'href="?pagina=ativos_elera" target="_self" '
+    'title="Visualizar os ativos da Elera">'
+    f'{html_logo_elera}'
+    '<span>Ativos Elera</span>'
     '</a>'
 
     '</div>'
