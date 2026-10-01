@@ -10,7 +10,7 @@ Regras das bases:
 from datetime import date
 from pathlib import Path
 from io import BytesIO
-nave
+
 import pandas as pd
 import plotly.express as px
 import matplotlib.pyplot as plt
