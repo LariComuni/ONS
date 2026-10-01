@@ -663,7 +663,8 @@ st.markdown(
         .st-key-download_mensal,
         .st-key-download_heatmap,
         .st-key-download_corte,
-        .st-key-download_resumo {
+        .st-key-download_resumo,
+        .st-key-download_detalhado {
             display: flex;
             align-items: center;
             justify-content: flex-end;
@@ -677,6 +678,8 @@ st.markdown(
         .st-key-download_corte
         div[data-testid="stDownloadButton"],
         .st-key-download_resumo
+        div[data-testid="stDownloadButton"],
+        .st-key-download_detalhado
         div[data-testid="stDownloadButton"] {
             display: flex;
             align-items: center;
@@ -691,6 +694,8 @@ st.markdown(
         .st-key-download_corte
         div[data-testid="stDownloadButton"] button,
         .st-key-download_resumo
+        div[data-testid="stDownloadButton"] button,
+        .st-key-download_detalhado
         div[data-testid="stDownloadButton"] button {
             position: relative;
         
@@ -734,6 +739,8 @@ st.markdown(
         .st-key-download_corte
         div[data-testid="stDownloadButton"] button:hover,
         .st-key-download_resumo
+        div[data-testid="stDownloadButton"] button:hover,
+        .st-key-download_detalhado
         div[data-testid="stDownloadButton"] button:hover {
             background-color: #6b9de8 !important;
         
@@ -752,6 +759,8 @@ st.markdown(
         .st-key-download_corte
         div[data-testid="stDownloadButton"] button:active,
         .st-key-download_resumo
+        div[data-testid="stDownloadButton"] button:active,
+        .st-key-download_detalhado
         div[data-testid="stDownloadButton"] button:active {
             background-color: #5d8ed7 !important;
             transform: translateY(0);
@@ -764,6 +773,8 @@ st.markdown(
         .st-key-download_corte
         div[data-testid="stDownloadButton"] button:focus-visible,
         .st-key-download_resumo
+        div[data-testid="stDownloadButton"] button:focus-visible,
+        .st-key-download_detalhado
         div[data-testid="stDownloadButton"] button:focus-visible {
             outline: 3px solid rgba(122, 170, 240, 0.35);
             outline-offset: 2px;
@@ -786,6 +797,10 @@ st.markdown(
         .st-key-download_resumo
         div[data-testid="stDownloadButton"] button p,
         .st-key-download_resumo
+        div[data-testid="stDownloadButton"] button span,
+        .st-key-download_detalhado
+        div[data-testid="stDownloadButton"] button p,
+        .st-key-download_detalhado
         div[data-testid="stDownloadButton"] button span {
             visibility: hidden;
         
@@ -805,7 +820,9 @@ st.markdown(
         .st-key-download_corte
         div[data-testid="stDownloadButton"] button::before,
         .st-key-download_resumo
-        div[data-testid="stDownloadButton"] button::before{
+        div[data-testid="stDownloadButton"] button::before,
+        .st-key-download_detalhado
+        div[data-testid="stDownloadButton"] button::before {
             content: "";
         
             position: absolute;
