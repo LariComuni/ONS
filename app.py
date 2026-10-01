@@ -31,6 +31,7 @@ from src.analise_subsistemas import (
     preparar_download_perfil_horario,
     preparar_corte_subsistema_tipo,  
     preparar_resumo_subsistemas,
+    preparar_exportacao_subsistemas
 )
 # ============================================================
 # CONFIGURAÇÃO
@@ -1104,6 +1105,59 @@ st.markdown(
             font-size: 0.82rem;
             text-align: center;
         }
+
+        /* card de tabela completa download */
+
+        .st-key-card_exportacao_subsistemas {
+            width: min(1500px, calc(100vw - 3rem));
+        
+            margin-top: 0;
+            margin-right: auto;
+            margin-bottom: 2rem;
+            margin-left: auto;
+        
+            padding: 0.85rem 0.95rem;
+        
+            background-color: #ffffff;
+        
+            border: 1px solid #e2e8f0;
+            border-radius: 13px;
+        
+            box-shadow:
+                0 6px 18px rgba(15, 42, 70, 0.08);
+        
+            box-sizing: border-box;
+        }
+        
+        .st-key-card_exportacao_subsistemas
+        div[data-testid="stVerticalBlockBorderWrapper"] {
+            border: 0;
+            box-shadow: none;
+        }
+        
+        .cabecalho-exportacao-subsistemas {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        
+            min-height: 46px;
+        }
+        
+        .subtitulo-exportacao-subsistemas {
+            margin-top: 0.25rem;
+        
+            color: #64748b;
+            font-size: 0.76rem;
+            line-height: 1.35;
+        }
+        
+        .st-key-card_exportacao_subsistemas
+        div[data-testid="stSelectbox"] label {
+            color: #53667c;
+            font-size: 0.76rem;
+            font-weight: 600;
+        }
+
         
         @media (max-width: 900px) {
             .kpis-subsistemas {
@@ -1197,6 +1251,15 @@ TIPOS_CURTAILMENT = {
     "Energético": "ENE",
     "Elétrico": "REL",
     "Confiabilidade": "CNF",
+}
+
+GRANULARIDADES_EXPORTACAO = {
+    "Dia e hora": "DIA_HORA",
+    "Mês e hora": "MES_HORA",
+    "Ano e hora": "ANO_HORA",
+    "Dia": "DIA",
+    "Mês": "MES",
+    "Ano": "ANO",
 }
 
 # ============================================================
@@ -3639,7 +3702,110 @@ def renderizar_pagina_subsistemas(
             
             st.html(
                 html_tabela_resumo
-            )   
+            )
+
+    # ============================================================
+    # EXPORTAÇÃO DA ANÁLISE DETALHADA
+    # ============================================================
+    
+    with st.container(
+        border=True,
+        key="card_exportacao_subsistemas",
+    ):
+        (coluna_texto_exportacao,coluna_granularidade,coluna_download_detalhado) = st.columns([5,1.8,0.45],vertical_alignment="center")
+    
+        with coluna_texto_exportacao:
+            st.html(
+                """
+                <div class="cabecalho-exportacao-subsistemas">
+                    <div class="titulo-card-grafico">
+                        Exportar análise detalhada
+                    </div>
+    
+                    <div class="subtitulo-exportacao-subsistemas">
+                        Curtailment por tipo, geração esperada
+                        e corte percentual, sempre divididos
+                        por subsistema.
+                    </div>
+                </div>
+                """
+            )
+    
+        with coluna_granularidade:
+            granularidade_rotulo = st.selectbox(
+                "Granularidade",
+                options=list(
+                    GRANULARIDADES_EXPORTACAO.keys()
+                ),
+                index=0,
+                key="granularidade_exportacao_subsistemas",
+            )
+    
+        granularidade_codigo = (GRANULARIDADES_EXPORTACAO[granularidade_rotulo])
+    
+        arquivo_exportacao_xlsx = None
+    
+        try:
+            dados_exportacao_subsistemas = (
+                preparar_exportacao_subsistemas_aplicacao(
+                    df_curtailment=(df_curtailment_subsistemas),
+                    granularidade=(granularidade_codigo)
+                )
+            )
+    
+            nome_planilha_exportacao = {
+                "DIA_HORA": "Dia e hora",
+                "MES_HORA": "Mês e hora",
+                "ANO_HORA": "Ano e hora",
+                "DIA": "Dia",
+                "MES": "Mês",
+                "ANO": "Ano",
+            }[granularidade_codigo]
+    
+            arquivo_exportacao_xlsx = (
+                gerar_excel_dataframe(
+                    df=dados_exportacao_subsistemas,
+                    nome_planilha=(
+                        nome_planilha_exportacao
+                    ),
+                )
+            )
+    
+        except (
+            TypeError,
+            ValueError,
+            KeyError,
+        ) as erro_exportacao:
+            st.warning("Não foi possível preparar a análise detalhada para download.")
+    
+            st.caption(str(erro_exportacao))
+    
+        with coluna_download_detalhado:
+            with st.container(
+                key="download_detalhado",
+            ):
+                if arquivo_exportacao_xlsx is not None:
+                    nome_granularidade_arquivo = (granularidade_codigo.lower())
+    
+                    nome_arquivo_exportacao = (
+                        "SINmulator_"
+                        "analise_subsistemas_"
+                        f"{nome_granularidade_arquivo}_"
+                        f"{filtros_subsistemas['ano_inicial']}-"
+                        f"{filtros_subsistemas['mes_inicial'\]:02d}_"
+                        f"{filtros_subsistemas['ano_final']}-"
+                        f"{filtros_subsistemas['mes_final'\]:02d}"
+                        ".xlsx"
+                    )
+    
+                    st.download_button(
+                        label="Baixar",
+                        data=arquivo_exportacao_xlsx,
+                        file_name=(nome_arquivo_exportacao),
+                        mime=("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"),
+                        help=("Baixar a análise detalhada por subsistema na granularidade selecionada"),
+                        key="botao_download_detalhado"
+                    )
 
 
 @st.cache_data(show_spinner=False,)
@@ -3742,6 +3908,21 @@ def gerar_excel_dataframe(
     buffer.seek(0)
 
     return buffer.getvalue()
+
+@st.cache_data(show_spinner=False)
+def preparar_exportacao_subsistemas_aplicacao(
+    df_curtailment,
+    granularidade,
+):
+    """
+    Prepara a análise detalhada por subsistema
+    para exportação.
+    """
+
+    return preparar_exportacao_subsistemas(
+        df=df_curtailment,
+        granularidade=granularidade,
+    )
 
 def formatar_percentual(
     valor,
