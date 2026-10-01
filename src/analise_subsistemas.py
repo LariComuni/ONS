@@ -1843,3 +1843,500 @@ def preparar_resumo_subsistemas(
     )
 
     return resumo
+
+def preparar_exportacao_subsistemas(
+    df,
+    granularidade,
+):
+    """
+    Prepara uma análise consolidada por subsistema
+    para exportação.
+
+    Granularidades permitidas
+    -------------------------
+    DIA_HORA
+        Uma linha para cada data, hora e subsistema.
+
+    MES_HORA
+        Uma linha para cada mês, hora do dia e subsistema.
+
+    ANO_HORA
+        Uma linha para cada ano, hora do dia e subsistema.
+
+    DIA
+        Uma linha para cada data e subsistema.
+
+    MES
+        Uma linha para cada mês e subsistema.
+
+    ANO
+        Uma linha para cada ano e subsistema.
+
+    Os registros representam intervalos de 30 minutos.
+    Portanto, a conversão de potência para energia utiliza:
+
+    MW * 0.5 = MWh
+
+    Parâmetros
+    ----------
+    df : pandas.DataFrame
+        Base calculada de curtailment.
+
+    granularidade : str
+        Granularidade temporal desejada.
+
+    Retorno
+    -------
+    pandas.DataFrame
+        Tabela consolidada por período e subsistema,
+        com curtailment por tipo, geração esperada e
+        percentuais de corte.
+    """
+
+    if not isinstance(
+        df,
+        pd.DataFrame,
+    ):
+        raise TypeError("df deve ser um DataFrame.")
+
+    if df.empty:
+        raise ValueError("A base informada está vazia.")
+
+    colunas_obrigatorias = {
+        "din_instante",
+        "id_subsistema",
+        "cod_razaorestricao",
+        "val_curtailment",
+        "val_geracao_esperada",
+    }
+
+    colunas_ausentes = (colunas_obrigatorias- set(df.columns))
+
+    if colunas_ausentes:
+        raise ValueError(f "A base não possui as colunas obrigatórias:{sorted(colunas_ausentes)}.")
+
+    granularidade_normalizada = (str(granularidade).strip().upper())
+
+    granularidades_permitidas = {
+        "DIA_HORA",
+        "MES_HORA",
+        "ANO_HORA",
+        "DIA",
+        "MES",
+        "ANO",
+    }
+
+    if (
+        granularidade_normalizada
+        not in granularidades_permitidas
+    ):
+        raise ValueError("A granularidade deve ser DIA_HORA, MES_HORA, ANO_HORA, DIA, MES ou ANO.")
+
+    df_aux = df.copy()
+
+    # ========================================================
+    # TRATAMENTO DA BASE
+    # ========================================================
+
+    df_aux["din_instante"] = pd.to_datetime(
+        df_aux["din_instante"],
+        errors="coerce",
+    )
+
+    df_aux["val_curtailment"] = pd.to_numeric(
+        df_aux["val_curtailment"],
+        errors="coerce",
+    )
+
+    df_aux["val_geracao_esperada"] = pd.to_numeric(
+        df_aux["val_geracao_esperada"],
+        errors="coerce",
+    )
+
+    df_aux["id_subsistema"] = (
+        df_aux["id_subsistema"]
+        .astype("string")
+        .str.strip()
+        .str.upper()
+    )
+
+    df_aux["tipo_curtailment"] = (
+        df_aux["cod_razaorestricao"]
+        .astype("string")
+        .str.strip()
+        .str.upper()
+        .fillna("SEM_CODIGO")
+        .replace(
+            "",
+            "SEM_CODIGO",
+        )
+    )
+
+    df_aux = df_aux.dropna(subset=["din_instante","id_subsistema","val_geracao_esperada"]).copy()
+
+    # A análise permanece obrigatoriamente dividida
+    # nos quatro subsistemas considerados na página.
+
+    ordem_subsistemas = [
+        "N",
+        "NE",
+        "SE",
+        "S",
+    ]
+
+    df_aux = df_aux[
+        df_aux["id_subsistema"]
+        .isin(
+            ordem_subsistemas
+        )
+    ].copy()
+
+    if df_aux.empty:
+        raise ValueError(
+            "Não restaram registros válidos dos "
+            "subsistemas N, NE, SE e S."
+        )
+
+    df_aux["val_curtailment"] = (df_aux["val_curtailment"].fillna(0.0).clip(lower=0))
+
+    df_aux["val_geracao_esperada"] = (df_aux["val_geracao_esperada"].fillna(0.0).clip(lower=0))
+
+    # Cada registro representa 30 minutos.
+
+    df_aux["curtailment_mwh"] = (df_aux["val_curtailment"]* 0.5)
+
+    df_aux["geracao_esperada_mwh"] = (df_aux["val_geracao_esperada"]* 0.5)
+
+    # ========================================================
+    # COLUNAS TEMPORAIS
+    # ========================================================
+
+    df_aux["data"] = (df_aux["din_instante"].dt.normalize())
+
+    df_aux["mes"] = (df_aux["din_instante"].dt.to_period("M").dt.to_timestamp())
+
+    df_aux["ano"] = (df_aux["din_instante"].dt.year)
+
+    df_aux["hora"] = (df_aux["din_instante"].dt.hour)
+
+    colunas_temporais = {
+        "DIA_HORA": [
+            "data",
+            "hora",
+        ],
+        "MES_HORA": [
+            "mes",
+            "hora",
+        ],
+        "ANO_HORA": [
+            "ano",
+            "hora",
+        ],
+        "DIA": [
+            "data",
+        ],
+        "MES": [
+            "mes",
+        ],
+        "ANO": [
+            "ano",
+        ],
+    }
+
+    colunas_grupo = colunas_temporais[granularidade_normalizada]
+
+    # id_subsistema sempre faz parte das chaves. Assim, nenhuma granularidade mistura N, NE, SE e S.
+
+    colunas_indice = (colunas_grupo + ["id_subsistema"])
+
+    # ========================================================
+    # GERAÇÃO ESPERADA
+    # ========================================================
+
+    # A geração esperada é agregada uma única vez por período e subsistema. Ela não é separada por tipo de curtailment.
+
+    geracao_esperada = (
+        df_aux
+        .groupby(
+            colunas_indice,
+            as_index=False,
+            observed=True,
+        )
+        .agg(
+            geracao_esperada_mwh=(
+                "geracao_esperada_mwh",
+                "sum",
+            )
+        )
+    )
+
+    # ========================================================
+    # CURTAILMENT POR TIPO
+    # ========================================================
+
+    tipos_permitidos = ["ENE","REL","CNF"]
+
+    df_curtailment = df_aux[
+        df_aux["tipo_curtailment"]
+        .isin(
+            tipos_permitidos
+        )
+    ].copy()
+
+    if df_curtailment.empty:
+        tabela_curtailment = (
+            geracao_esperada[
+                colunas_indice
+            ]
+            .copy()
+        )
+
+        tabela_curtailment["ENE"] = 0.0
+        tabela_curtailment["REL"] = 0.0
+        tabela_curtailment["CNF"] = 0.0
+
+    else:
+        curtailment_agrupado = (
+            df_curtailment
+            .groupby(
+                colunas_indice
+                + [
+                    "tipo_curtailment",
+                ],
+                as_index=False,
+                observed=True,
+            )
+            .agg(
+                curtailment_mwh=(
+                    "curtailment_mwh",
+                    "sum",
+                )
+            )
+        )
+
+        tabela_curtailment = (
+            curtailment_agrupado
+            .pivot_table(
+                index=colunas_indice,
+                columns="tipo_curtailment",
+                values="curtailment_mwh",
+                aggfunc="sum",
+                fill_value=0.0,
+            )
+            .reset_index()
+        )
+
+        for codigo in tipos_permitidos:
+            if codigo not in tabela_curtailment.columns:
+                tabela_curtailment[
+                    codigo
+                ] = 0.0
+
+    # ========================================================
+    # COMBINAÇÃO DAS BASES
+    # ========================================================
+
+    tabela_exportacao = (geracao_esperada.merge(tabela_curtailment,on=colunas_indice,how="left",validate="one_to_one"))
+
+    for codigo in tipos_permitidos:
+        tabela_exportacao[codigo] = (
+            tabela_exportacao[codigo]
+            .fillna(0.0)
+        )
+
+    # ========================================================
+    # CURTAILMENT TOTAL
+    # ========================================================
+
+    tabela_exportacao["TODOS"] = (
+        tabela_exportacao["ENE"]
+        + tabela_exportacao["REL"]
+        + tabela_exportacao["CNF"]
+    )
+
+    # ========================================================
+    # PERCENTUAIS DE CORTE
+    # ========================================================
+
+    mascara_geracao_positiva = (tabela_exportacao["geracao_esperada_mwh"] > 0)
+
+    for codigo in [
+        "ENE",
+        "REL",
+        "CNF",
+        "TODOS",
+    ]:
+        coluna_corte = (
+            f"corte_{codigo.lower()}_pct"
+        )
+
+        tabela_exportacao[
+            coluna_corte
+        ] = 0.0
+
+        tabela_exportacao.loc[
+            mascara_geracao_positiva,
+            coluna_corte,
+        ] = (
+            100
+            * tabela_exportacao.loc[
+                mascara_geracao_positiva,
+                codigo,
+            ]
+            / tabela_exportacao.loc[
+                mascara_geracao_positiva,
+                "geracao_esperada_mwh",
+            ]
+        )
+
+    # ========================================================
+    # ORDENAÇÃO DAS LINHAS
+    # ========================================================
+
+    ordem_subsistemas_mapa = {
+        "N": 1,
+        "NE": 2,
+        "SE": 3,
+        "S": 4,
+    }
+
+    tabela_exportacao[
+        "ordem_subsistema"
+    ] = (
+        tabela_exportacao[
+            "id_subsistema"
+        ]
+        .map(
+            ordem_subsistemas_mapa
+        )
+        .fillna(99)
+    )
+
+    colunas_ordenacao = (colunas_grupo+ ["ordem_subsistema"])
+
+    tabela_exportacao = (
+        tabela_exportacao
+        .sort_values(
+            colunas_ordenacao
+        )
+        .drop(
+            columns="ordem_subsistema"
+        )
+        .reset_index(
+            drop=True
+        )
+    )
+
+    # ========================================================
+    # NOMES DAS COLUNAS
+    # ========================================================
+
+    tabela_exportacao = (
+        tabela_exportacao
+        .rename(
+            columns={
+                "data": "Data",
+                "mes": "Mês",
+                "ano": "Ano",
+                "hora": "Hora",
+                "id_subsistema": "Subsistema",
+                "ENE": "Curtailment ENE (MWh)",
+                "REL": "Curtailment REL (MWh)",
+                "CNF": "Curtailment CNF (MWh)",
+                "TODOS": (
+                    "Curtailment Todos (MWh)"
+                ),
+                "geracao_esperada_mwh": (
+                    "Geração Esperada (MWh)"
+                ),
+                "corte_ene_pct": (
+                    "Corte ENE (%)"
+                ),
+                "corte_rel_pct": (
+                    "Corte REL (%)"
+                ),
+                "corte_cnf_pct": (
+                    "Corte CNF (%)"
+                ),
+                "corte_todos_pct": (
+                    "Corte Todos (%)"
+                ),
+            }
+        )
+    )
+
+    # ========================================================
+    # FORMATAÇÃO DAS COLUNAS TEMPORAIS
+    # ========================================================
+
+    if "Data" in tabela_exportacao.columns:
+        tabela_exportacao["Data"] = (
+            tabela_exportacao["Data"]
+            .dt.date
+        )
+
+    if "Mês" in tabela_exportacao.columns:
+        tabela_exportacao["Mês"] = (
+            tabela_exportacao["Mês"]
+            .dt.strftime("%m/%Y")
+        )
+
+    if "Hora" in tabela_exportacao.columns:
+        tabela_exportacao["Hora"] = (
+            tabela_exportacao["Hora"]
+            .map(
+                lambda hora: (
+                    f"{int(hora):02d}:00"
+                )
+            )
+        )
+
+    # ========================================================
+    # ORDEM FINAL DAS COLUNAS
+    # ========================================================
+
+    colunas_temporais_saida = {
+        "DIA_HORA": [
+            "Data",
+            "Hora",
+        ],
+        "MES_HORA": [
+            "Mês",
+            "Hora",
+        ],
+        "ANO_HORA": [
+            "Ano",
+            "Hora",
+        ],
+        "DIA": [
+            "Data",
+        ],
+        "MES": [
+            "Mês",
+        ],
+        "ANO": [
+            "Ano",
+        ],
+    }
+
+    colunas_saida = (
+        colunas_temporais_saida[
+            granularidade_normalizada
+        ]
+        + [
+            "Subsistema",
+            "Curtailment ENE (MWh)",
+            "Curtailment REL (MWh)",
+            "Curtailment CNF (MWh)",
+            "Curtailment Todos (MWh)",
+            "Geração Esperada (MWh)",
+            "Corte ENE (%)",
+            "Corte REL (%)",
+            "Corte CNF (%)",
+            "Corte Todos (%)",
+        ]
+    )
+
+    tabela_exportacao = tabela_exportacao[colunas_saida]
+
+    return tabela_exportacao
