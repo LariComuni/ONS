@@ -463,6 +463,8 @@ st.markdown(
             color: #475569;
             font-size: 0.82rem !important;
             line-height: 1rem;
+
+            transform: translateY(-1px);
         }
         
         .st-key-filtros_subsistemas
