@@ -427,54 +427,23 @@ st.markdown(
             border-radius: 9px;
             font-weight: 600;
         }
-
+        
         /* Spinner apenas da aba Subsistemas */
 
         .st-key-filtros_subsistemas
         div[data-testid="stStatusWidget"],
         .st-key-filtros_subsistemas
         div[data-testid="stSpinner"] {
-            margin-top: 0.3rem;
+            margin-top: 0.45rem;
             margin-bottom: 0;
         }
         
         .st-key-filtros_subsistemas
-        div[data-testid="stSpinner"] {
-            display: flex;
-            align-items: center;
-            gap: 0.45rem;
-        }
-        
-        .st-key-filtros_subsistemas
-        div[data-testid="stSpinner"] > div {
-            display: flex;
-            align-items: center;
-        }
-        
-        .st-key-filtros_subsistemas
         div[data-testid="stSpinner"] p {
-            display: flex;
-            align-items: center;
-        
-            min-height: 1rem;
-            margin: 0 !important;
-            padding: 0 !important;
-        
             color: #475569;
-            font-size: 0.82rem !important;
-            line-height: 1rem;
+            font-size: 0.82rem;
+        }
 
-            transform: translateY(-1px);
-        }
-        
-        .st-key-filtros_subsistemas
-        div[data-testid="stSpinner"] svg {
-            display: block;
-            flex: 0 0 auto;
-        
-            width: 1rem;
-            height: 1rem;
-        }
 
         .resumo-subsistemas-filtros {
             display: flex;
