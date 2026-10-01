@@ -1913,7 +1913,7 @@ def preparar_exportacao_subsistemas(
     colunas_ausentes = (colunas_obrigatorias- set(df.columns))
 
     if colunas_ausentes:
-        raise ValueError(f "A base não possui as colunas obrigatórias:{sorted(colunas_ausentes)}.")
+        raise ValueError(f"A base não possui as colunas obrigatórias:{sorted(colunas_ausentes)}.")
 
     granularidade_normalizada = (str(granularidade).strip().upper())
 
