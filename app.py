@@ -444,7 +444,6 @@ st.markdown(
         
             color: #475569;
             font-size: 0.82rem !important;
-            line-height: 1.3;
         }
         
         .st-key-filtros_subsistemas
