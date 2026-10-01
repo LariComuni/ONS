@@ -657,9 +657,12 @@ st.markdown(
             line-height: 1.2;
         }
 
+        /* botões de download da aba de subsistemas*/
+
         .st-key-download_mensal,
         .st-key-download_heatmap,
-        .st-key-download_corte {
+        .st-key-download_corte,
+        .st-key-download_resumo {
             display: flex;
             align-items: center;
             justify-content: flex-end;
@@ -671,7 +674,9 @@ st.markdown(
         .st-key-download_heatmap
         div[data-testid="stDownloadButton"],
         .st-key-download_corte
-        div[data-testid="stDownloadButton"]{
+        div[data-testid="stDownloadButton"],
+        .st-key-download_resumo
+        div[data-testid="stDownloadButton"] {
             display: flex;
             align-items: center;
             justify-content: flex-end;
@@ -683,6 +688,8 @@ st.markdown(
         .st-key-download_heatmap
         div[data-testid="stDownloadButton"] button,
         .st-key-download_corte
+        div[data-testid="stDownloadButton"] button,
+        .st-key-download_resumo
         div[data-testid="stDownloadButton"] button {
             position: relative;
         
@@ -724,7 +731,9 @@ st.markdown(
         .st-key-download_heatmap
         div[data-testid="stDownloadButton"] button:hover,
         .st-key-download_corte
-        div[data-testid="stDownloadButton"] button:hover{
+        div[data-testid="stDownloadButton"] button:hover,
+        .st-key-download_resumo
+        div[data-testid="stDownloadButton"] button:hover {
             background-color: #6b9de8 !important;
         
             border: 0 !important;
@@ -740,6 +749,8 @@ st.markdown(
         .st-key-download_heatmap
         div[data-testid="stDownloadButton"] button:active,
         .st-key-download_corte
+        div[data-testid="stDownloadButton"] button:active,
+        .st-key-download_resumo
         div[data-testid="stDownloadButton"] button:active {
             background-color: #5d8ed7 !important;
             transform: translateY(0);
@@ -750,6 +761,8 @@ st.markdown(
         .st-key-download_heatmap
         div[data-testid="stDownloadButton"] button:focus-visible, 
         .st-key-download_corte
+        div[data-testid="stDownloadButton"] button:focus-visible,
+        .st-key-download_resumo
         div[data-testid="stDownloadButton"] button:focus-visible {
             outline: 3px solid rgba(122, 170, 240, 0.35);
             outline-offset: 2px;
@@ -768,6 +781,10 @@ st.markdown(
         .st-key-download_corte
         div[data-testid="stDownloadButton"] button p,
         .st-key-download_corte
+        div[data-testid="stDownloadButton"] button span,
+        .st-key-download_resumo
+        div[data-testid="stDownloadButton"] button p,
+        .st-key-download_resumo
         div[data-testid="stDownloadButton"] button span {
             visibility: hidden;
         
@@ -785,7 +802,9 @@ st.markdown(
         .st-key-download_heatmap
         div[data-testid="stDownloadButton"] button::before,
         .st-key-download_corte
-        div[data-testid="stDownloadButton"] button::before {
+        div[data-testid="stDownloadButton"] button::before,
+        .st-key-download_resumo
+        div[data-testid="stDownloadButton"] button::before{
             content: "";
         
             position: absolute;
@@ -3417,31 +3436,69 @@ def renderizar_pagina_subsistemas(
         )
     
         tabela_resumo_subsistemas = pd.DataFrame()
+        
+    arquivo_resumo_xlsx = None
+
+    if not tabela_resumo_subsistemas.empty:
+        dados_download_resumo = (tabela_resumo_subsistemas.copy())
     
+        arquivo_resumo_xlsx = (gerar_excel_dataframe(df=dados_download_resumo,nome_planilha=("Resumo por subsistema")))
     
     with st.container(
         border=True,
         key="card_tabela_subsistemas",
     ):
-        st.html(
-            """
-            <div class="titulo-card-grafico">
-                Resumo por subsistema
-            </div>
-            """
-        )
+        (coluna_titulo_resumo,coluna_download_resumo) = st.columns([8,0.45],vertical_alignment="center")
+
+        # =======================================
+        # TÍTULO DO CARD DE RESUMO
+        # =======================================
+        with coluna_titulo_resumo:
+            st.html(
+                """
+                <div class="titulo-card-grafico">
+                    Resumo por subsistema
+                </div>
+                """
+            )
+        # =======================================
+        # BOTÃO DE DOWNLOAD DA TABELA DE RESUMO
+        # =======================================
+        with coluna_download_resumo:
+            with st.container(
+                key="download_resumo",
+            ):
+                if arquivo_resumo_xlsx is not None:
+                    nome_arquivo_resumo = (
+                        "SINmulator_"
+                        "resumo_subsistemas_"
+                        f"{filtros_subsistemas['ano_inicial']}-"
+                        f"{filtros_subsistemas['mes_inicial']:02d}_"
+                        f"{filtros_subsistemas['ano_final']}-"
+                        f"{filtros_subsistemas['mes_final']:02d}"
+                        ".xlsx"
+                    )
+        
+                    st.download_button(
+                        label="Baixar",
+                        data=arquivo_resumo_xlsx,
+                        file_name=nome_arquivo_resumo,
+                        mime=(
+                            "application/vnd.openxmlformats-"
+                            "officedocument.spreadsheetml.sheet"
+                        ),
+                        help=(
+                            "Baixar a tabela de resumo por "
+                            "subsistema"
+                        ),
+                        key="botao_download_resumo",
+                    )
     
         if tabela_resumo_subsistemas.empty:
-            st.info(
-                "Não há dados disponíveis para a tabela "
-                "de resumo."
-            )
+            st.info("Não há dados disponíveis para a tabela de resumo.")
     
         else:
-            tabela_exibicao = (
-                tabela_resumo_subsistemas
-                .copy()
-            )
+            tabela_exibicao = (tabela_resumo_subsistemas.copy())
     
             tabela_exibicao[
                 "Curtailment (GWh)"
