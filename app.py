@@ -7,15 +7,16 @@ Regras das bases:
 - subestações: cadastro mais atual disponível;
 - linhas de transmissão: cadastro mais atual disponível.
 """
-
 from datetime import date
 from pathlib import Path
 from io import BytesIO
+
 import pandas as pd
 import plotly.express as px
 import matplotlib.pyplot as plt
 import streamlit as st
 import streamlit.components.v1 as components
+import base64
 
 from src.mapa import (
     carregar_malha_ufs,
@@ -1279,6 +1280,11 @@ GRANULARIDADES_EXPORTACAO = {
     "Ano": "ANO",
 }
 
+CAMINHO_LOGO_ELERA = (
+    Path(__file__).resolve().parent
+    / "assets"
+    / "logo_elera.png")
+
 # ============================================================
 # FUNÇÕES
 # ============================================================
@@ -1452,9 +1458,7 @@ def executar_pipeline_aplicacao(
         timeout=timeout,
     )
 
-@st.cache_data(
-    show_spinner=False,
-)
+@st.cache_data(show_spinner=False)
 
 def carregar_ufs_aplicacao(
     caminho_geojson,
@@ -3836,7 +3840,6 @@ def calcular_kpis_subsistemas_aplicacao(
     return calcular_kpis_curtailment(df_curtailment)
 
 @st.cache_data(show_spinner=False,)
-
 def preparar_resumo_subsistemas_aplicacao(
     df_curtailment,
 ):
@@ -3940,6 +3943,36 @@ def preparar_exportacao_subsistemas_aplicacao(
         granularidade=granularidade,
     )
 
+@st.cache_data(show_spinner=False)
+def carregar_imagem_base64(
+    caminho_imagem,
+):
+    """
+    Converte uma imagem local em uma URI base64 para
+    utilização em elementos HTML.
+    """
+
+    caminho = Path(caminho_imagem)
+
+    if not caminho.exists():
+        return None
+
+    extensao = (caminho.suffix.lower().replace(".",""))
+
+    tipos_mime = {
+        "png": "image/png",
+        "jpg": "image/jpeg",
+        "jpeg": "image/jpeg",
+        "webp": "image/webp",
+        "svg": "image/svg+xml",
+    }
+
+    tipo_mime = tipos_mime.get(extensao,"image/png",)
+
+    imagem_base64 = base64.b64encode(caminho.read_bytes()).decode("utf-8")
+
+    return (f"data:{tipo_mime};base64,{imagem_base64}")
+
 def formatar_percentual(
     valor,
 ):
@@ -3989,15 +4022,9 @@ if not CAMINHO_UFS.exists():
 # NAVEGAÇÃO
 # ============================================================
 
-pagina_ativa = st.query_params.get(
-    "pagina",
-    "mapa",
-)
+pagina_ativa = st.query_params.get("pagina","mapa")
 
-paginas_permitidas = {
-    "mapa",
-    "subsistemas",
-}
+paginas_permitidas = {"mapa","subsistemas","ativos_elera"}
 
 if pagina_ativa not in paginas_permitidas:
     pagina_ativa = "mapa"
