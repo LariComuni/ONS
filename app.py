@@ -4122,7 +4122,17 @@ if logo_elera_base64 is not None:
         '<img '
         f'src="{logo_elera_base64}" '
         'alt="" '
-        'aria-hidden="true">'
+        'aria-hidden="true" '
+        'width="18" '
+        'height="18" '
+        'style="'
+        'display:block;'
+        'width:18px;'
+        'height:18px;'
+        'margin:0;'
+        'padding:0;'
+        'object-fit:contain;'
+        '">'
         '</span>'
     )
 
