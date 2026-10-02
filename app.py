@@ -194,10 +194,10 @@ st.markdown(
             align-items: center;
             justify-content: center;
         
-            flex: 0 0 auto;
+            flex: 0 0 20px;
         
-            width: 27px;
-            height: 27px;
+            width: 20px;
+            height: 20px;
         
             overflow: hidden;
         
@@ -212,8 +212,8 @@ st.markdown(
         .sin-navbar-logo-elera img {
             display: block;
         
-            width: 25px;
-            height: 25px;
+            width: 18px;
+            height: 18px;
         
             object-fit: contain;
             object-position: center;
