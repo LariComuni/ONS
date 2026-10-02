@@ -1245,72 +1245,6 @@ st.markdown(
             font-size: 0.76rem;
             font-weight: 600;
         }
-
-        /* Página provisória Ativos Elera */
-
-        .pagina-ativos-elera {
-            width: min(760px, calc(100vw - 3rem));
-        
-            margin-top: 3rem;
-            margin-right: auto;
-            margin-bottom: 3rem;
-            margin-left: auto;
-        
-            padding: 2.75rem 2.25rem;
-        
-            text-align: center;
-        
-            background-color: #ffffff;
-        
-            border: 1px solid #e2e8f0;
-            border-radius: 14px;
-        
-            box-shadow:
-                0 8px 24px rgba(15, 23, 42, 0.08);
-        
-            box-sizing: border-box;
-        }
-        
-        .pagina-elera-conteudo h1 {
-            margin: 0 0 0.5rem;
-        
-            color: #0f2948;
-            font-size: 1.8rem;
-            font-weight: 750;
-            line-height: 1.2;
-        }
-        
-        .pagina-elera-conteudo p {
-            max-width: 540px;
-        
-            margin-top: 0;
-            margin-right: auto;
-            margin-bottom: 1.1rem;
-            margin-left: auto;
-        
-            color: #64748b;
-            font-size: 0.95rem;
-            line-height: 1.55;
-        }
-        
-        .pagina-elera-status {
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-        
-            padding: 0.4rem 0.75rem;
-        
-            color: #c35d0e;
-            background-color: #fff7ed;
-        
-            border: 1px solid #fed7aa;
-            border-radius: 999px;
-        
-            font-size: 0.74rem;
-            font-weight: 650;
-            line-height: 1;
-        }
-
         
         @media (max-width: 900px) {
             .kpis-subsistemas {
@@ -1342,14 +1276,6 @@ st.markdown(
             
             .sin-navbar-item-elera {
                 min-width: auto;
-            }
-            
-            .pagina-ativos-elera {
-                width: calc(100vw - 1rem);
-            
-                margin-top: 1.5rem;
-            
-                padding: 2rem 1.25rem;
             }
         }
     </style>
