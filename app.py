@@ -774,6 +774,143 @@ st.markdown(
             padding: 0.95rem 1.05rem;
         }
 
+        /* KPIs ativos elera */
+        
+        .kpis-ativos-elera {
+            display: grid;
+            grid-template-columns:
+                repeat(4, minmax(0, 1fr));
+            gap: 1rem;
+        
+            width: min(1500px, calc(100vw - 3rem));
+        
+            margin-top: 1rem;
+            margin-right: auto;
+            margin-bottom: 1.25rem;
+            margin-left: auto;
+        }
+        
+        .kpi-elera-card {
+            display: flex;
+            align-items: center;
+            gap: 0.85rem;
+        
+            min-width: 0;
+            min-height: 96px;
+        
+            padding: 0.95rem 1.05rem;
+        
+            background:
+                linear-gradient(
+                    135deg,
+                    #ffffff 0%,
+                    #fbfdff 100%
+                );
+        
+            border: 1px solid #e5edf5;
+            border-radius: 13px;
+        
+            box-shadow:
+                0 6px 18px rgba(15, 42, 70, 0.08);
+        
+            box-sizing: border-box;
+        }
+        
+        .kpi-elera-icone {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+        
+            flex: 0 0 auto;
+        
+            width: 48px;
+            height: 48px;
+        
+            border-radius: 50%;
+        }
+        
+        .kpi-elera-simbolo {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+        
+            width: 100%;
+            height: 100%;
+        
+            color: currentColor;
+        
+            font-family:
+                "Segoe UI Symbol",
+                Arial,
+                sans-serif;
+            font-size: 1.55rem;
+            font-weight: 700;
+            line-height: 1;
+        
+            user-select: none;
+        }
+        
+        .kpi-elera-conteudo {
+            min-width: 0;
+        }
+        
+        .kpi-elera-titulo {
+            margin-bottom: 0.25rem;
+        
+            color: #53667c;
+            font-size: 0.82rem;
+            font-weight: 650;
+            line-height: 1.2;
+        }
+        
+        .kpi-elera-valor {
+            overflow: hidden;
+        
+            color: #102d57;
+            font-size: 1.22rem;
+            font-weight: 750;
+            line-height: 1.2;
+        
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+        
+        .kpi-elera-detalhe {
+            margin-top: 0.22rem;
+        
+            color: #7c8ca0;
+            font-size: 0.75rem;
+            line-height: 1.3;
+        }
+        
+        /* Geração esperada */
+        
+        .kpi-elera-icone-geracao {
+            color: #d97706;
+            background-color: #fff7e6;
+        }
+        
+        /* Curtailment */
+        
+        .kpi-elera-icone-curtailment {
+            color: #d94c70;
+            background-color: #fce1e8;
+        }
+        
+        /* Corte médio */
+        
+        .kpi-elera-icone-corte {
+            color: #2f6690;
+            background-color: #eaf3f9;
+        }
+        
+        /* Usina mais cortada */
+        
+        .kpi-elera-icone-usina {
+            color: #9467bd;
+            background-color: #f1eafb;
+        }
+
         /* GRÁFICO CURT */
 
         .cabecalho-card-grafico {
@@ -1320,18 +1457,6 @@ st.markdown(
         }
         
         @media (max-width: 900px) {
-            .kpis-subsistemas {
-                grid-template-columns:
-                    repeat(2, minmax(0, 1fr));
-            }
-        
-            .st-key-card_grafico_mensal,
-            .st-key-card_grafico_participacao {
-                min-height: auto;
-            }
-        }
-
-        @media (max-width: 900px) {
             .sin-navbar {
                 min-height: 56px;
                 padding: 0.55rem 1rem;
@@ -1349,6 +1474,18 @@ st.markdown(
             
             .sin-navbar-item-elera {
                 min-width: auto;
+            }
+            .kpis-subsistemas {
+                grid-template-columns:
+                    repeat(2, minmax(0, 1fr));
+            }
+            .kpis-ativos-elera {
+                grid-template-columns:
+                    repeat(2, minmax(0, 1fr));
+            }
+            .st-key-card_grafico_mensal,
+            .st-key-card_grafico_participacao {
+                min-height: auto;
             }
         }
     </style>
