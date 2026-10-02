@@ -94,7 +94,7 @@ def filtrar_ativos_elera(
 
     df_elera["ativo_elera"] = (df_elera["nom_usina"].map({nome_base: dados["nome_exibicao"] for nome_base, dados in ATIVOS_ELERA.items()}))
 
-    df_elera["fonte_elera"] = (df_elera["nom_usina"].map({nome_base: dados["fonte"] for nome_base, dadosin ATIVOS_ELERA.items()}))
+    df_elera["fonte_elera"] = (df_elera["nom_usina"].map({nome_base: dados["fonte"] for nome_base, dados in ATIVOS_ELERA.items()}))
 
     return df_elera
 
