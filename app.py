@@ -124,7 +124,10 @@ st.markdown(
             gap: 0.55rem;
         
             min-width: 112px;
-            padding: 0.65rem 1rem;
+            height: 42px;
+            padding: 0 1rem;
+            
+            box-sizing: border-box;
         
             color: rgba(255, 255, 255, 0.78) !important;
             background-color: transparent;
@@ -186,14 +189,8 @@ st.markdown(
         }
 
         .sin-navbar-item-elera {
-            width: 138px;
             min-width: 138px;
-        
             gap: 0.45rem;
-            padding-right: 0.75rem;
-            padding-left: 0.75rem;
-        
-            box-sizing: border-box;
         }
         
         .sin-navbar-logo-elera {
@@ -222,9 +219,13 @@ st.markdown(
             width: 18px;
             height: 18px;
         
+            margin: 0;
+            padding: 0;
+        
             object-fit: contain;
             object-position: center;
         
+            border: 0;
             border-radius: 50%;
         }
         
@@ -1254,7 +1255,8 @@ st.markdown(
 
             .sin-navbar-item {
                 min-width: auto;
-                padding: 0.55rem 0.75rem;
+                height: 38px;
+                padding: 0 0.75rem;
             }
             
             .sin-navbar-item-elera {
