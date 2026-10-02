@@ -431,8 +431,6 @@ st.markdown(
             margin-bottom: 0.28rem;
         }
 
-        /* aba subsistemas*/
-
         /* Filtros da página Subsistemas */
 
         .st-key-filtros_subsistemas {
@@ -486,6 +484,64 @@ st.markdown(
             border-radius: 9px;
             font-weight: 600;
         }
+
+        /* Filtros da página Ativos Elera */
+
+        .st-key-filtros_ativos_elera {
+            position: relative;
+            z-index: 10;
+        
+            width: min(1120px, calc(100vw - 3rem));
+        
+            margin-top: 14px;
+            margin-right: auto;
+            margin-bottom: 1.25rem;
+            margin-left: auto;
+        
+            padding: 0.55rem 0.75rem 0.7rem;
+        
+            background-color: rgba(255, 255, 255, 0.97);
+            backdrop-filter: blur(12px);
+        
+            border: 1px solid rgba(203, 213, 225, 0.95);
+            border-radius: 13px;
+        
+            box-shadow:
+                0 10px 28px rgba(15, 23, 42, 0.14);
+        
+            box-sizing: border-box;
+        }
+        
+        .st-key-filtros_ativos_elera
+        div[data-testid="stVerticalBlockBorderWrapper"] {
+            padding: 0;
+        
+            background: transparent;
+        
+            border: 0;
+            box-shadow: none;
+        }
+        
+        .st-key-filtros_ativos_elera
+        div[data-testid="stSelectbox"] {
+            min-width: 0;
+        }
+        
+        .st-key-filtros_ativos_elera
+        div[data-testid="stSelectbox"] label {
+            color: #334155;
+            font-size: 0.78rem;
+            font-weight: 600;
+        }
+        
+        .st-key-filtros_ativos_elera
+        div[data-testid="stButton"] button {
+            min-height: 40px;
+        
+            border-radius: 9px;
+        
+            font-weight: 600;
+        }
         
         /* Spinner apenas da aba Subsistemas */
 
@@ -503,6 +559,23 @@ st.markdown(
             font-size: 0.82rem;
         }
 
+        /* Spinner apenas da aba Ativos Elera */
+
+        .st-key-filtros_ativos_elera
+        div[data-testid="stStatusWidget"],
+        .st-key-filtros_ativos_elera
+        div[data-testid="stSpinner"] {
+            margin-top: 0.45rem;
+            margin-bottom: 0;
+        }
+        
+        .st-key-filtros_ativos_elera
+        div[data-testid="stSpinner"] p {
+            color: #475569;
+            font-size: 0.82rem;
+        }
+
+        /* resumo subsistemas */
 
         .resumo-subsistemas-filtros {
             display: flex;
@@ -533,7 +606,7 @@ st.markdown(
             font-size: 0.55rem;
         }
         
-        /* CABEÇALHO SUBSISTEMAS */
+        /* Cabeçalho subsistemas */
         .cabecalho-subsistemas {
             width: min(1180px, calc(100vw - 3rem));
         
@@ -551,7 +624,7 @@ st.markdown(
             font-weight: 700;
         }
         
-        /* CABECALHO ATIVOS ELERA */
+        /* Cabeçalho ativos elera */
         .cabecalho-ativos-elera {
             width: min(1500px, calc(100vw - 3rem));
         
