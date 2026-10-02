@@ -886,29 +886,29 @@ st.markdown(
         /* Geração esperada */
         
         .kpi-elera-icone-geracao {
-            color: #d97706;
-            background-color: #fff7e6;
+            color: #2979e8;
+            background-color: #e4f0ff;
         }
         
         /* Curtailment */
         
         .kpi-elera-icone-curtailment {
-            color: #d94c70;
-            background-color: #fce1e8;
+            color: #d97706;
+            background-color: #fff3d6;
         }
         
         /* Corte médio */
         
         .kpi-elera-icone-corte {
-            color: #2f6690;
-            background-color: #eaf3f9;
+            color: #05aaa4;
+            background-color: #ddf8f6;
         }
         
         /* Usina mais cortada */
         
         .kpi-elera-icone-usina {
-            color: #9467bd;
-            background-color: #f1eafb;
+            color: #ef476f;
+            background-color: #ffe8ed;
         }
 
         /* GRÁFICO CURT */
@@ -4450,7 +4450,7 @@ def renderizar_pagina_ativos_elera(
         '<div class="kpi-elera-card">'
         '<div class="kpi-elera-icone kpi-elera-icone-curtailment">'
         '<span class="kpi-elera-simbolo" aria-hidden="true">'
-        '&#8595;'
+        '&#9888;'
         '</span>'
         '</div>'
         '<div class="kpi-elera-conteudo">'
