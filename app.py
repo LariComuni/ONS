@@ -4264,6 +4264,119 @@ def renderizar_pagina_ativos_elera(
 
         return
 
+    # ============================================================
+    # FORMATAÇÃO DOS KPIs
+    # ============================================================
+    
+    geracao_esperada_elera = (formatar_numero_brasileiro(kpis_ativos_elera["Geração Esperada (GWh)"],casas_decimais=2))
+    
+    curtailment_elera = (formatar_numero_brasileiro(kpis_ativos_elera["Curtailment (GWh)"],casas_decimais=2))
+    
+    corte_medio_elera = (formatar_numero_brasileiro(kpis_ativos_elera["Corte Médio (%)"],casas_decimais=2))
+    
+    usina_mais_cortada = (kpis_ativos_elera["Usina Mais Cortada"])
+    
+    fonte_usina_mais_cortada = (kpis_ativos_elera["Fonte da Usina Mais Cortada"])
+    
+    corte_usina_mais_cortada = (formatar_numero_brasileiro(kpis_ativos_elera["Corte da Usina Mais Cortada (%)"],casas_decimais=2))
+    
+    curtailment_usina_mais_cortada = (formatar_numero_brasileiro(kpis_ativos_elera["Curtailment da Usina Mais Cortada (GWh)"],casas_decimais=2))
+
+    # ============================================================
+    # CARDS DOS KPIs
+    # ============================================================
+    
+    html_kpis_ativos_elera = (
+        '<div class="kpis-ativos-elera">'
+    
+        # Geração esperada
+        '<div class="kpi-elera-card">'
+        '<div class="kpi-elera-icone kpi-elera-icone-geracao">'
+        '<span class="kpi-elera-simbolo" aria-hidden="true">'
+        '&#9889;&#65038;'
+        '</span>'
+        '</div>'
+        '<div class="kpi-elera-conteudo">'
+        '<div class="kpi-elera-titulo">'
+        'Geração esperada'
+        '</div>'
+        '<div class="kpi-elera-valor">'
+        f'{geracao_esperada_elera} GWh'
+        '</div>'
+        '<div class="kpi-elera-detalhe">'
+        'Produção potencial dos sete ativos'
+        '</div>'
+        '</div>'
+        '</div>'
+    
+        # Curtailment
+        '<div class="kpi-elera-card">'
+        '<div class="kpi-elera-icone kpi-elera-icone-curtailment">'
+        '<span class="kpi-elera-simbolo" aria-hidden="true">'
+        '&#8595;'
+        '</span>'
+        '</div>'
+        '<div class="kpi-elera-conteudo">'
+        '<div class="kpi-elera-titulo">'
+        'Curtailment'
+        '</div>'
+        '<div class="kpi-elera-valor">'
+        f'{curtailment_elera} GWh'
+        '</div>'
+        '<div class="kpi-elera-detalhe">'
+        'Energia restringida no período'
+        '</div>'
+        '</div>'
+        '</div>'
+    
+        # Corte médio
+        '<div class="kpi-elera-card">'
+        '<div class="kpi-elera-icone kpi-elera-icone-corte">'
+        '<span class="kpi-elera-simbolo" aria-hidden="true">'
+        '%'
+        '</span>'
+        '</div>'
+        '<div class="kpi-elera-conteudo">'
+        '<div class="kpi-elera-titulo">'
+        'Corte médio'
+        '</div>'
+        '<div class="kpi-elera-valor">'
+        f'{corte_medio_elera}%'
+        '</div>'
+        '<div class="kpi-elera-detalhe">'
+        'Curtailment sobre a geração esperada'
+        '</div>'
+        '</div>'
+        '</div>'
+    
+        # Usina mais cortada
+        '<div class="kpi-elera-card">'
+        '<div class="kpi-elera-icone kpi-elera-icone-usina">'
+        '<span class="kpi-elera-simbolo" aria-hidden="true">'
+        '&#9678;'
+        '</span>'
+        '</div>'
+        '<div class="kpi-elera-conteudo">'
+        '<div class="kpi-elera-titulo">'
+        'Usina mais cortada'
+        '</div>'
+        '<div class="kpi-elera-valor">'
+        f'{usina_mais_cortada}'
+        '</div>'
+        '<div class="kpi-elera-detalhe">'
+        f'{corte_usina_mais_cortada}% de corte'
+        f' | {curtailment_usina_mais_cortada} GWh'
+        f' | {fonte_usina_mais_cortada}'
+        '</div>'
+        '</div>'
+        '</div>'
+    
+        '</div>'
+    )
+    
+    st.html(
+        html_kpis_ativos_elera
+    )
 
 @st.cache_data(show_spinner=False)
 def calcular_kpis_subsistemas_aplicacao(
