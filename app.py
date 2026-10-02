@@ -3285,7 +3285,7 @@ def renderizar_pagina_subsistemas(
                                         "Geração Esperada (MWh)",
                                         "Corte ENE (%)",
                                         "Corte REL (%)",
-                                      "Corte CNF (%)",
+                                        "Corte CNF (%)",
                                         "Corte Todos (%)",
                                     ]
                                 ]
@@ -3886,6 +3886,50 @@ def renderizar_pagina_subsistemas(
                         key="botao_download_detalhado"
                     )
 
+def renderizar_pagina_ativos_elera():
+    """
+    Renderiza a página provisória da aba Ativos Elera.
+    """
+
+    logo_elera_base64 = carregar_imagem_base64(CAMINHO_LOGO_ELERA)
+
+    if logo_elera_base64 is not None:
+        html_logo_pagina = (
+            '<div class="pagina-elera-logo">'
+            '<img '
+            f'src="{logo_elera_base64}" '
+            'alt="Logo Elera" '
+            'width="74" '
+            'height="74">'
+            '</div>'
+        )
+
+    else:
+        html_logo_pagina = (
+            '<div class="pagina-elera-logo '
+            'pagina-elera-logo-fallback" '
+            'aria-hidden="true">'
+            '☀'
+            '</div>'
+        )
+
+    html_pagina_elera = (
+        '<div class="pagina-ativos-elera">'
+        f'{html_logo_pagina}'
+        '<div class="pagina-elera-conteudo">'
+        '<h1>Ativos Elera</h1>'
+        '<p>'
+        'Esta área apresentará indicadores e análises '
+        'de curtailment dos ativos da Elera.'
+        '</p>'
+        '<span class="pagina-elera-status">'
+        'Dashboard em desenvolvimento'
+        '</span>'
+        '</div>'
+        '</div>'
+    )
+
+    st.html(html_pagina_elera)
 
 @st.cache_data(show_spinner=False,)
 
