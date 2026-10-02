@@ -244,15 +244,14 @@ def calcular_kpis_ativos_elera(df):
     # ========================================================
     # ATIVOS ENCONTRADOS
     # ========================================================
-     
+
     nomes_encontrados = (indicadores_ativos["ativo_elera"].dropna().unique().tolist())
-     
     nomes_encontrados = [nome for nome in ORDEM_ATIVOS_ELERA if nome in nomes_encontrados]
-     
+
     # ========================================================
     # RETORNO
     # ========================================================
-     
+
     return {
       "Geração Esperada (GWh)": round(float(geracao_esperada_total_mwh) / 1000,2),
       "Curtailment (GWh)": round(float(curtailment_total_mwh) / 1000,2),
