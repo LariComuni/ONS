@@ -34,6 +34,9 @@ from src.analise_subsistemas import (
     preparar_resumo_subsistemas,
     preparar_exportacao_subsistemas
 )
+from src.analise_ativos_elera import (
+    calcular_kpis_ativos_elera,
+)
 # ============================================================
 # CONFIGURAÇÃO
 # ============================================================
@@ -530,6 +533,7 @@ st.markdown(
             font-size: 0.55rem;
         }
         
+        /* CABEÇALHO SUBSISTEMAS */
         .cabecalho-subsistemas {
             width: min(1180px, calc(100vw - 3rem));
         
@@ -547,11 +551,23 @@ st.markdown(
             font-weight: 700;
         }
         
-        .cabecalho-subsistemas p {
-            margin: 0;
+        /* CABECALHO ATIVOS ELERA */
+        .cabecalho-ativos-elera {
+            width: min(1500px, calc(100vw - 3rem));
         
-            color: #64748b;
-            font-size: 0.9rem;
+            margin-top: 0.35rem;
+            margin-right: auto;
+            margin-bottom: 0.85rem;
+            margin-left: auto;
+        }
+        
+        .cabecalho-ativos-elera h1 {
+            margin: 0 0 0.25rem;
+        
+            color: #0f2948;
+            font-size: 1.65rem;
+            font-weight: 700;
+            line-height: 1.2;
         }
         
         /* KPIS */
@@ -1808,6 +1824,164 @@ def renderizar_filtros_subsistemas(
         },
         status_subsistemas,
         resumo_subsistemas,
+    )
+
+def renderizar_filtros_ativos_elera(
+    ultimo_ano_completo,
+    ultimo_mes_completo,
+):
+    """
+    Renderiza os filtros independentes da página ativos elera.
+
+    Retorno
+    -------
+    dict ou None
+        Configuração selecionada quando o botão Aplicar
+        for acionado. Caso contrário, retorna None.
+    """
+
+    anos_disponiveis = list(
+        range(
+            ANO_MINIMO,
+            ultimo_ano_completo + 1,
+        )
+    )
+
+    with st.container(
+        border=True,
+        key="filtros_ativos_elera",
+    ):
+        (
+            coluna_ano_inicial,
+            coluna_mes_inicial,
+            coluna_ano_final,
+            coluna_mes_final,
+            coluna_fonte,
+            coluna_botao,
+        ) = st.columns(
+            [
+                0.8,
+                1.3,
+                0.8,
+                1.3,
+                1.9,
+                1,
+            ],
+            vertical_alignment="bottom",
+        )
+
+        with coluna_ano_inicial:
+            ano_inicial = st.selectbox(
+                "Ano inicial",
+                options=anos_disponiveis,
+                index=len(
+                    anos_disponiveis
+                ) - 1,
+                key="ativos_elera_ano_inicial",
+            )
+
+        meses_iniciais = obter_meses_disponiveis(
+            ano=ano_inicial,
+            ultimo_ano_completo=(
+                ultimo_ano_completo
+            ),
+            ultimo_mes_completo=(
+                ultimo_mes_completo
+            ),
+        )
+
+        with coluna_mes_inicial:
+            mes_inicial = st.selectbox(
+                "Mês inicial",
+                options=meses_iniciais,
+                index=0,
+                format_func=formatar_mes,
+                key="ativos_elera_mes_inicial",
+            )
+
+        with coluna_ano_final:
+            ano_final = st.selectbox(
+                "Ano final",
+                options=anos_disponiveis,
+                index=len(
+                    anos_disponiveis
+                ) - 1,
+                key="ativos_elera_ano_final",
+            )
+
+        meses_finais = obter_meses_disponiveis(
+            ano=ano_final,
+            ultimo_ano_completo=(
+                ultimo_ano_completo
+            ),
+            ultimo_mes_completo=(
+                ultimo_mes_completo
+            ),
+        )
+
+        with coluna_mes_final:
+            mes_final = st.selectbox(
+                "Mês final",
+                options=meses_finais,
+                index=len(
+                    meses_finais
+                ) - 1,
+                format_func=formatar_mes,
+                key="ativos_elera_mes_final",
+            )
+
+        with coluna_fonte:
+            opcao_fonte = st.selectbox(
+                "Tipo de fonte",
+                options=list(
+                    OPCOES_FONTES
+                ),
+                index=0,
+                key="ativos_elera_opcao_fonte",
+            )
+
+        fontes_selecionadas = (OPCOES_FONTES[opcao_fonte])
+
+        with coluna_botao:
+            aplicar_filtros = st.button(
+                "Aplicar",
+                use_container_width=True,
+                type="primary",
+                key="ativos_elera_aplicar",
+            )
+            
+        status_ativos_elera = st.empty()
+        resumo_ativos_elera = st.empty()
+
+    if not aplicar_filtros:
+        return (None,status_ativos_elera,resumo_ativos_elera)
+
+    validar_periodo_interface(
+        ano_inicial=ano_inicial,
+        mes_inicial=mes_inicial,
+        ano_final=ano_final,
+        mes_final=mes_final,
+        ultimo_ano_completo=(
+            ultimo_ano_completo
+        ),
+        ultimo_mes_completo=(
+            ultimo_mes_completo
+        ),
+    )
+
+    return (
+        {
+            "ano_inicial": ano_inicial,
+            "mes_inicial": mes_inicial,
+            "ano_final": ano_final,
+            "mes_final": mes_final,
+            "fontes": tuple(
+                fontes_selecionadas
+            ),
+            "rotulo_fonte": opcao_fonte,
+        },
+        status_ativos_elera,
+        resumo_ativos_elera,
     )
 
 def renderizar_pagina_subsistemas(
@@ -3959,32 +4133,140 @@ def renderizar_pagina_subsistemas(
                         key="botao_download_detalhado"
                     )
 
-def renderizar_pagina_ativos_elera():
+def renderizar_pagina_ativos_elera(
+    hoje,
+    ultimo_ano_completo,
+    ultimo_mes_completo
+):
+    
     """
     Renderiza a página provisória da aba Ativos Elera.
     """
 
+    try:
+        (
+            filtros_aplicados,
+            status_ativos_elera,
+            resumo_ativos_elera,
+        ) = renderizar_filtros_ativos_elera(
+            ultimo_ano_completo=(
+                ultimo_ano_completo
+            ),
+            ultimo_mes_completo=(
+                ultimo_mes_completo
+            ),
+        )
+
+    except ValueError as erro:
+        st.error(str(erro))
+
+        return
+    #==========================================
+    # CABEÇALHO
+    #==========================================
     st.html(
         """
-        <div class="pagina-ativos-elera">
-            <div class="pagina-elera-conteudo">
+        <div class="cabecalho-ativos-elera">
                 <h1>Ativos Elera</h1>
-
-                <p>
-                    Esta área apresentará indicadores e análises
-                    de curtailment dos ativos da Elera.
-                </p>
-
-                <span class="pagina-elera-status">
-                    Dashboard em desenvolvimento
-                </span>
-            </div>
         </div>
         """
     )
+    
+    #==========================================
+    # FILTROS APLICADOS
+    #==========================================
+    
+    if filtros_aplicados is not None:
+        st.session_state["filtros_ativos_elera"] = filtros_aplicados
+        st.session_state["processar_ativos_elera"] = True
+        
+    filtros_ativos_elera = (st.session_state.get("filtros_ativos_elera"))
+    if filtros_ativos_elera is None:
+        return
+    
+    #==========================================
+    # PROCESSAMENTO
+    #==========================================
+    
+    if st.session_state.get("processar_ativos_elera",False):
+        competencia_inicial = formatar_competencia(
+            ano=filtros_ativos_elera["ano_inicial"],
+            mes=filtros_ativos_elera["mes_inicial"],
+        )
 
-@st.cache_data(show_spinner=False,)
+        competencia_final = formatar_competencia(
+            ano=filtros_ativos_elera["ano_final"],
+            mes=filtros_ativos_elera["mes_final"],
+        )
 
+        mensagem_processamento = (
+            "Coletando e processando os dados de "
+            f"{competencia_inicial} a {competencia_final}. "
+            "A primeira execução pode levar alguns minutos."
+        )
+
+        try:
+            with status_ativos_elera.container():
+                with st.spinner(mensagem_processamento):
+                    dados_ativos_elera = (
+                        executar_pipeline_aplicacao(
+                            ano_inicial=(filtros_ativos_elera["ano_inicial"]),
+                            mes_inicial=(filtros_ativos_elera["mes_inicial"]),
+                            ano_final=(filtros_ativos_elera["ano_final"]),
+                            mes_final=(filtros_ativos_elera["mes_final"]),
+                            fontes=tuple(filtros_ativos_elera["fontes"]),
+                            data_referencia=hoje,
+                            timeout=TIMEOUT_PIPELINE,
+                        )
+                    )
+
+            st.session_state["dados_ativos_elera"] = dados_ativos_elera
+
+            st.session_state["periodo_processado_ativos_elera"] = filtros_ativos_elera.copy()
+
+            st.session_state["processar_ativos_elera"] = False
+
+            status_ativos_elera.empty()
+
+            st.toast("Dados dos ativos Elera processados com sucesso.",icon="✅")
+
+        except Exception as erro:
+            st.session_state["processar_ativos_elera"] = False
+
+            status_ativos_elera.error("Não foi possível processar os dados dos ativos da Elera.")
+
+            st.exception(erro)
+
+            return
+
+    #==============================================
+    # RECUPERAÇÃO DOS DADOS PROCESSADOS
+    #==============================================
+    
+    dados_ativos_elera = st.session_state.get("dados_ativos_elera")
+    periodo_processado = st.session_state.get("periodo_processado_ativos_elera")
+
+    if (dados_ativos_elera is None or periodo_processado is None):
+        return
+
+    df_curtailment_ativos_elera = (dados_ativos_elera["df_curtailment"])
+    
+    #=====================================
+    # CÁLCULO DOS KPIs
+    #=====================================
+    
+    try:
+        kpis_ativos_elera = (calcular_kpis_ativos_elera_aplicacao(df_curtailment_ativos_elera))
+
+    except (TypeError,ValueError,KeyError) as erro:
+        st.error("Não foi possível calcular os indicadores dos ativos da Elera.")
+
+        st.exception(erro)
+
+        return
+
+
+@st.cache_data(show_spinner=False)
 def calcular_kpis_subsistemas_aplicacao(
     df_curtailment,
 ):
@@ -3994,7 +4276,17 @@ def calcular_kpis_subsistemas_aplicacao(
 
     return calcular_kpis_curtailment(df_curtailment)
 
-@st.cache_data(show_spinner=False,)
+@st.cache_data(show_spinner=False)
+def calcular_kpis_ativos_elera_aplicacao(
+    df_curtailment,
+):
+    """
+    Calcula os KPIs da página Ativos Elera.
+    """
+
+    return calcular_kpis_ativos_elera(df_curtailment)
+
+@st.cache_data(show_spinner=False)
 def preparar_resumo_subsistemas_aplicacao(
     df_curtailment,
 ):
@@ -4002,9 +4294,7 @@ def preparar_resumo_subsistemas_aplicacao(
     Prepara a tabela de resumo da página Subsistemas.
     """
 
-    return preparar_resumo_subsistemas(
-        df_curtailment
-    )
+    return preparar_resumo_subsistemas(df_curtailment)
 
 @st.cache_data(show_spinner=False)
 def gerar_excel_dataframe(
@@ -4292,12 +4582,8 @@ st.html(html_navbar)
 if pagina_ativa == "subsistemas":
     renderizar_pagina_subsistemas(
         hoje=hoje,
-        ultimo_ano_completo=(
-            ultimo_ano_completo
-        ),
-        ultimo_mes_completo=(
-            ultimo_mes_completo
-        ),
+        ultimo_ano_completo=(ultimo_ano_completo),
+        ultimo_mes_completo=(ultimo_mes_completo),
     )
 
     st.stop()
@@ -4307,7 +4593,11 @@ if pagina_ativa == "subsistemas":
 # ============================================================
 
 if pagina_ativa == "ativos_elera":
-    renderizar_pagina_ativos_elera()
+    renderizar_pagina_ativos_elera(
+        hoje=hoje,
+        ultimo_ano_completo=(ultimo_ano_completo),
+        ultimo_mes_completo=(ultimo_mes_completo)
+    )
 
     st.stop()
 # ============================================================
