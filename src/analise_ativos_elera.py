@@ -240,7 +240,7 @@ def calcular_kpis_ativos_elera(df):
         fonte_usina_mais_cortada = (linha_mais_cortada["fonte_elera"])
         corte_usina_mais_cortada_pct = round(float(linha_mais_cortada["corte_pct"]),2,)
         curtailment_usina_mais_cortada_gwh = (round(float(linha_mais_cortada["curtailment_mwh"]) / 1000,2))
- 
+
     # ========================================================
     # ATIVOS ENCONTRADOS
     # ========================================================
