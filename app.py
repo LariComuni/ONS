@@ -186,7 +186,14 @@ st.markdown(
         }
 
         .sin-navbar-item-elera {
+            width: 138px;
             min-width: 138px;
+        
+            gap: 0.45rem;
+            padding-right: 0.75rem;
+            padding-left: 0.75rem;
+        
+            box-sizing: border-box;
         }
         
         .sin-navbar-logo-elera {
