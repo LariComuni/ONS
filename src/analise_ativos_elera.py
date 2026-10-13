@@ -13,30 +13,37 @@ ATIVOS_ELERA = {
     "Conj. Janaúba": {
         "nome_exibicao": "Janaúba",
         "fonte": "Solar",
+        "participacao_elera": 1.0,
     },
     "Conj. Alex": {
         "nome_exibicao": "Alex",
         "fonte": "Solar",
+        "participacao_elera": 1.0,
     },
     "Conj. Igaporã II": {
         "nome_exibicao": "Alto Sertão",
         "fonte": "Eólica",
+        "participacao_elera": 1.0,
     },
     "Conj. Renascença": {
         "nome_exibicao": "Renascença",
         "fonte": "Eólica",
+        "participacao_elera": 1.0,
     },
     "Conj. Viamão 3": {
         "nome_exibicao": "Pontal",
         "fonte": "Eólica",
+        "participacao_elera": 1.0,
     },
     "Conj. Oeste Seridó": {
         "nome_exibicao": "Seridó",
         "fonte": "Eólica",
+        "participacao_elera": 1.0,
     },
     "Conj. Faísa": {
         "nome_exibicao": "Faísa",
         "fonte": "Eólica",
+        "participacao_elera": 0.5992,
     },
 }
 
@@ -96,6 +103,18 @@ def filtrar_ativos_elera(
 
     df_elera["fonte_elera"] = (df_elera["nom_usina"].map({nome_base: dados["fonte"] for nome_base, dados in ATIVOS_ELERA.items()}))
 
+    df_elera["participacao_elera"] = (df_elera["nom_usina"]
+        .map({nome_base: dados["participacao_elera"] for nome_base, dados in ATIVOS_ELERA.items()}).fillna(0.0)
+    )
+
+    df_elera["val_curtailment"] = pd.to_numeric(df_elera["val_curtailment"],errors="coerce")
+    
+    df_elera["val_geracao_esperada"] = pd.to_numeric(df_elera["val_geracao_esperada"],errors="coerce")
+    
+    df_elera["val_curtailment_elera"] = (df_elera["val_curtailment"] * df_elera["participacao_elera"])
+    
+    df_elera["val_geracao_esperada_elera"] = (df_elera["val_geracao_esperada"] * df_elera["participacao_elera"])
+
     return df_elera
 
 
@@ -125,10 +144,7 @@ def calcular_kpis_ativos_elera(df):
         e ativo com maior percentual de corte.
     """
 
-    if not isinstance(
-        df,
-        pd.DataFrame,
-    ):
+    if not isinstance(df,pd.DataFrame):
         raise TypeError("df deve ser um DataFrame.")
 
     if df.empty:
@@ -147,7 +163,7 @@ def calcular_kpis_ativos_elera(df):
 
     df_elera["val_geracao_esperada"] = pd.to_numeric(df_elera["val_geracao_esperada"],errors="coerce")
 
-    df_elera = df_elera.dropna(subset=["ativo_elera","val_curtailment","val_geracao_esperada",]).copy()
+    df_elera = df_elera.dropna(subset=["ativo_elera","val_curtailment_elera","val_geracao_esperada_elera"]).copy()
 
     if df_elera.empty:
         raise ValueError("Não restaram registros válidos dos ativos da Elera após o tratamento.")
@@ -156,9 +172,9 @@ def calcular_kpis_ativos_elera(df):
     # CONVERSÃO PARA ENERGIA
     # ========================================================
 
-    df_elera["curtailment_mwh"] = (df_elera["val_curtailment"].clip(lower=0) * 0.5)
+    df_elera["curtailment_mwh"] = (df_elera["val_curtailment_elera"].clip(lower=0) * 0.5)
 
-    df_elera["geracao_esperada_mwh"] = (df_elera["val_geracao_esperada"].clip(lower=0) * 0.5)
+    df_elera["geracao_esperada_mwh"] = (df_elera["val_geracao_esperada_elera"].clip(lower=0) * 0.5)
 
     # ========================================================
     # TOTAIS DOS ATIVOS ELERA
@@ -264,3 +280,92 @@ def calcular_kpis_ativos_elera(df):
       "Quantidade de Ativos Encontrados": (len(nomes_encontrados)),
       "Ativos Encontrados": (nomes_encontrados),
     }
+
+def preparar_curtailment_mensal_ativos_elera(
+    df,
+):
+    """
+    Prepara o curtailment mensal dos ativos da Elera, separado por tipo de restrição.
+
+    Os registros representam intervalos de 30 minutos.Portanto:
+
+    MW * 0.5 = MWh
+    MWh / 1000 = GWh
+
+    Parâmetros
+    ----------
+    df : pandas.DataFrame
+        Base calculada de curtailment.
+
+    Retorno
+    -------
+    pandas.DataFrame
+        Tabela mensal com curtailment ENE, REL e CNF em GWh para o portfólio consolidado da Elera.
+    """
+
+    colunas_obrigatorias = {
+        "din_instante",
+        "nom_usina",
+        "cod_razaorestricao",
+        "val_curtailment"}
+
+    colunas_ausentes = (colunas_obrigatorias - set(df.columns))
+
+    if colunas_ausentes:
+        raise ValueError(
+            f"A base não possui as colunas obrigatórias:{sorted(colunas_ausentes)}.")
+
+    df_elera = filtrar_ativos_elera(df)
+
+    if "val_curtailment_elera" not in df_elera.columns:
+        raise ValueError("A função filtrar_ativos_elera não criou a coluna val_curtailment_elera.")
+
+    df_elera["din_instante"] = pd.to_datetime(df_elera["din_instante"],errors="coerce")
+
+    df_elera["val_curtailment_elera"] = pd.to_numeric(df_elera["val_curtailment_elera"],errors="coerce")
+
+    df_elera["tipo_curtailment"] = (
+        df_elera["cod_razaorestricao"]
+        .astype("string")
+        .str.strip()
+        .str.upper()
+    )
+
+    df_elera = df_elera.dropna(subset=["din_instante","ativo_elera","val_curtailment_elera"]).copy()
+
+    tipos_permitidos = ["ENE","REL","CNF"]
+
+    df_elera = df_elera[df_elera["tipo_curtailment"].isin(tipos_permitidos)].copy()
+
+    if df_elera.empty:
+        raise ValueError("Não foram encontrados registros de curtailment ENE, REL ou CNF para os ativos da Elera.")
+
+    df_elera["mes"] = (df_elera["din_instante"].dt.to_period("M").dt.to_timestamp())
+
+    df_elera["curtailment_gwh"] = (df_elera["val_curtailment_elera"].clip(lower=0) * 0.5 / 1000)
+
+    base_mensal = (
+        df_elera
+        .groupby(["mes","tipo_curtailment"],as_index=False,observed=True)
+        .agg(curtailment_gwh=("curtailment_gwh","sum"))
+    )
+
+    # Garante todos os meses entre o primeiro e o último mês disponíveis na base.
+
+    meses_disponiveis = pd.date_range(start=base_mensal["mes"].min(),end=base_mensal["mes"].max(),freq="MS",)
+
+    indice_completo = pd.MultiIndex.from_product([meses_disponiveis,tipos_permitidos],names=["mes","tipo_curtailment"])
+
+    base_mensal = (base_mensal.set_index(["mes","tipo_curtailment"]).reindex(indice_completo,fill_value=0.0).reset_index())
+
+    rotulos_tipos = {"ENE": "Energético","REL": "Elétrico","CNF": "Confiabilidade"}
+
+    base_mensal["tipo_rotulo"] = (base_mensal["tipo_curtailment"].map(rotulos_tipos))
+
+    base_mensal["mes_rotulo"] = (base_mensal["mes"].dt.strftime("%m/%Y"))
+
+    base_mensal["ordem_tipo"] = (base_mensal["tipo_curtailment"].map({"ENE": 1,"REL": 2,"CNF": 3}))
+
+    base_mensal = (base_mensal.sort_values(["mes","ordem_tipo"]).drop(columns="ordem_tipo").reset_index(drop=True))
+
+    return base_mensal
