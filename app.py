@@ -36,6 +36,10 @@ from src.analise_subsistemas import (
 )
 from src.analise_ativos_elera import (
     calcular_kpis_ativos_elera,
+    preparar_curtailment_mensal_ativos_elera,
+    preparar_geracao_esperada_mensal_ativos_elera,
+    preparar_participacao_curtailment_ativos_elera,
+    preparar_participacao_geracao_ativos_elera
 )
 # ============================================================
 # CONFIGURAÇÃO
@@ -939,6 +943,44 @@ st.markdown(
             line-height: 1.2;
         }
 
+        /* graficos ativos elera portfólio */
+        
+        .st-key-graficos_portfolio_elera {
+            width: min(1500px, calc(100vw - 3rem));
+        
+            margin-top: 0.75rem;
+            margin-right: auto;
+            margin-bottom: 1.5rem;
+            margin-left: auto;
+        }
+        
+        .st-key-card_mensal_elera,
+        .st-key-card_participacao_elera {
+            width: 100%;
+            min-height: 405px;
+        
+            margin: 0;
+        
+            padding: 0.75rem 0.85rem 0.45rem;
+        
+            background-color: #ffffff;
+        
+            border: 1px solid #e2e8f0;
+            border-radius: 13px;
+        
+            box-shadow:
+                0 6px 18px rgba(15, 42, 70, 0.08);
+        
+            box-sizing: border-box;
+        }
+        
+        .st-key-card_mensal_elera
+        div[data-testid="stVerticalBlockBorderWrapper"],
+        .st-key-card_participacao_elera
+        div[data-testid="stVerticalBlockBorderWrapper"] {
+            border: 0;
+            box-shadow: none;
+        }
         /* botões de download da aba de subsistemas*/
 
         .st-key-download_mensal,
@@ -1485,6 +1527,11 @@ st.markdown(
             }
             .st-key-card_grafico_mensal,
             .st-key-card_grafico_participacao {
+                min-height: auto;
+            }
+            .st-key-graficos_portfolio_elera,
+            .st-key-card_mensal_elera,
+            .st-key-card_participacao_elera {
                 min-height: auto;
             }
         }
@@ -4511,10 +4558,281 @@ def renderizar_pagina_ativos_elera(
         '</div>'
     )
     
-    st.html(
-        html_kpis_ativos_elera
-    )
+    st.html(html_kpis_ativos_elera)
+    # ============================================================
+    # BASES DOS GRÁFICOS DO PORTFÓLIO
+    # ============================================================
+    
+    try:
+        base_mensal_curtailment_elera = (preparar_curtailment_mensal_elera_aplicacao(df_curtailment_ativos_elera))
+        base_participacao_curtailment_elera = (preparar_participacao_curtailment_elera_aplicacao(df_curtailment_ativos_elera))
+        base_mensal_geracao_elera = (preparar_geracao_mensal_elera_aplicacao(df_curtailment_ativos_elera))
+        base_participacao_geracao_elera = (preparar_participacao_geracao_elera_aplicacao(df_curtailment_ativos_elera))
+    
+    except (TypeError,ValueError,KeyError) as erro:
+        st.error("Não foi possível preparar os gráficos do portfólio Elera.")
+        st.exception(erro)
+        return
 
+    # ============================================================
+    # PALETAS DOS GRÁFICOS
+    # ============================================================
+    
+    cores_fontes_elera = {
+        "Solar": "#F3A6B8",
+        "Eólica": "#5F8FB5",
+    }
+    
+    cores_tipos_elera = {
+        "Energético": "#E57373",
+        "Elétrico": "#F5A65B",
+        "Confiabilidade": "#A58ACB",
+    }
+
+    # ============================================================
+    # GRÁFICOS MENSAIS E PARTICIPAÇÃO
+    # ============================================================
+    
+    with st.container(key="graficos_portfolio_elera"):
+        (coluna_mensal_elera,coluna_participacao_elera) = st.columns([1.75,1,],gap="medium",vertical_alignment="top")
+        with coluna_mensal_elera:
+            with st.container(border=True,key="card_mensal_elera"):
+                if metrica_elera == "Curtailment":
+                    titulo_mensal_elera = ("Curtailment mensal do portfólio")
+    
+                else:
+                    titulo_mensal_elera = ("Geração esperada mensal do portfólio")
+    
+                st.html(
+                    ('<div class="titulo-card-grafico">'
+                     f'{titulo_mensal_elera}'
+                     '</div>')
+                )
+    
+                if metrica_elera == "Curtailment":
+                    ordem_meses_elera = (base_mensal_curtailment_elera[["mes","mes_rotulo"]]
+                        .drop_duplicates()
+                        .sort_values("mes")["mes_rotulo"]
+                        .tolist()
+                    )
+    
+                    ordem_tipos_elera = ["Energético","Elétrico","Confiabilidade"]
+    
+                    fig_mensal_elera = px.bar(
+                        base_mensal_curtailment_elera,
+                        x="mes_rotulo",
+                        y="curtailment_gwh",
+                        color="tipo_rotulo",
+                        barmode="stack",
+                        category_orders={"mes_rotulo": (ordem_meses_elera),"tipo_rotulo": (ordem_tipos_elera)},
+                        color_discrete_map=(cores_tipos_elera),
+                        labels={"mes_rotulo": "Mês","curtailment_gwh": ("Curtailment (GWh)"),"tipo_rotulo": ("Tipo de curtailment")},
+                        custom_data=["tipo_rotulo","tipo_curtailment"]
+                    )
+    
+                    fig_mensal_elera.update_traces(
+                        marker_line_color=("rgba(255,255,255,0.75)"),
+                        marker_line_width=0.5,
+                        hovertemplate=(
+                            "<b>%{customdata[0]}</b>"
+                            "<br>Código: %{customdata[1]}"
+                            "<br>Mês: %{x}"
+                            "<br>Curtailment: "
+                            "%{y:,.2f} GWh"
+                            "<extra></extra>")
+                    )
+                    titulo_eixo_y = ("Curtailment (GWh)")
+                    mostrar_legenda = True
+    
+                else:
+                    ordem_meses_elera = (base_mensal_geracao_elera[["mes","mes_rotulo"]].drop_duplicates().sort_values("mes")["mes_rotulo"].tolist())
+                    fig_mensal_elera = px.bar(
+                        base_mensal_geracao_elera,
+                        x="mes_rotulo",
+                        y="geracao_esperada_gwh",
+                        category_orders={"mes_rotulo": (ordem_meses_elera)},
+                        labels={"mes_rotulo": "Mês","geracao_esperada_gwh": ("Geração esperada (GWh)")}
+                    )
+                    fig_mensal_elera.update_traces(
+                        marker_color="#F5A65B",
+                        marker_line_color=("rgba(255,255,255,0.75)"),
+                        marker_line_width=0.5,
+                        hovertemplate=(
+                            "<b>Geração esperada</b>"
+                            "<br>Mês: %{x}"
+                            "<br>Geração esperada: "
+                            "%{y:,.2f} GWh"
+                            "<extra></extra>")
+                    )
+                    titulo_eixo_y = ("Geração esperada (GWh)")
+                    mostrar_legenda = False
+                    
+                fig_mensal_elera.update_layout(
+                height=345,
+                margin={
+                    "l": 10,
+                    "r": 10,
+                    "t": (
+                        55
+                        if mostrar_legenda
+                        else 25
+                    ),
+                    "b": 15,
+                },
+                paper_bgcolor="rgba(0,0,0,0)",
+                plot_bgcolor="rgba(0,0,0,0)",
+                font={
+                    "family": ("Segoe UI, Arial, sans-serif"),
+                    "color": "#334155",
+                    "size": 12,
+                },
+                showlegend=mostrar_legenda,
+                legend={
+                    "title": {"text": ""},
+                    "orientation": "h",
+                    "yanchor": "bottom",
+                    "y": 1.03,
+                    "xanchor": "center",
+                    "x": 0.5,
+                    "font": {"size": 12,"color": "#334155"},
+                },
+                hoverlabel={"bgcolor": "#FFFFFF","bordercolor": "#D9E2EC","font": {"color": "#102D57","size": 12,}},
+                bargap=0.25,
+            )
+
+            fig_mensal_elera.update_xaxes(
+                title=None,
+                showgrid=False,
+                showline=False,
+                tickfont={"size": 11,"color": "#64748B"},
+                fixedrange=True,
+            )
+
+            fig_mensal_elera.update_yaxes(
+                title=titulo_eixo_y,
+                gridcolor=("rgba(148, 163, 184, 0.20)"),
+                zeroline=False,
+                showline=False,
+                tickfont={"size": 10,"color": "#64748B"},
+                title_font={"size": 11,"color": "#475569"},
+                tickformat=",.0f",
+                fixedrange=True,
+            )
+
+            st.plotly_chart(
+                fig_mensal_elera,
+                width="stretch",
+                height=345,
+                config={"displayModeBar": False,"responsive": True},
+                key=(f"grafico_mensal_elera_{metrica_elera}")
+            )
+            
+        with coluna_participacao_elera:
+            with st.container(border=True,key="card_participacao_elera"):
+                if metrica_elera == "Curtailment":
+                    titulo_participacao_elera = ("Participação no curtailment por ativo")
+                    base_participacao_elera = (base_participacao_curtailment_elera.copy())
+                    coluna_valor_participacao = ("curtailment_gwh")
+                    rotulo_valor_participacao = ("Curtailment")
+    
+                else:
+                    titulo_participacao_elera = ("Participação na geração por ativo")
+                    base_participacao_elera = (base_participacao_geracao_elera.copy())
+                    coluna_valor_participacao = ("geracao_esperada_gwh")
+                    rotulo_valor_participacao = ("Geração esperada")
+    
+                st.html(
+                    ('<div class="titulo-card-grafico">'
+                     f'{titulo_participacao_elera}'
+                     '</div>')
+                )
+    
+                ordem_ativos_participacao = (base_participacao_elera["ativo_elera"].tolist())
+    
+                fig_participacao_elera = px.bar(
+                    base_participacao_elera,
+                    x="participacao_pct",
+                    y="ativo_elera",
+                    color="fonte_elera",
+                    orientation="h",
+                    category_orders={"ativo_elera": (ordem_ativos_participacao),"fonte_elera": ["Solar","Eólica",]},
+                    color_discrete_map=(cores_fontes_elera),
+                    labels={"participacao_pct": ("Participação (%)"),"ativo_elera": "","fonte_elera": "Fonte"},
+                    custom_data=["fonte_elera",coluna_valor_participacao],
+                    text="participacao_pct"
+                )
+    
+                fig_participacao_elera.update_traces(
+                    texttemplate="%{x:.1f}%",
+                    textposition="outside",
+                    cliponaxis=False,
+                    marker_line_color="#FFFFFF",
+                    marker_line_width=0.5,
+                    hovertemplate=(
+                        "<b>%{y}</b>"
+                        "<br>Fonte: %{customdata[0]}"
+                        "<br>Participação: %{x:.2f}%"
+                        f"<br>{rotulo_valor_participacao}: "
+                        "%{customdata,.2f} GWh"
+                        "<extra></extra>")
+                )
+
+                maior_participacao = (base_participacao_elera["participacao_pct"].max())
+
+                limite_eixo_participacao = max(maior_participacao * 1.18,10.0)
+    
+                fig_participacao_elera.update_layout(
+                    height=345,
+                    margin={
+                        "l": 5,
+                        "r": 45,
+                        "t": 50,
+                        "b": 15,
+                    },
+                    paper_bgcolor="rgba(0,0,0,0)",
+                    plot_bgcolor="rgba(0,0,0,0)",
+                    font={"family": ("Segoe UI, Arial, sans-serif"),"color": "#334155","size": 12,},
+                    legend={
+                        "title": {"text": ""},
+                        "orientation": "h",
+                        "yanchor": "bottom",
+                        "y": 1.03,
+                        "xanchor": "center",
+                        "x": 0.5,
+                        "font": {"size": 11,"color": "#334155",}},
+                    hoverlabel={"bgcolor": "#FFFFFF","bordercolor": "#D9E2EC","font": {"color": "#102D57","size": 12}},
+                    bargap=0.28,
+                )
+    
+                fig_participacao_elera.update_xaxes(
+                    title="Participação (%)",
+                    range=[0,limite_eixo_participacao],
+                    ticksuffix="%",
+                    gridcolor=("rgba(148, 163, 184, 0.20)"),
+                    zeroline=False,
+                    showline=False,
+                    tickfont={"size": 10,"color": "#64748B"},
+                    title_font={"size": 11,"color": "#475569"},
+                    fixedrange=True,
+                )
+    
+                fig_participacao_elera.update_yaxes(
+                    title=None,
+                    autorange="reversed",
+                    showgrid=False,
+                    showline=False,
+                    tickfont={"size": 11,"color": "#334155"},
+                    fixedrange=True,
+                )
+    
+                st.plotly_chart(
+                    fig_participacao_elera,
+                    width="stretch",
+                    height=345,
+                    config={"displayModeBar": False,"responsive": True},
+                    key=(f"grafico_participacao_elera_{metrica_elera}"),
+                )
+            
 @st.cache_data(show_spinner=False)
 def calcular_kpis_subsistemas_aplicacao(
     df_curtailment,
@@ -4534,6 +4852,47 @@ def calcular_kpis_ativos_elera_aplicacao(
     """
 
     return calcular_kpis_ativos_elera(df_curtailment)
+
+@st.cache_data(show_spinner=False)
+def preparar_curtailment_mensal_elera_aplicacao(
+    df_curtailment,
+):
+    """
+    Prepara o curtailment mensal do portfólio Elera.
+    """
+
+    return preparar_curtailment_mensal_ativos_elera(df_curtailment)
+
+
+@st.cache_data(show_spinner=False)
+def preparar_participacao_curtailment_elera_aplicacao(
+    df_curtailment,
+):
+    """
+    Prepara a participação dos ativos no curtailment.
+    """
+
+    return preparar_participacao_curtailment_ativos_elera(df_curtailment)
+
+@st.cache_data(show_spinner=False)
+def preparar_geracao_mensal_elera_aplicacao(
+    df_curtailment,
+):
+    """
+    Prepara a geração esperada mensal do portfólio Elera.
+    """
+
+    return preparar_geracao_esperada_mensal_ativos_elera(df_curtailment)
+
+@st.cache_data(show_spinner=False)
+def preparar_participacao_geracao_elera_aplicacao(
+    df_curtailment,
+):
+    """
+    Prepara a participação dos ativos na geração esperada.
+    """
+
+    return preparar_participacao_geracao_ativos_elera(df_curtailment)
 
 @st.cache_data(show_spinner=False)
 def preparar_resumo_subsistemas_aplicacao(
