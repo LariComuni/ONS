@@ -370,6 +370,92 @@ def preparar_curtailment_mensal_ativos_elera(
 
     return base_mensal
 
+def preparar_geracao_esperada_mensal_ativos_elera(
+    df,
+):
+    """
+    Prepara a geração esperada mensal atribuída ao
+    portfólio da Elera.
+
+    Para Conj. Faísa, os valores da base original são
+    multiplicados por 0.5992, representando somente
+    a parcela do conjunto atribuível à Elera.
+
+    Os registros representam intervalos de 30 minutos.
+    Portanto:
+
+    MW * 0.5 = MWh
+    MWh / 1000 = GWh
+
+    Parâmetros
+    ----------
+    df : pandas.DataFrame
+        Base calculada de curtailment.
+
+    Retorno
+    -------
+    pandas.DataFrame
+        Tabela mensal com a geração esperada atribuída
+        ao portfólio da Elera, em GWh.
+    """
+
+    if not isinstance(df,pd.DataFrame):
+        raise TypeError("df deve ser um DataFrame.")
+
+    if df.empty:
+        raise ValueError("A base informada está vazia.")
+
+    colunas_obrigatorias = {"din_instante","nom_usina","val_geracao_esperada"}
+
+    colunas_ausentes = (colunas_obrigatorias - set(df.columns))
+
+    if colunas_ausentes:
+        raise ValueError(f"A base não possui as colunas obrigatórias: {sorted(colunas_ausentes)}.")
+
+    df_elera = filtrar_ativos_elera(df)
+
+    colunas_ajustadas_obrigatorias = {"ativo_elera","participacao_elera","val_geracao_esperada_elera"}
+
+    colunas_ajustadas_ausentes = (colunas_ajustadas_obrigatorias - set(df_elera.columns))
+
+    if colunas_ajustadas_ausentes:
+        raise ValueError(f"A base filtrada não possui as colunas ajustadas obrigatórias:{sorted(colunas_ajustadas_ausentes)}.")
+
+    df_elera["din_instante"] = pd.to_datetime(df_elera["din_instante"],errors="coerce")
+
+    df_elera["val_geracao_esperada_elera"] = pd.to_numeric(df_elera["val_geracao_esperada_elera"],errors="coerce")
+
+    df_elera = df_elera.dropna(subset=["din_instante","ativo_elera","val_geracao_esperada_elera"]).copy()
+
+    if df_elera.empty:
+        raise ValueError("Não restaram registros válidos dos ativos da Elera após o tratamento.")
+
+    df_elera["mes"] = (df_elera["din_instante"].dt.to_period("M").dt.to_timestamp())
+
+    df_elera["geracao_esperada_gwh"] = (df_elera["val_geracao_esperada_elera"].clip(lower=0) * 0.5 / 1000)
+
+    base_mensal = (
+        df_elera
+        .groupby("mes",as_index=False,observed=True)
+        .agg(geracao_esperada_gwh=("geracao_esperada_gwh","sum"))
+    )
+
+    if base_mensal.empty:
+        raise ValueError("Não foi possível preparar a geração esperada mensal dos ativos da Elera.")
+
+    meses_disponiveis = pd.date_range(start=base_mensal["mes"].min(),end=base_mensal["mes"].max(),freq="MS")
+
+    base_mensal = (
+        base_mensal.set_index("mes")
+        .reindex(meses_disponiveis,fill_value=0.0)
+        .rename_axis("mes")
+        .reset_index()
+    )
+
+    base_mensal["mes_rotulo"] = (base_mensal["mes"].dt.strftime("%m/%Y"))
+
+    return base_mensal
+
 def preparar_participacao_curtailment_ativos_elera(
     df,
 ):
@@ -460,6 +546,96 @@ def preparar_participacao_curtailment_ativos_elera(
     participacao_ativos = (
         participacao_ativos
         .sort_values(["participacao_pct","ativo_elera"],ascending=[False,True],)
+        .reset_index(drop=True)
+    )
+
+    participacao_ativos["ordem_participacao"] = range(1,len(participacao_ativos) + 1)
+
+    return participacao_ativos
+
+def preparar_participacao_geracao_ativos_elera(
+    df,
+):
+    """
+    Prepara a participação de cada ativo na geração
+    esperada total atribuída ao portfólio da Elera.
+
+    Para Conj. Faísa, os valores da base original são
+    multiplicados por 0.5992 antes do cálculo da
+    participação no portfólio.
+
+    O fator 0.5992 não representa a participação de
+    Faísa na geração esperada total do portfólio.
+    A participação do ativo é calculada posteriormente
+    pela razão entre sua geração esperada ajustada e a
+    geração esperada ajustada total do portfólio.
+
+    Os registros representam intervalos de 30 minutos.
+    Portanto:
+
+    MW * 0.5 = MWh
+    MWh / 1000 = GWh
+
+    Parâmetros
+    ----------
+    df : pandas.DataFrame
+        Base calculada de curtailment.
+
+    Retorno
+    -------
+    pandas.DataFrame
+        Tabela com geração esperada ajustada em GWh,
+        participação percentual e fonte de cada ativo.
+    """
+
+    if not isinstance(df,pd.DataFrame):
+        raise TypeError("df deve ser um DataFrame")
+
+    if df.empty:
+        raise ValueError("A base informada está vazia.")
+
+    colunas_obrigatorias = {"nom_usina","val_geracao_esperada"}
+
+    colunas_ausentes = (colunas_obrigatorias - set(df.columns))
+
+    if colunas_ausentes:
+        raise ValueError(f"A base não possui as colunas obrigatórias: {sorted(colunas_ausentes)}.")
+
+    df_elera = filtrar_ativos_elera(df)
+
+    colunas_ajustadas_obrigatorias = {"ativo_elera","fonte_elera","participacao_elera","val_geracao_esperada_elera"}
+
+    colunas_ajustadas_ausentes = (colunas_ajustadas_obrigatorias - set(df_elera.columns))
+
+    if colunas_ajustadas_ausentes:
+        raise ValueError(f"A base filtrada não possui as colunas ajustadas obrigatórias:{sorted(colunas_ajustadas_ausentes)}.")
+
+    df_elera["val_geracao_esperada_elera"] = pd.to_numeric(df_elera["val_geracao_esperada_elera"],errors="coerce")
+
+    df_elera = df_elera.dropna(subset=["ativo_elera","fonte_elera","val_geracao_esperada_elera"]).copy()
+
+    if df_elera.empty:
+        raise ValueError("Não restaram registros válidos dos ativos da Elera após o tratamento.")
+
+    df_elera["geracao_esperada_gwh"] = (df_elera["val_geracao_esperada_elera"].clip(lower=0) * 0.5 / 1000)
+
+    participacao_ativos = (
+        df_elera
+        .groupby(["ativo_elera","fonte_elera"],as_index=False,observed=True)
+        .agg(geracao_esperada_gwh=("geracao_esperada_gwh","sum"))
+    )
+
+    geracao_total_gwh = (participacao_ativos["geracao_esperada_gwh"].sum())
+
+    if geracao_total_gwh <= 0:
+        participacao_ativos["participacao_pct"] = 0.0
+
+    else:
+        participacao_ativos["participacao_pct"] = (100 * participacao_ativos["geracao_esperada_gwh"] / geracao_total_gwh)
+
+    participacao_ativos = (
+        participacao_ativos
+        .sort_values(["participacao_pct","ativo_elera",],ascending=[False,True])
         .reset_index(drop=True)
     )
 
