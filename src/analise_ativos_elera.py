@@ -954,6 +954,41 @@ def preparar_analise_individual_ativo_elera(
         ]
     )
 
+    # ========================================================
+    # BASE MENSAL CONSOLIDADA
+    # ========================================================
+
+    resumo_mensal["curtailment_gwh"] = (
+        resumo_mensal[
+            "curtailment_mwh"
+        ]
+        / 1000
+    )
+
+    resumo_mensal[
+        "geracao_esperada_gwh"
+    ] = (
+        resumo_mensal[
+            "geracao_esperada_mwh"
+        ]
+        / 1000
+    )
+
+    resumo_mensal["mes_rotulo"] = (
+        resumo_mensal["mes"]
+        .dt.strftime("%m/%Y")
+    )
+
+    resumo_mensal = (
+        resumo_mensal
+        .sort_values(
+            "mes"
+        )
+        .reset_index(
+            drop=True
+        )
+    )
+
     meses_validos = resumo_mensal[
         resumo_mensal[
             "geracao_esperada_mwh"
@@ -1267,6 +1302,9 @@ def preparar_analise_individual_ativo_elera(
         ),
         "curtailment_mes_critico_gwh": (
             curtailment_mes_critico_gwh
+        ),
+        "base_mensal_resumo": (
+            resumo_mensal
         ),
         "base_mensal_tipo": (
             base_mensal_tipo
