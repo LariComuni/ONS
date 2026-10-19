@@ -5077,6 +5077,8 @@ def calcular_kpis_subsistemas_aplicacao(
 
     return calcular_kpis_curtailment(df_curtailment)
 
+# FUNÇÕES COM CACHE - ATIVOS ELERA
+
 @st.cache_data(show_spinner=False)
 def calcular_kpis_ativos_elera_aplicacao(
     df_curtailment,
@@ -5127,6 +5129,13 @@ def preparar_participacao_geracao_elera_aplicacao(
     """
 
     return preparar_participacao_geracao_ativos_elera(df_curtailment)
+
+@st.cache_data(show_spinner=False)
+def preparar_analise_individual_elera_aplicacao(
+    df_curtailment,
+    ativo_selecionado,
+):
+    return preparar_analise_individual_ativo_elera(df=df_curtailment, ativo_selecionado=ativo_selecionado)
 
 @st.cache_data(show_spinner=False)
 def preparar_resumo_subsistemas_aplicacao(
