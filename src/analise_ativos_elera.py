@@ -642,3 +642,625 @@ def preparar_participacao_geracao_ativos_elera(
     participacao_ativos["ordem_participacao"] = range(1,len(participacao_ativos) + 1)
 
     return participacao_ativos
+
+def preparar_analise_individual_ativo_elera(
+    df,
+    ativo_selecionado,
+):
+    """
+    Prepara a análise individual de um ativo da Elera.
+
+    A função retorna:
+
+    - informações cadastrais do ativo;
+    - geração esperada no período;
+    - curtailment no período;
+    - percentual de corte;
+    - mês crítico;
+    - curtailment mensal dividido em ENE, REL e CNF;
+    - composição do curtailment entre ENE, REL e CNF.
+
+    Para Conj. Faísa, os valores da base original são
+    multiplicados por 0.5992 antes das agregações, de
+    modo a considerar somente a parcela do conjunto
+    atribuível à Elera.
+
+    Os registros representam intervalos de 30 minutos.
+    Portanto:
+
+    MW * 0.5 = MWh
+    MWh / 1000 = GWh
+
+    Parâmetros
+    ----------
+    df : pandas.DataFrame
+        Base calculada de curtailment.
+
+    ativo_selecionado : str
+        Nome amigável do ativo selecionado.
+
+    Retorno
+    -------
+    dict
+        Dicionário com informações, KPIs e bases
+        analíticas do ativo.
+    """
+
+    if not isinstance(
+        df,
+        pd.DataFrame,
+    ):
+        raise TypeError(
+            "df deve ser um DataFrame."
+        )
+
+    if df.empty:
+        raise ValueError(
+            "A base informada está vazia."
+        )
+
+    colunas_obrigatorias = {
+        "din_instante",
+        "nom_usina",
+        "cod_razaorestricao",
+        "val_curtailment",
+        "val_geracao_esperada",
+    }
+
+    colunas_ausentes = (
+        colunas_obrigatorias
+        - set(df.columns)
+    )
+
+    if colunas_ausentes:
+        raise ValueError(
+            "A base não possui as colunas obrigatórias: "
+            f"{sorted(colunas_ausentes)}."
+        )
+
+    ativo_normalizado = str(
+        ativo_selecionado
+    ).strip()
+
+    if ativo_normalizado not in ORDEM_ATIVOS_ELERA:
+        raise ValueError(
+            "O ativo selecionado não pertence ao "
+            "portfólio cadastrado da Elera."
+        )
+
+    # filtrar_ativos_elera aplica o fator 0.5992
+    # somente aos registros de Conj. Faísa.
+
+    df_elera = filtrar_ativos_elera(
+        df
+    )
+
+    colunas_ajustadas_obrigatorias = {
+        "nom_usina",
+        "ativo_elera",
+        "fonte_elera",
+        "estado_elera",
+        "participacao_elera",
+        "val_curtailment_elera",
+        "val_geracao_esperada_elera",
+    }
+
+    colunas_ajustadas_ausentes = (
+        colunas_ajustadas_obrigatorias
+        - set(df_elera.columns)
+    )
+
+    if colunas_ajustadas_ausentes:
+        raise ValueError(
+            "A base filtrada não possui as colunas "
+            "necessárias para a análise individual: "
+            f"{sorted(colunas_ajustadas_ausentes)}."
+        )
+
+    df_ativo = df_elera[
+        df_elera["ativo_elera"]
+        == ativo_normalizado
+    ].copy()
+
+    if df_ativo.empty:
+        raise ValueError(
+            "Não foram encontrados registros para o "
+            f"ativo {ativo_normalizado}."
+        )
+
+    # ========================================================
+    # TRATAMENTO
+    # ========================================================
+
+    df_ativo["din_instante"] = pd.to_datetime(
+        df_ativo["din_instante"],
+        errors="coerce",
+    )
+
+    df_ativo[
+        "val_curtailment_elera"
+    ] = pd.to_numeric(
+        df_ativo[
+            "val_curtailment_elera"
+        ],
+        errors="coerce",
+    )
+
+    df_ativo[
+        "val_geracao_esperada_elera"
+    ] = pd.to_numeric(
+        df_ativo[
+            "val_geracao_esperada_elera"
+        ],
+        errors="coerce",
+    )
+
+    df_ativo["tipo_curtailment"] = (
+        df_ativo["cod_razaorestricao"]
+        .astype("string")
+        .str.strip()
+        .str.upper()
+        .fillna("SEM_CODIGO")
+        .replace(
+            "",
+            "SEM_CODIGO",
+        )
+    )
+
+    df_ativo = df_ativo.dropna(
+        subset=[
+            "din_instante",
+            "ativo_elera",
+            "val_curtailment_elera",
+            "val_geracao_esperada_elera",
+        ]
+    ).copy()
+
+    if df_ativo.empty:
+        raise ValueError(
+            "Não restaram registros válidos para o "
+            "ativo selecionado."
+        )
+
+    df_ativo["mes"] = (
+        df_ativo["din_instante"]
+        .dt.to_period("M")
+        .dt.to_timestamp()
+    )
+
+    df_ativo["curtailment_mwh"] = (
+        df_ativo[
+            "val_curtailment_elera"
+        ]
+        .clip(lower=0)
+        * 0.5
+    )
+
+    df_ativo["geracao_esperada_mwh"] = (
+        df_ativo[
+            "val_geracao_esperada_elera"
+        ]
+        .clip(lower=0)
+        * 0.5
+    )
+
+    # ========================================================
+    # INFORMAÇÕES DO ATIVO
+    # ========================================================
+
+    nome_base = (
+        df_ativo["nom_usina"]
+        .dropna()
+        .iloc[0]
+    )
+
+    fonte = (
+        df_ativo["fonte_elera"]
+        .dropna()
+        .iloc[0]
+    )
+
+    estado = (
+        df_ativo["estado_elera"]
+        .dropna()
+        .iloc[0]
+    )
+
+    participacao_fator = float(
+        df_ativo["participacao_elera"]
+        .dropna()
+        .iloc[0]
+    )
+
+    # ========================================================
+    # KPIs DO PERÍODO
+    # ========================================================
+
+    curtailment_total_mwh = (
+        df_ativo["curtailment_mwh"]
+        .sum()
+    )
+
+    geracao_esperada_total_mwh = (
+        df_ativo["geracao_esperada_mwh"]
+        .sum()
+    )
+
+    if geracao_esperada_total_mwh > 0:
+        corte_periodo_pct = (
+            100
+            * curtailment_total_mwh
+            / geracao_esperada_total_mwh
+        )
+
+    else:
+        corte_periodo_pct = None
+
+    # ========================================================
+    # MÊS CRÍTICO
+    # Maior corte percentual mensal.
+    # ========================================================
+
+    resumo_mensal = (
+        df_ativo
+        .groupby(
+            "mes",
+            as_index=False,
+            observed=True,
+        )
+        .agg(
+            curtailment_mwh=(
+                "curtailment_mwh",
+                "sum",
+            ),
+            geracao_esperada_mwh=(
+                "geracao_esperada_mwh",
+                "sum",
+            ),
+        )
+    )
+
+    resumo_mensal["corte_pct"] = 0.0
+
+    mascara_geracao_positiva = (
+        resumo_mensal[
+            "geracao_esperada_mwh"
+        ] > 0
+    )
+
+    resumo_mensal.loc[
+        mascara_geracao_positiva,
+        "corte_pct",
+    ] = (
+        100
+        * resumo_mensal.loc[
+            mascara_geracao_positiva,
+            "curtailment_mwh",
+        ]
+        / resumo_mensal.loc[
+            mascara_geracao_positiva,
+            "geracao_esperada_mwh",
+        ]
+    )
+
+    meses_validos = resumo_mensal[
+        resumo_mensal[
+            "geracao_esperada_mwh"
+        ] > 0
+    ].copy()
+
+    if meses_validos.empty:
+        mes_critico = "Não disponível"
+        corte_mes_critico_pct = None
+        curtailment_mes_critico_gwh = None
+
+    else:
+        linha_mes_critico = meses_validos.loc[
+            meses_validos[
+                "corte_pct"
+            ].idxmax()
+        ]
+
+        mes_critico = (
+            linha_mes_critico["mes"]
+            .strftime("%m/%Y")
+        )
+
+        corte_mes_critico_pct = float(
+            linha_mes_critico[
+                "corte_pct"
+            ]
+        )
+
+        curtailment_mes_critico_gwh = float(
+            linha_mes_critico[
+                "curtailment_mwh"
+            ]
+            / 1000
+        )
+
+    # ========================================================
+    # CURTAILMENT MENSAL POR TIPO
+    # ========================================================
+
+    tipos_permitidos = [
+        "ENE",
+        "REL",
+        "CNF",
+    ]
+
+    df_tipos = df_ativo[
+        df_ativo["tipo_curtailment"]
+        .isin(
+            tipos_permitidos
+        )
+    ].copy()
+
+    base_mensal_tipo = (
+        df_tipos
+        .groupby(
+            [
+                "mes",
+                "tipo_curtailment",
+            ],
+            as_index=False,
+            observed=True,
+        )
+        .agg(
+            curtailment_mwh=(
+                "curtailment_mwh",
+                "sum",
+            )
+        )
+    )
+
+    meses_disponiveis = pd.date_range(
+        start=df_ativo["mes"].min(),
+        end=df_ativo["mes"].max(),
+        freq="MS",
+    )
+
+    indice_completo = pd.MultiIndex.from_product(
+        [
+            meses_disponiveis,
+            tipos_permitidos,
+        ],
+        names=[
+            "mes",
+            "tipo_curtailment",
+        ],
+    )
+
+    if base_mensal_tipo.empty:
+        base_mensal_tipo = pd.DataFrame(
+            index=indice_completo
+        ).reset_index()
+
+        base_mensal_tipo[
+            "curtailment_mwh"
+        ] = 0.0
+
+    else:
+        base_mensal_tipo = (
+            base_mensal_tipo
+            .set_index(
+                [
+                    "mes",
+                    "tipo_curtailment",
+                ]
+            )
+            .reindex(
+                indice_completo,
+                fill_value=0.0,
+            )
+            .reset_index()
+        )
+
+    base_mensal_tipo[
+        "curtailment_gwh"
+    ] = (
+        base_mensal_tipo[
+            "curtailment_mwh"
+        ]
+        / 1000
+    )
+
+    rotulos_tipos = {
+        "ENE": "Energético",
+        "REL": "Elétrico",
+        "CNF": "Confiabilidade",
+    }
+
+    ordem_tipos = {
+        "ENE": 1,
+        "REL": 2,
+        "CNF": 3,
+    }
+
+    base_mensal_tipo["tipo_rotulo"] = (
+        base_mensal_tipo[
+            "tipo_curtailment"
+        ]
+        .map(
+            rotulos_tipos
+        )
+    )
+
+    base_mensal_tipo["mes_rotulo"] = (
+        base_mensal_tipo["mes"]
+        .dt.strftime("%m/%Y")
+    )
+
+    base_mensal_tipo["ordem_tipo"] = (
+        base_mensal_tipo[
+            "tipo_curtailment"
+        ]
+        .map(
+            ordem_tipos
+        )
+    )
+
+    base_mensal_tipo = (
+        base_mensal_tipo
+        .sort_values(
+            [
+                "mes",
+                "ordem_tipo",
+            ]
+        )
+        .drop(
+            columns="ordem_tipo"
+        )
+        .reset_index(
+            drop=True
+        )
+    )
+
+    # ========================================================
+    # COMPOSIÇÃO DOS CORTES NO PERÍODO
+    # ========================================================
+
+    composicao_cortes = (
+        df_tipos
+        .groupby(
+            "tipo_curtailment",
+            as_index=False,
+            observed=True,
+        )
+        .agg(
+            curtailment_mwh=(
+                "curtailment_mwh",
+                "sum",
+            )
+        )
+    )
+
+    indice_tipos = pd.Index(
+        tipos_permitidos,
+        name="tipo_curtailment",
+    )
+
+    if composicao_cortes.empty:
+        composicao_cortes = pd.DataFrame(
+            index=indice_tipos
+        ).reset_index()
+
+        composicao_cortes[
+            "curtailment_mwh"
+        ] = 0.0
+
+    else:
+        composicao_cortes = (
+            composicao_cortes
+            .set_index(
+                "tipo_curtailment"
+            )
+            .reindex(
+                indice_tipos,
+                fill_value=0.0,
+            )
+            .reset_index()
+        )
+
+    composicao_cortes[
+        "curtailment_gwh"
+    ] = (
+        composicao_cortes[
+            "curtailment_mwh"
+        ]
+        / 1000
+    )
+
+    curtailment_classificado_mwh = (
+        composicao_cortes[
+            "curtailment_mwh"
+        ]
+        .sum()
+    )
+
+    if curtailment_classificado_mwh > 0:
+        composicao_cortes[
+            "composicao_pct"
+        ] = (
+            100
+            * composicao_cortes[
+                "curtailment_mwh"
+            ]
+            / curtailment_classificado_mwh
+        )
+
+    else:
+        composicao_cortes[
+            "composicao_pct"
+        ] = 0.0
+
+    composicao_cortes["tipo_rotulo"] = (
+        composicao_cortes[
+            "tipo_curtailment"
+        ]
+        .map(
+            rotulos_tipos
+        )
+    )
+
+    composicao_cortes["ordem_tipo"] = (
+        composicao_cortes[
+            "tipo_curtailment"
+        ]
+        .map(
+            ordem_tipos
+        )
+    )
+
+    composicao_cortes = (
+        composicao_cortes
+        .sort_values(
+            "ordem_tipo"
+        )
+        .drop(
+            columns="ordem_tipo"
+        )
+        .reset_index(
+            drop=True
+        )
+    )
+
+    # ========================================================
+    # RETORNO
+    # ========================================================
+
+    return {
+        "ativo": ativo_normalizado,
+        "nome_base": nome_base,
+        "fonte": fonte,
+        "estado": estado,
+        "fator_atribuicao": participacao_fator,
+        "curtailment_gwh": float(
+            curtailment_total_mwh
+            / 1000
+        ),
+        "geracao_esperada_gwh": float(
+            geracao_esperada_total_mwh
+            / 1000
+        ),
+        "corte_pct": (
+            float(
+                corte_periodo_pct
+            )
+            if corte_periodo_pct is not None
+            else None
+        ),
+        "mes_critico": mes_critico,
+        "corte_mes_critico_pct": (
+            corte_mes_critico_pct
+        ),
+        "curtailment_mes_critico_gwh": (
+            curtailment_mes_critico_gwh
+        ),
+        "base_mensal_tipo": (
+            base_mensal_tipo
+        ),
+        "composicao_cortes": (
+            composicao_cortes
+        ),
+    }
