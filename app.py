@@ -35,11 +35,13 @@ from src.analise_subsistemas import (
     preparar_exportacao_subsistemas
 )
 from src.analise_ativos_elera import (
+    ORDEM_ATIVOS_ELERA,
     calcular_kpis_ativos_elera,
     preparar_curtailment_mensal_ativos_elera,
     preparar_geracao_esperada_mensal_ativos_elera,
     preparar_participacao_curtailment_ativos_elera,
-    preparar_participacao_geracao_ativos_elera
+    preparar_participacao_geracao_ativos_elera,
+    preparar_analise_individual_ativo_elera
 )
 # ============================================================
 # CONFIGURAÇÃO
@@ -5021,6 +5023,49 @@ def renderizar_pagina_ativos_elera(
                     config={"displayModeBar": False,"responsive": True},
                     key=(f"grafico_participacao_elera_{metrica_elera}"),
                 )
+
+    # ============================================================
+    # ANÁLISE INDIVIDUAL POR ATIVO
+    # ============================================================
+    
+    st.html(
+        """
+        <div class="titulo-secao-elera">
+            Análise por ativo
+        </div>
+        """
+    )
+    
+    rotulos_ativos_elera = {
+        "Janaúba": "☀ Janaúba",
+        "Alex": "☀ Alex",
+        "Alto Sertão": "● Alto Sertão",
+        "Renascença": "● Renascença",
+        "Pontal": "● Pontal",
+        "Seridó": "● Seridó",
+        "Faísa": "● Faísa",
+    }
+    
+    with st.container(
+        key="seletor_ativo_elera",
+    ):
+        ativo_selecionado_elera = st.pills(
+            "Selecione o ativo",
+            options=ORDEM_ATIVOS_ELERA,
+            default="Janaúba",
+            selection_mode="single",
+            required=True,
+            format_func=lambda ativo: (
+                rotulos_ativos_elera.get(
+                    ativo,
+                    ativo,
+                )
+            ),
+            key="ativo_individual_elera",
+            label_visibility="collapsed",
+            width="stretch",
+            wrap=True,
+        )
             
 @st.cache_data(show_spinner=False)
 def calcular_kpis_subsistemas_aplicacao(
