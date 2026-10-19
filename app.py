@@ -1110,9 +1110,19 @@ st.markdown(
         /* Conteúdo do card de resumo */
         
         .resumo-ativo-elera {
-            padding: 0.25rem;
-        }
+            display: flex;
+            flex-direction: column;
         
+            min-height: 405px;
+        
+            padding: 0.35rem 0.25rem;
+        
+            box-sizing: border-box;
+        }
+        .bloco-composicao-cortes {
+            margin-top: auto;
+            padding-top: 1.35rem;
+        }
         .resumo-ativo-cabecalho {
             display: flex;
             align-items: center;
@@ -1182,13 +1192,18 @@ st.markdown(
         }
         
         .resumo-ativo-kpi {
-            min-width: 0;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
         
-            padding: 0.65rem;
+            min-width: 0;
+            min-height: 82px;
+        
+            padding: 0.8rem 0.75rem;
         
             background-color: #f8fafc;
         
-            border: 1px solid #edf1f5;
+            border: 1px solid #e5edf5;
             border-radius: 9px;
         
             box-sizing: border-box;
@@ -1199,20 +1214,20 @@ st.markdown(
             display: block;
         
             color: #7c8ca0;
-            font-size: 0.68rem;
+            font-size: 0.72rem;
             line-height: 1.3;
         }
         
         .resumo-ativo-kpi strong {
             display: block;
         
-            margin-top: 0.2rem;
+            margin-top: 0.3rem;
         
             overflow: hidden;
         
             color: #102d57;
-            font-size: 0.92rem;
-            font-weight: 700;
+            font-size: 1rem;
+            font-weight: 750;
             line-height: 1.2;
         
             text-overflow: ellipsis;
@@ -1238,13 +1253,13 @@ st.markdown(
             display: flex;
         
             width: 100%;
-            height: 28px;
+            height: 34px;
         
             overflow: hidden;
         
             background-color: #e2e8f0;
         
-            border-radius: 7px;
+            border-radius: 8px;
         }
         
         .segmento-composicao {
@@ -1257,8 +1272,8 @@ st.markdown(
         
             color: #ffffff;
         
-            font-size: 0.7rem;
-            font-weight: 700;
+            font-size: 0.74rem;
+            font-weight: 750;
             line-height: 1;
             white-space: nowrap;
         }
@@ -1281,17 +1296,23 @@ st.markdown(
             display: grid;
             grid-template-columns:
                 repeat(3, minmax(0, 1fr));
-            gap: 0.65rem;
+            gap: 0.85rem;
         
-            margin-top: 0.75rem;
+            margin-top: 0.9rem;
         }
         
-        .item-composicao {
-            display: flex;
-            align-items: flex-start;
-            gap: 0.4rem;
+       .item-composicao strong {
+            color: #334155;
+            font-size: 0.76rem;
+            line-height: 1.2;
+        }
         
-            min-width: 0;
+        .item-composicao div > span {
+            margin-top: 0.15rem;
+        
+            color: #7c8ca0;
+            font-size: 0.72rem;
+            line-height: 1.2;
         }
         
         .bolinha-composicao {
@@ -5383,11 +5404,11 @@ def renderizar_pagina_ativos_elera(
     rotulos_ativos_elera = {
         "Janaúba": "☀ Janaúba",
         "Alex": "☀ Alex",
-        "Alto Sertão": "● Alto Sertão",
-        "Renascença": "● Renascença",
-        "Pontal": "● Pontal",
-        "Seridó": "● Seridó",
-        "Faísa": "● Faísa",
+        "Alto Sertão": "≈ Alto Sertão",
+        "Renascença": "≈ Renascença",
+        "Pontal": "≈ Pontal",
+        "Seridó": "≈ Seridó",
+        "Faísa": "≈ Faísa",
     }
     
     with st.container(
@@ -5665,7 +5686,11 @@ def renderizar_pagina_ativos_elera(
             with st.container(border=True,key="card_resumo_ativo_elera"):
                 html_resumo_ativo = (
                     '<div class="resumo-ativo-elera">'
-    
+                
+                    # ========================================================
+                    # CABEÇALHO DO ATIVO
+                    # ========================================================
+                
                     '<div class="resumo-ativo-cabecalho">'
                     '<div>'
                     '<div class="resumo-ativo-rotulo">'
@@ -5679,30 +5704,38 @@ def renderizar_pagina_ativos_elera(
                     f'{analise_ativo_elera["fonte"]}'
                     '</div>'
                     '</div>'
-    
+                
+                    # ========================================================
+                    # LOCAL
+                    # ========================================================
+                
                     '<div class="resumo-ativo-local">'
                     '<span>Local</span>'
                     '<strong>'
                     f'{analise_ativo_elera["estado"]}'
                     '</strong>'
                     '</div>'
-    
+                
+                    # ========================================================
+                    # KPIs
+                    # ========================================================
+                
                     '<div class="resumo-ativo-kpis">'
-    
+                
                     '<div class="resumo-ativo-kpi">'
                     '<span>Curtailment</span>'
                     '<strong>'
                     f'{curtailment_ativo_formatado} GWh'
                     '</strong>'
                     '</div>'
-    
+                
                     '<div class="resumo-ativo-kpi">'
                     '<span>Corte</span>'
                     '<strong>'
                     f'{corte_ativo_formatado}%'
                     '</strong>'
                     '</div>'
-    
+                
                     '<div class="resumo-ativo-kpi">'
                     '<span>Mês crítico</span>'
                     '<strong>'
@@ -5712,34 +5745,44 @@ def renderizar_pagina_ativos_elera(
                     f'{corte_mes_critico_formatado}% de corte'
                     '</small>'
                     '</div>'
-    
+                
                     '</div>'
-    
+                
+                    # ========================================================
+                    # COMPOSIÇÃO DOS CORTES
+                    # ========================================================
+                
+                    '<div class="bloco-composicao-cortes">'
+                
                     '<div class="composicao-cortes-titulo">'
                     'Composição dos cortes no período'
                     '</div>'
-    
+                
                     '<div class="barra-composicao-cortes">'
-    
+                
                     '<div class="segmento-composicao segmento-ene" '
                     f'style="width:{ene_pct}%">'
                     f'{ene_pct:.1f}%'
                     '</div>'
-    
+                
                     '<div class="segmento-composicao segmento-rel" '
                     f'style="width:{rel_pct}%">'
                     f'{rel_pct:.1f}%'
                     '</div>'
-    
+                
                     '<div class="segmento-composicao segmento-cnf" '
                     f'style="width:{cnf_pct}%">'
                     f'{cnf_pct:.1f}%'
                     '</div>'
-    
+                
                     '</div>'
-    
+                
+                    # ========================================================
+                    # LEGENDA DA COMPOSIÇÃO
+                    # ========================================================
+                
                     '<div class="legenda-composicao-cortes">'
-    
+                
                     '<div class="item-composicao">'
                     '<span class="bolinha-composicao ene"></span>'
                     '<div>'
@@ -5747,7 +5790,7 @@ def renderizar_pagina_ativos_elera(
                     f'<span>{ene_gwh_formatado} GWh</span>'
                     '</div>'
                     '</div>'
-    
+                
                     '<div class="item-composicao">'
                     '<span class="bolinha-composicao rel"></span>'
                     '<div>'
@@ -5755,7 +5798,7 @@ def renderizar_pagina_ativos_elera(
                     f'<span>{rel_gwh_formatado} GWh</span>'
                     '</div>'
                     '</div>'
-    
+                
                     '<div class="item-composicao">'
                     '<span class="bolinha-composicao cnf"></span>'
                     '<div>'
@@ -5763,8 +5806,13 @@ def renderizar_pagina_ativos_elera(
                     f'<span>{cnf_gwh_formatado} GWh</span>'
                     '</div>'
                     '</div>'
-    
+                
                     '</div>'
+                
+                    # Fecha bloco-composicao-cortes.
+                    '</div>'
+                
+                    # Fecha resumo-ativo-elera.
                     '</div>'
                 )
     
