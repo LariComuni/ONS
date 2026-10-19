@@ -110,6 +110,10 @@ def filtrar_ativos_elera(
 
     df_elera["fonte_elera"] = (df_elera["nom_usina"].map({nome_base: dados["fonte"] for nome_base, dados in ATIVOS_ELERA.items()}))
 
+    df_elera["estado_elera"] = (df_elera["nom_usina"]
+        .map({nome_base: dados.get("estado","Não informado") for nome_base, dados in ATIVOS_ELERA.items()})
+    )
+    
     df_elera["participacao_elera"] = (df_elera["nom_usina"]
         .map({nome_base: dados["participacao_elera"] for nome_base, dados in ATIVOS_ELERA.items()}).fillna(0.0)
     )
