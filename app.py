@@ -41,7 +41,7 @@ from src.analise_ativos_elera import (
     preparar_geracao_esperada_mensal_ativos_elera,
     preparar_participacao_curtailment_ativos_elera,
     preparar_participacao_geracao_ativos_elera,
-    preparar_analise__ativo_elera
+    preparar_analise_individual_ativo_elera,
 )
 # ============================================================
 # CONFIGURAÇÃO
