@@ -5519,17 +5519,35 @@ def renderizar_pagina_ativos_elera(
         (coluna_grafico_ativo,coluna_resumo_ativo) = st.columns([1.55,1],gap="medium",vertical_alignment="top")
         
         with coluna_grafico_ativo:
-            with st.container(
-                border=True,
-                key="card_grafico_ativo_elera",
-            ):
-                st.html(
-                    (
-                        '<div class="titulo-card-grafico">'
-                        'Curtailment mensal do ativo'
-                        '</div>'
+            with st.container(border=True,key="card_grafico_ativo_elera"):
+                (coluna_titulo_grafico_ativo,coluna_metrica_grafico_ativo) = st.columns([2.4,2.1],vertical_alignment="center")
+                
+                with coluna_titulo_grafico_ativo:
+                    st.html(
+                        """
+                        <div class="titulo-card-grafico">
+                            Mensal do ativo
+                        </div>
+                        """
                     )
-                )
+                
+                with coluna_metrica_grafico_ativo:
+                    metrica_individual_elera = (
+                        st.segmented_control(
+                            "Métrica mensal do ativo",
+                            options=[
+                                "Curtailment",
+                                "Geração esperada",
+                            ],
+                            default="Curtailment",
+                            key="metrica_individual_elera",
+                            label_visibility="collapsed",
+                            selection_mode="single",
+                        )
+                    )
+                
+                if metrica_individual_elera is None:
+                    metrica_individual_elera = "Curtailment"
     
                 base_mensal_ativo = (
                     analise_ativo_elera[
