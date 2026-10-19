@@ -41,7 +41,7 @@ from src.analise_ativos_elera import (
     preparar_geracao_esperada_mensal_ativos_elera,
     preparar_participacao_curtailment_ativos_elera,
     preparar_participacao_geracao_ativos_elera,
-    preparar_analise_individual_ativo_elera
+    preparar_analise__ativo_elera
 )
 # ============================================================
 # CONFIGURAÇÃO
@@ -1009,6 +1009,332 @@ st.markdown(
             line-height: 1;
             white-space: nowrap;
         }
+        /*Análise individual dos ativos Elera*/
+        
+        .titulo-secao-elera {
+            width: min(1500px, calc(100vw - 3rem));
+        
+            margin-top: 0;
+            margin-right: auto;
+            margin-bottom: 0.65rem;
+            margin-left: auto;
+        
+            color: #0f2948;
+            font-size: 1.15rem;
+            font-weight: 700;
+            line-height: 1.2;
+        }
+        
+        .st-key-seletor_ativo_elera,
+        .st-key-analise_individual_elera {
+            width: min(1500px, calc(100vw - 3rem));
+        
+            margin-right: auto;
+            margin-left: auto;
+        }
+        
+        .st-key-seletor_ativo_elera {
+            margin-bottom: 0.85rem;
+        }
+        
+        .st-key-analise_individual_elera {
+            margin-bottom: 1.5rem;
+        }
+        
+        /* Seletor visual dos ativos */
+        
+        .st-key-seletor_ativo_elera
+        div[data-testid="stPills"] {
+            width: 100%;
+        }
+        
+        .st-key-seletor_ativo_elera
+        div[data-testid="stPills"] > div {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+        
+            width: 100%;
+        }
+        
+        .st-key-seletor_ativo_elera
+        div[data-testid="stPills"] button {
+            min-height: 38px;
+        
+            padding: 0.45rem 0.8rem;
+        
+            color: #475569;
+            background-color: #ffffff;
+        
+            border: 1px solid #dbe3ec;
+            border-radius: 999px;
+        
+            font-size: 0.8rem;
+            font-weight: 600;
+        
+            box-shadow:
+                0 2px 6px rgba(15, 42, 70, 0.05);
+        }
+        
+        /* Cards da análise individual */
+        
+        .st-key-card_grafico_ativo_elera,
+        .st-key-card_resumo_ativo_elera {
+            width: 100%;
+            min-height: 450px;
+        
+            margin: 0;
+            padding: 0.8rem 0.9rem;
+        
+            background-color: #ffffff;
+        
+            border: 1px solid #e2e8f0;
+            border-radius: 13px;
+        
+            box-shadow:
+                0 6px 18px rgba(15, 42, 70, 0.08);
+        
+            box-sizing: border-box;
+        }
+        
+        .st-key-card_grafico_ativo_elera
+        div[data-testid="stVerticalBlockBorderWrapper"],
+        .st-key-card_resumo_ativo_elera
+        div[data-testid="stVerticalBlockBorderWrapper"] {
+            height: 100%;
+        
+            border: 0;
+            box-shadow: none;
+        }
+        
+        /* Conteúdo do card de resumo */
+        
+        .resumo-ativo-elera {
+            padding: 0.25rem;
+        }
+        
+        .resumo-ativo-cabecalho {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 1rem;
+        
+            padding-bottom: 0.85rem;
+        
+            border-bottom: 1px solid #e2e8f0;
+        }
+        
+        .resumo-ativo-rotulo {
+            color: #7c8ca0;
+            font-size: 0.72rem;
+            line-height: 1.2;
+        }
+        
+        .resumo-ativo-nome {
+            margin-top: 0.15rem;
+        
+            color: #102d57;
+            font-size: 1.35rem;
+            font-weight: 750;
+            line-height: 1.2;
+        }
+        
+        .resumo-ativo-fonte {
+            flex: 0 0 auto;
+        
+            padding: 0.35rem 0.65rem;
+        
+            color: #2f6690;
+            background-color: #eaf3f9;
+        
+            border-radius: 999px;
+        
+            font-size: 0.74rem;
+            font-weight: 650;
+            line-height: 1;
+        }
+        
+        .resumo-ativo-local {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        
+            padding: 0.75rem 0;
+        
+            color: #64748b;
+            font-size: 0.82rem;
+        }
+        
+        .resumo-ativo-local strong {
+            color: #334155;
+            font-weight: 650;
+        }
+        
+        /* KPIs internos do ativo */
+        
+        .resumo-ativo-kpis {
+            display: grid;
+            grid-template-columns:
+                repeat(3, minmax(0, 1fr));
+            gap: 0.55rem;
+        
+            margin-bottom: 1.25rem;
+        }
+        
+        .resumo-ativo-kpi {
+            min-width: 0;
+        
+            padding: 0.65rem;
+        
+            background-color: #f8fafc;
+        
+            border: 1px solid #edf1f5;
+            border-radius: 9px;
+        
+            box-sizing: border-box;
+        }
+        
+        .resumo-ativo-kpi span,
+        .resumo-ativo-kpi small {
+            display: block;
+        
+            color: #7c8ca0;
+            font-size: 0.68rem;
+            line-height: 1.3;
+        }
+        
+        .resumo-ativo-kpi strong {
+            display: block;
+        
+            margin-top: 0.2rem;
+        
+            overflow: hidden;
+        
+            color: #102d57;
+            font-size: 0.92rem;
+            font-weight: 700;
+            line-height: 1.2;
+        
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+        
+        .resumo-ativo-kpi small {
+            margin-top: 0.15rem;
+        }
+        
+        /* Composição dos cortes */
+        
+        .composicao-cortes-titulo {
+            margin-bottom: 0.55rem;
+        
+            color: #102d57;
+            font-size: 0.85rem;
+            font-weight: 700;
+            line-height: 1.2;
+        }
+        
+        .barra-composicao-cortes {
+            display: flex;
+        
+            width: 100%;
+            height: 28px;
+        
+            overflow: hidden;
+        
+            background-color: #e2e8f0;
+        
+            border-radius: 7px;
+        }
+        
+        .segmento-composicao {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        
+            min-width: 0;
+            overflow: hidden;
+        
+            color: #ffffff;
+        
+            font-size: 0.7rem;
+            font-weight: 700;
+            line-height: 1;
+            white-space: nowrap;
+        }
+        
+        .segmento-ene {
+            background-color: #2f70c9;
+        }
+        
+        .segmento-rel {
+            background-color: #24aaa6;
+        }
+        
+        .segmento-cnf {
+            background-color: #ff6666;
+        }
+        
+        /* Legenda da composição */
+        
+        .legenda-composicao-cortes {
+            display: grid;
+            grid-template-columns:
+                repeat(3, minmax(0, 1fr));
+            gap: 0.65rem;
+        
+            margin-top: 0.75rem;
+        }
+        
+        .item-composicao {
+            display: flex;
+            align-items: flex-start;
+            gap: 0.4rem;
+        
+            min-width: 0;
+        }
+        
+        .bolinha-composicao {
+            flex: 0 0 auto;
+        
+            width: 10px;
+            height: 10px;
+        
+            margin-top: 0.15rem;
+        
+            border-radius: 50%;
+        }
+        
+        .bolinha-composicao.ene {
+            background-color: #2f70c9;
+        }
+        
+        .bolinha-composicao.rel {
+            background-color: #24aaa6;
+        }
+        
+        .bolinha-composicao.cnf {
+            background-color: #ff6666;
+        }
+        
+        .item-composicao strong,
+        .item-composicao div > span {
+            display: block;
+        }
+        
+        .item-composicao strong {
+            color: #334155;
+            font-size: 0.72rem;
+            line-height: 1.2;
+        }
+        
+        .item-composicao div > span {
+            margin-top: 0.1rem;
+        
+            color: #7c8ca0;
+            font-size: 0.68rem;
+            line-height: 1.2;
+        }
         
         /* botões de download da aba de subsistemas*/
 
@@ -1574,6 +1900,24 @@ st.markdown(
             .st-key-card_participacao_elera {
                 min-height: auto;
             }
+            
+            /* Análise individual dos ativos Elera */
+
+            .titulo-secao-elera,
+            .st-key-seletor_ativo_elera,
+            .st-key-analise_individual_elera {
+                width: calc(100vw - 1rem);
+            }
+            
+            .st-key-card_grafico_ativo_elera,
+            .st-key-card_resumo_ativo_elera {
+                min-height: auto;
+            }
+            
+            .resumo-ativo-kpis {
+                grid-template-columns:
+                    repeat(3, minmax(0, 1fr));
+            }       
         }
     </style>
     """,
@@ -5066,6 +5410,365 @@ def renderizar_pagina_ativos_elera(
             width="stretch",
             wrap=True,
         )
+    try:
+        analise_ativo_elera = (
+            preparar_analise_individual_elera_aplicacao(
+                df_curtailment=(
+                    df_curtailment_ativos_elera
+                ),
+                ativo_selecionado=(
+                    ativo_selecionado_elera
+                ),
+            )
+        )
+    
+    except (
+        TypeError,
+        ValueError,
+        KeyError,
+    ) as erro:
+        st.error(
+            "Não foi possível preparar a análise "
+            "individual do ativo selecionado."
+        )
+    
+        st.exception(
+            erro
+        )
+    
+        return
+    curtailment_ativo_formatado = (formatar_numero_brasileiro(analise_ativo_elera["curtailment_gwh"],casas_decimais=2))
+    
+    corte_ativo = analise_ativo_elera["corte_pct"]
+    
+    if corte_ativo is not None:
+        corte_ativo_formatado = (
+            formatar_numero_brasileiro(
+                corte_ativo,
+                casas_decimais=2,
+            )
+        )
+    
+    else:
+        corte_ativo_formatado = "—"
+    
+    mes_critico_ativo = analise_ativo_elera["mes_critico"]
+    
+    corte_mes_critico = analise_ativo_elera["corte_mes_critico_pct"]
+    
+    if corte_mes_critico is not None:
+        corte_mes_critico_formatado = (formatar_numero_brasileiro(corte_mes_critico,casas_decimais=2))
+    
+    else:
+        corte_mes_critico_formatado = "—"
+    
+    composicao_cortes_ativo = (analise_ativo_elera["composicao_cortes"].set_index("tipo_curtailment"))
+    
+    dados_composicao_ativo = {}
+    
+    for codigo in ["ENE","REL","CNF"]:
+        if codigo in composicao_cortes_ativo.index:
+            linha_tipo = composicao_cortes_ativo.loc[codigo]
+    
+            dados_composicao_ativo[codigo] = {"pct": float(linha_tipo["composicao_pct"]),"gwh": float(linha_tipo["curtailment_gwh"])}
+    
+        else:
+            dados_composicao_ativo[codigo] = {"pct": 0.0,"gwh": 0.0}
+   
+    ene_gwh_formatado = formatar_numero_brasileiro(
+        dados_composicao_ativo["ENE"]["gwh"],
+        casas_decimais=2,
+    )
+    
+    rel_gwh_formatado = formatar_numero_brasileiro(
+        dados_composicao_ativo["REL"]["gwh"],
+        casas_decimais=2,
+    )
+    
+    cnf_gwh_formatado = formatar_numero_brasileiro(
+        dados_composicao_ativo["CNF"]["gwh"],
+        casas_decimais=2,
+    )
+    
+    ene_pct = dados_composicao_ativo["ENE"]["pct"]
+    rel_pct = dados_composicao_ativo["REL"]["pct"]
+    cnf_pct = dados_composicao_ativo["CNF"]["pct"]
+
+    with st.container(key="analise_individual_elera"):
+        (coluna_grafico_ativo,coluna_resumo_ativo) = st.columns([1.55,1],gap="medium",vertical_alignment="top")
+        
+        with coluna_grafico_ativo:
+            with st.container(
+                border=True,
+                key="card_grafico_ativo_elera",
+            ):
+                st.html(
+                    (
+                        '<div class="titulo-card-grafico">'
+                        'Curtailment mensal do ativo'
+                        '</div>'
+                    )
+                )
+    
+                base_mensal_ativo = (
+                    analise_ativo_elera[
+                        "base_mensal_tipo"
+                    ]
+                    .copy()
+                )
+    
+                ordem_meses_ativo = (
+                    base_mensal_ativo[
+                        [
+                            "mes",
+                            "mes_rotulo",
+                        ]
+                    ]
+                    .drop_duplicates()
+                    .sort_values(
+                        "mes"
+                    )[
+                        "mes_rotulo"
+                    ]
+                    .tolist()
+                )
+    
+                fig_ativo_elera = px.bar(
+                    base_mensal_ativo,
+                    x="mes_rotulo",
+                    y="curtailment_gwh",
+                    color="tipo_rotulo",
+                    barmode="stack",
+                    category_orders={
+                        "mes_rotulo": ordem_meses_ativo,
+                        "tipo_rotulo": [
+                            "Energético",
+                            "Elétrico",
+                            "Confiabilidade",
+                        ],
+                    },
+                    color_discrete_map=(
+                        cores_tipos_elera
+                    ),
+                    labels={
+                        "mes_rotulo": "Mês",
+                        "curtailment_gwh": (
+                            "Curtailment (GWh)"
+                        ),
+                        "tipo_rotulo": "Tipo",
+                    },
+                    custom_data=[
+                        "tipo_curtailment",
+                        "tipo_rotulo",
+                    ],
+                )
+    
+                fig_ativo_elera.update_traces(
+                    marker_line_color="#FFFFFF",
+                    marker_line_width=0.5,
+                    hovertemplate=(
+                        "<b>%{customdata[1]}</b>"
+                        "<br>Código: %{customdata[0]}"
+                        "<br>Mês: %{x}"
+                        "<br>Curtailment: %{y:,.2f} GWh"
+                        "<extra></extra>"
+                    ),
+                )
+    
+                fig_ativo_elera.update_layout(
+                    height=390,
+                    margin={
+                        "l": 10,
+                        "r": 10,
+                        "t": 55,
+                        "b": 15,
+                    },
+                    paper_bgcolor="rgba(0,0,0,0)",
+                    plot_bgcolor="rgba(0,0,0,0)",
+                    font={
+                        "family": (
+                            "Segoe UI, Arial, sans-serif"
+                        ),
+                        "color": "#334155",
+                        "size": 12,
+                    },
+                    legend={
+                        "title": {
+                            "text": "",
+                        },
+                        "orientation": "h",
+                        "yanchor": "bottom",
+                        "y": 1.03,
+                        "xanchor": "center",
+                        "x": 0.5,
+                        "font": {
+                            "size": 12,
+                            "color": "#334155",
+                        },
+                    },
+                    hoverlabel={
+                        "bgcolor": "#FFFFFF",
+                        "bordercolor": "#D9E2EC",
+                        "font": {
+                            "color": "#102D57",
+                            "size": 12,
+                        },
+                    },
+                    bargap=0.25,
+                )
+    
+                fig_ativo_elera.update_xaxes(
+                    title=None,
+                    showgrid=False,
+                    showline=False,
+                    tickfont={
+                        "size": 11,
+                        "color": "#64748B",
+                    },
+                    fixedrange=True,
+                )
+    
+                fig_ativo_elera.update_yaxes(
+                    title="Curtailment (GWh)",
+                    gridcolor=(
+                        "rgba(148, 163, 184, 0.20)"
+                    ),
+                    zeroline=False,
+                    showline=False,
+                    tickfont={
+                        "size": 10,
+                        "color": "#64748B",
+                    },
+                    title_font={
+                        "size": 11,
+                        "color": "#475569",
+                    },
+                    tickformat=",.0f",
+                    fixedrange=True,
+                )
+    
+                st.plotly_chart(
+                    fig_ativo_elera,
+                    width="stretch",
+                    height=390,
+                    config={
+                        "displayModeBar": False,
+                        "responsive": True,
+                    },
+                    key=(
+                        "grafico_individual_elera_"
+                        f"{ativo_selecionado_elera}"
+                    ),
+                )
+
+        with coluna_resumo_ativo:
+            with st.container(border=True,key="card_resumo_ativo_elera"):
+                html_resumo_ativo = (
+                    '<div class="resumo-ativo-elera">'
+    
+                    '<div class="resumo-ativo-cabecalho">'
+                    '<div>'
+                    '<div class="resumo-ativo-rotulo">'
+                    'Ativo selecionado'
+                    '</div>'
+                    '<div class="resumo-ativo-nome">'
+                    f'{analise_ativo_elera["ativo"]}'
+                    '</div>'
+                    '</div>'
+                    '<div class="resumo-ativo-fonte">'
+                    f'{analise_ativo_elera["fonte"]}'
+                    '</div>'
+                    '</div>'
+    
+                    '<div class="resumo-ativo-local">'
+                    '<span>Local</span>'
+                    '<strong>'
+                    f'{analise_ativo_elera["estado"]}'
+                    '</strong>'
+                    '</div>'
+    
+                    '<div class="resumo-ativo-kpis">'
+    
+                    '<div class="resumo-ativo-kpi">'
+                    '<span>Curtailment</span>'
+                    '<strong>'
+                    f'{curtailment_ativo_formatado} GWh'
+                    '</strong>'
+                    '</div>'
+    
+                    '<div class="resumo-ativo-kpi">'
+                    '<span>Corte</span>'
+                    '<strong>'
+                    f'{corte_ativo_formatado}%'
+                    '</strong>'
+                    '</div>'
+    
+                    '<div class="resumo-ativo-kpi">'
+                    '<span>Mês crítico</span>'
+                    '<strong>'
+                    f'{mes_critico_ativo}'
+                    '</strong>'
+                    '<small>'
+                    f'{corte_mes_critico_formatado}% de corte'
+                    '</small>'
+                    '</div>'
+    
+                    '</div>'
+    
+                    '<div class="composicao-cortes-titulo">'
+                    'Composição dos cortes no período'
+                    '</div>'
+    
+                    '<div class="barra-composicao-cortes">'
+    
+                    '<div class="segmento-composicao segmento-ene" '
+                    f'style="width:{ene_pct}%">'
+                    f'{ene_pct:.1f}%'
+                    '</div>'
+    
+                    '<div class="segmento-composicao segmento-rel" '
+                    f'style="width:{rel_pct}%">'
+                    f'{rel_pct:.1f}%'
+                    '</div>'
+    
+                    '<div class="segmento-composicao segmento-cnf" '
+                    f'style="width:{cnf_pct}%">'
+                    f'{cnf_pct:.1f}%'
+                    '</div>'
+    
+                    '</div>'
+    
+                    '<div class="legenda-composicao-cortes">'
+    
+                    '<div class="item-composicao">'
+                    '<span class="bolinha-composicao ene"></span>'
+                    '<div>'
+                    '<strong>ENE</strong>'
+                    f'<span>{ene_gwh_formatado} GWh</span>'
+                    '</div>'
+                    '</div>'
+    
+                    '<div class="item-composicao">'
+                    '<span class="bolinha-composicao rel"></span>'
+                    '<div>'
+                    '<strong>REL</strong>'
+                    f'<span>{rel_gwh_formatado} GWh</span>'
+                    '</div>'
+                    '</div>'
+    
+                    '<div class="item-composicao">'
+                    '<span class="bolinha-composicao cnf"></span>'
+                    '<div>'
+                    '<strong>CNF</strong>'
+                    f'<span>{cnf_gwh_formatado} GWh</span>'
+                    '</div>'
+                    '</div>'
+    
+                    '</div>'
+                    '</div>'
+                )
+    
+                st.html(html_resumo_ativo)
             
 @st.cache_data(show_spinner=False)
 def calcular_kpis_subsistemas_aplicacao(
