@@ -4617,8 +4617,8 @@ def renderizar_pagina_ativos_elera(
     # ============================================================
     
     cores_fontes_elera = {
-        "Solar": "#F3A6B8",
-        "Eólica": "#5F8FB5",
+        "Solar": "#F59E0B",
+        "Eólica": "#2F6690",
     }
     
     cores_tipos_elera = {
@@ -4801,7 +4801,7 @@ def renderizar_pagina_ativos_elera(
                     )
     
                     fig_mensal_elera.update_traces(
-                        marker_color="#F5A65B",
+                        marker_color="#2F6690",
                         marker_line_color=(
                             "rgba(255,255,255,0.75)"
                         ),
