@@ -14,36 +14,43 @@ ATIVOS_ELERA = {
         "nome_exibicao": "Janaúba",
         "fonte": "Solar",
         "participacao_elera": 1.0,
+        "estado": "MG",
     },
     "Conj. Alex": {
         "nome_exibicao": "Alex",
         "fonte": "Solar",
         "participacao_elera": 1.0,
+        "estado": "CE",
     },
     "Conj. Igaporã II": {
         "nome_exibicao": "Alto Sertão",
         "fonte": "Eólica",
         "participacao_elera": 1.0,
+        "estado": "BA",
     },
     "Conj. Renascença": {
         "nome_exibicao": "Renascença",
         "fonte": "Eólica",
         "participacao_elera": 1.0,
+        "estado": "RN",
     },
     "Conj. Viamão 3": {
         "nome_exibicao": "Pontal",
         "fonte": "Eólica",
         "participacao_elera": 1.0,
+        "estado": "RS",
     },
     "Conj. Oeste Seridó": {
         "nome_exibicao": "Seridó",
         "fonte": "Eólica",
         "participacao_elera": 1.0,
+        "estado": "PB",
     },
     "Conj. Faísa": {
         "nome_exibicao": "Faísa",
         "fonte": "Eólica",
         "participacao_elera": 0.5992,
+        "estado": "CE",
     },
 }
 
