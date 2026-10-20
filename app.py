@@ -1106,6 +1106,32 @@ st.markdown(
             border: 0;
             box-shadow: none;
         }
+
+        /* Seletores do gráfico individual */
+
+        .st-key-card_grafico_ativo_elera
+        div[data-testid="stSegmentedControl"] {
+            display: flex;
+            justify-content: flex-end;
+        
+            width: 100%;
+        }
+        
+        .st-key-card_grafico_ativo_elera
+        div[data-testid="stSegmentedControl"] > div {
+            width: auto;
+        }
+        
+        .st-key-card_grafico_ativo_elera
+        div[data-testid="stSegmentedControl"] button {
+            min-height: 34px;
+        
+            padding: 0.35rem 0.55rem;
+        
+            font-size: 0.75rem;
+            line-height: 1;
+            white-space: nowrap;
+        }
         
         /* Conteúdo do card de resumo */
         
@@ -5537,50 +5563,59 @@ def renderizar_pagina_ativos_elera(
         
         with coluna_grafico_ativo:
             with st.container(border=True,key="card_grafico_ativo_elera"):
-                (coluna_titulo_grafico_ativo,coluna_metrica_grafico_ativo) = st.columns([2.4,2.1],vertical_alignment="center")
-                
+                (coluna_titulo_grafico_ativo,coluna_visao_grafico_ativo,coluna_metrica_grafico_ativo,) = st.columns([1.7,1.6,2.1,],vertical_alignment="center",)
+            
                 with coluna_titulo_grafico_ativo:
                     st.html(
                         """
                         <div class="titulo-card-grafico">
-                            Mensal do ativo
+                            Análise do ativo
                         </div>
                         """
                     )
-                
+            
+                with coluna_visao_grafico_ativo:
+                    visao_individual_elera = (
+                            st.segmented_control("Visão do ativo",options=["Volume Mensal","Perfil horário"],
+                                default="Volume Mensal",
+                                key="visao_individual_elera",
+                                label_visibility="collapsed",
+                                selection_mode="single",
+                            )
+                        )
+            
                 with coluna_metrica_grafico_ativo:
                     metrica_individual_elera = (
-                        st.segmented_control(
-                            "Métrica mensal do ativo",
-                            options=[
-                                "Curtailment",
-                                "Geração esperada",
-                            ],
-                            default="Curtailment",
-                            key="metrica_individual_elera",
-                            label_visibility="collapsed",
-                            selection_mode="single",
+                        st.segmented_control("Métrica do ativo",options=["Curtailment","Geração esperada"],
+                                default="Curtailment",
+                                key="metrica_individual_elera",
+                                label_visibility="collapsed",
+                                selection_mode="single",
+                            )
                         )
-                    )
-                
+            
+                if visao_individual_elera is None:
+                    visao_individual_elera = "Volume Mensal"
+            
                 if metrica_individual_elera is None:
                     metrica_individual_elera = "Curtailment"
+
                 
                 
                 # ============================================================
                 # GRÁFICO DE CURTAILMENT
                 # ============================================================
                 
-                if metrica_individual_elera == "Curtailment":
-                    base_mensal_ativo = (
+                if (visao_individual_elera == "Volume Mensal" and metrica_individual_elera == "Curtailment"):
+                    base_grafico_ativo = (
                         analise_ativo_elera[
                             "base_mensal_tipo"
                         ]
                         .copy()
                     )
-                
-                    ordem_meses_ativo = (
-                        base_mensal_ativo[
+        
+                    ordem_eixo_x = (
+                        base_grafico_ativo[
                             [
                                 "mes",
                                 "mes_rotulo",
@@ -5594,15 +5629,15 @@ def renderizar_pagina_ativos_elera(
                         ]
                         .tolist()
                     )
-                
+        
                     fig_ativo_elera = px.bar(
-                        base_mensal_ativo,
+                        base_grafico_ativo,
                         x="mes_rotulo",
                         y="curtailment_gwh",
                         color="tipo_rotulo",
                         barmode="stack",
                         category_orders={
-                            "mes_rotulo": ordem_meses_ativo,
+                            "mes_rotulo": ordem_eixo_x,
                             "tipo_rotulo": [
                                 "Energético",
                                 "Elétrico",
@@ -5624,7 +5659,7 @@ def renderizar_pagina_ativos_elera(
                             "tipo_rotulo",
                         ],
                     )
-                
+        
                     fig_ativo_elera.update_traces(
                         marker_line_color="#FFFFFF",
                         marker_line_width=0.5,
@@ -5632,49 +5667,37 @@ def renderizar_pagina_ativos_elera(
                             "<b>%{customdata[1]}</b>"
                             "<br>Código: %{customdata[0]}"
                             "<br>Mês: %{x}"
-                            "<br>Curtailment: %{y:,.2f} GWh"
+                            "<br>Curtailment: "
+                            "%{y:,.2f} GWh"
                             "<extra></extra>"
                         ),
                     )
-                
-                    titulo_eixo_ativo = "Curtailment (GWh)"
+        
+                    titulo_eixo_ativo = (
+                        "Curtailment (GWh)"
+                    )
+        
                     mostrar_legenda_ativo = True
-                
                 
                 # ============================================================
                 # GRÁFICO DE GERAÇÃO ESPERADA
                 # ============================================================
-                
-                else:
-                    base_mensal_ativo = (
-                        analise_ativo_elera[
-                            "base_mensal_resumo"
-                        ]
-                        .copy()
-                    )
-                
-                    ordem_meses_ativo = (
-                        base_mensal_ativo[
-                            [
-                                "mes",
-                                "mes_rotulo",
-                            ]
-                        ]
+                elif (visao_individual_elera == "Volume Mensal" and metrica_individual_elera== "Geração esperada"):
+                    base_grafico_ativo = (analise_ativo_elera["base_mensal_resumo"].copy())
+        
+                    ordem_eixo_x = (
+                        base_grafico_ativo[["mes","mes_rotulo"]]
                         .drop_duplicates()
-                        .sort_values(
-                            "mes"
-                        )[
-                            "mes_rotulo"
-                        ]
+                        .sort_values("mes")["mes_rotulo"]
                         .tolist()
                     )
-                
+        
                     fig_ativo_elera = px.bar(
-                        base_mensal_ativo,
+                        base_grafico_ativo,
                         x="mes_rotulo",
                         y="geracao_esperada_gwh",
                         category_orders={
-                            "mes_rotulo": ordem_meses_ativo,
+                            "mes_rotulo": ordem_eixo_x,
                         },
                         labels={
                             "mes_rotulo": "Mês",
@@ -5683,9 +5706,11 @@ def renderizar_pagina_ativos_elera(
                             ),
                         },
                     )
-                
+        
                     fig_ativo_elera.update_traces(
-                        marker_color=cor_geracao_esperada_elera,
+                        marker_color=(
+                            cor_geracao_esperada_elera
+                        ),
                         marker_line_color="#FFFFFF",
                         marker_line_width=0.5,
                         hovertemplate=(
@@ -5696,14 +5721,119 @@ def renderizar_pagina_ativos_elera(
                             "<extra></extra>"
                         ),
                     )
-                
+        
                     titulo_eixo_ativo = (
                         "Geração esperada (GWh)"
                     )
-                
+        
                     mostrar_legenda_ativo = False
-                
-                
+
+                # ============================================================
+                # PERFIL HORÁRIO COM CURTAILMENT
+                # ============================================================
+                elif (visao_individual_elera== "Perfil horário" and metrica_individual_elera == "Curtailment"):
+                    base_grafico_ativo = (analise_ativo_elera["perfil_horario_tipo"].copy())
+        
+                    ordem_eixo_x = [f"{hora:02d}:00" for hora in range(24)]
+        
+                    fig_ativo_elera = px.bar(
+                        base_grafico_ativo,
+                        x="hora_rotulo",
+                        y="curtailment_mw",
+                        color="tipo_rotulo",
+                        barmode="stack",
+                        category_orders={
+                            "hora_rotulo": ordem_eixo_x,
+                            "tipo_rotulo": [
+                                "Energético",
+                                "Elétrico",
+                                "Confiabilidade",
+                            ],
+                        },
+                        color_discrete_map=(
+                            cores_tipos_elera
+                        ),
+                        labels={
+                            "hora_rotulo": "Hora",
+                            "curtailment_mw": (
+                                "Curtailment médio (MW)"
+                            ),
+                            "tipo_rotulo": "Tipo",
+                        },
+                        custom_data=[
+                            "tipo_curtailment",
+                            "tipo_rotulo",
+                        ],
+                    )
+        
+                    fig_ativo_elera.update_traces(
+                        marker_line_color="#FFFFFF",
+                        marker_line_width=0.4,
+                        hovertemplate=(
+                            "<b>%{customdata[1]}</b>"
+                            "<br>Código: %{customdata[0]}"
+                            "<br>Hora: %{x}"
+                            "<br>Curtailment médio: "
+                            "%{y:,.2f} MW"
+                            "<extra></extra>"
+                        ),
+                    )
+        
+                    titulo_eixo_ativo = (
+                        "Curtailment médio (MW)"
+                    )
+        
+                    mostrar_legenda_ativo = True
+
+                # ============================================================
+                # PERFIL HORÁRIO COM GERAÇÃO ESPERADA
+                # ============================================================
+                else:
+                    base_grafico_ativo = (analise_ativo_elera["perfil_horario_resumo"].copy())
+        
+                    ordem_eixo_x = [f"{hora:02d}:00" for hora in range(24)]
+        
+                    fig_ativo_elera = px.line(
+                        base_grafico_ativo,
+                        x="hora_rotulo",
+                        y="geracao_esperada_mw",
+                        markers=True,
+                        category_orders={
+                            "hora_rotulo": ordem_eixo_x,
+                        },
+                        labels={
+                            "hora_rotulo": "Hora",
+                            "geracao_esperada_mw": (
+                                "Geração esperada média (MW)"
+                            ),
+                        },
+                    )
+        
+                    fig_ativo_elera.update_traces(
+                        line={
+                            "color": (
+                                cor_geracao_esperada_elera
+                            ),
+                            "width": 2.5,
+                        },
+                        marker={
+                            "color": (
+                                cor_geracao_esperada_elera
+                            ),
+                            "size": 6,
+                        },
+                        hovertemplate=(
+                            "<b>Geração esperada</b>"
+                            "<br>Hora: %{x}"
+                            "<br>Potência média: "
+                            "%{y:,.2f} MW"
+                            "<extra></extra>"
+                        ),
+                    )
+        
+                    titulo_eixo_ativo = ("Geração esperada média (MW)")
+        
+                    mostrar_legenda_ativo = False
                 # ============================================================
                 # FORMATAÇÃO COMPARTILHADA
                 # ============================================================
@@ -5755,16 +5885,30 @@ def renderizar_pagina_ativos_elera(
                     bargap=0.25,
                 )
                 
-                fig_ativo_elera.update_xaxes(
-                    title=None,
-                    showgrid=False,
-                    showline=False,
-                    tickfont={
-                        "size": 11,
-                        "color": "#64748B",
-                    },
-                    fixedrange=True,
-                )
+                if (visao_individual_elera == "Perfil horário"):
+                    fig_ativo_elera.update_xaxes(
+                        title="Hora do dia",
+                        categoryorder="array",
+                        categoryarray=ordem_eixo_x,
+                        tickmode="array",
+                        tickvals=[
+                            f"{hora:02d}:00" for hora in range(0,24,2,)],
+                        showgrid=False,
+                        showline=False,
+                        tickfont={"size": 10,"color": "#64748B"},
+                        fixedrange=True,
+                    )
+        
+                else:
+                    fig_ativo_elera.update_xaxes(
+                        title=None,
+                        categoryorder="array",
+                        categoryarray=ordem_eixo_x,
+                        showgrid=False,
+                        showline=False,
+                        tickfont={"size": 11,"color": "#64748B"},
+                        fixedrange=True,
+                    )
                 
                 fig_ativo_elera.update_yaxes(
                     title=titulo_eixo_ativo,
@@ -5796,6 +5940,7 @@ def renderizar_pagina_ativos_elera(
                     key=(
                         "grafico_individual_elera_"
                         f"{ativo_selecionado_elera}_"
+                        f"{visao_individual_elera}_"
                         f"{metrica_individual_elera}"
                     ),
                 )
