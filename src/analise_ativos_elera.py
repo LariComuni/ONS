@@ -669,7 +669,10 @@ def preparar_analise_individual_ativo_elera(
     - percentual de corte;
     - mês crítico;
     - curtailment mensal dividido em ENE, REL e CNF;
-    - composição do curtailment entre ENE, REL e CNF.
+    - composição do curtailment entre ENE, REL e CNF;
+    - perfil horário médio da geração esperada;
+    - perfil horário médio do curtailment;
+    - perfil horário médio do curtailment por ENE, REL e CNF;
 
     Para Conj. Faísa, os valores da base original são
     multiplicados por 0.5992 antes das agregações, de
@@ -1042,6 +1045,289 @@ def preparar_analise_individual_ativo_elera(
         )
     ].copy()
 
+    # ========================================================
+    # PERFIL HORÁRIO CONSOLIDADO
+    # ========================================================
+
+    # O perfil horário representa potência média em MW. Portanto, não se aplica o fator de 0.5 utilizado na conversão dos registros semihorários para MWh.
+
+    base_instante_ativo = (
+        df_ativo
+        .groupby(
+            "din_instante",
+            as_index=False,
+            observed=True,
+        )
+        .agg(
+            curtailment_mw=(
+                "val_curtailment_elera",
+                "sum",
+            ),
+            geracao_esperada_mw=(
+                "val_geracao_esperada_elera",
+                "sum",
+            ),
+        )
+    )
+
+    base_instante_ativo["hora"] = (
+        base_instante_ativo[
+            "din_instante"
+        ]
+        .dt.hour
+    )
+
+    perfil_horario_resumo = (
+        base_instante_ativo
+        .groupby(
+            "hora",
+            as_index=False,
+            observed=True,
+        )
+        .agg(
+            curtailment_mw=(
+                "curtailment_mw",
+                "mean",
+            ),
+            geracao_esperada_mw=(
+                "geracao_esperada_mw",
+                "mean",
+            ),
+        )
+    )
+
+    # Garante as 24 horas do dia, mesmo que alguma
+    # hora não possua registros válidos.
+
+    perfil_horario_resumo = (
+        perfil_horario_resumo
+        .set_index(
+            "hora"
+        )
+        .reindex(
+            range(24),
+            fill_value=0.0,
+        )
+        .rename_axis(
+            "hora"
+        )
+        .reset_index()
+    )
+
+    perfil_horario_resumo[
+        "hora_rotulo"
+    ] = (
+        perfil_horario_resumo[
+            "hora"
+        ]
+        .map(
+            lambda hora: (
+                f"{int(hora):02d}:00"
+            )
+        )
+    )
+
+    # ========================================================
+    # PERFIL HORÁRIO DO CURTAILMENT POR TIPO
+    # ========================================================
+
+    # Primeiro, soma o curtailment em cada instante
+    # e tipo de restrição.
+
+    base_instante_tipo = (
+        df_tipos
+        .groupby(
+            [
+                "din_instante",
+                "tipo_curtailment",
+            ],
+            as_index=False,
+            observed=True,
+        )
+        .agg(
+            curtailment_mw=(
+                "val_curtailment_elera",
+                "sum",
+            )
+        )
+    )
+
+    # Cria uma tabela com uma linha por instante e uma
+    # coluna para cada tipo. Os tipos ausentes em um
+    # instante recebem zero.
+
+    base_instante_tipo = (
+        base_instante_tipo
+        .pivot_table(
+            index="din_instante",
+            columns="tipo_curtailment",
+            values="curtailment_mw",
+            aggfunc="sum",
+            fill_value=0.0,
+        )
+        .reindex(
+            columns=tipos_permitidos,
+            fill_value=0.0,
+        )
+        .reset_index()
+    )
+
+    # Garante que sejam considerados todos os instantes
+    # válidos do ativo. Se nenhum dos três tipos ocorreu
+    # em determinado instante, ENE, REL e CNF recebem zero.
+
+    instantes_ativo = (
+        base_instante_ativo[
+            [
+                "din_instante",
+            ]
+        ]
+        .drop_duplicates()
+    )
+
+    base_instante_tipo = (
+        instantes_ativo
+        .merge(
+            base_instante_tipo,
+            on="din_instante",
+            how="left",
+            validate="one_to_one",
+        )
+    )
+
+    for codigo in tipos_permitidos:
+        base_instante_tipo[codigo] = (
+            base_instante_tipo[codigo]
+            .fillna(0.0)
+        )
+
+    base_instante_tipo["hora"] = (
+        base_instante_tipo[
+            "din_instante"
+        ]
+        .dt.hour
+    )
+
+    # Calcula a potência média de cada tipo em cada
+    # hora do dia, considerando zero quando o tipo
+    # não ocorreu em um instante.
+
+    perfil_horario_tipo_largo = (
+        base_instante_tipo
+        .groupby(
+            "hora",
+            as_index=False,
+            observed=True,
+        )
+        .agg(
+            ENE=(
+                "ENE",
+                "mean",
+            ),
+            REL=(
+                "REL",
+                "mean",
+            ),
+            CNF=(
+                "CNF",
+                "mean",
+            ),
+        )
+    )
+
+    perfil_horario_tipo_largo = (
+        perfil_horario_tipo_largo
+        .set_index(
+            "hora"
+        )
+        .reindex(
+            range(24),
+            fill_value=0.0,
+        )
+        .rename_axis(
+            "hora"
+        )
+        .reset_index()
+    )
+
+    # Converte novamente para o formato longo,
+    # apropriado para o gráfico empilhado.
+
+    perfil_horario_tipo = (
+        perfil_horario_tipo_largo
+        .melt(
+            id_vars=[
+                "hora",
+            ],
+            value_vars=tipos_permitidos,
+            var_name="tipo_curtailment",
+            value_name="curtailment_mw",
+        )
+    )
+
+    rotulos_tipos = {
+        "ENE": "Energético",
+        "REL": "Elétrico",
+        "CNF": "Confiabilidade",
+    }
+
+    ordem_tipos = {
+        "ENE": 1,
+        "REL": 2,
+        "CNF": 3,
+    }
+
+    perfil_horario_tipo[
+        "tipo_rotulo"
+    ] = (
+        perfil_horario_tipo[
+            "tipo_curtailment"
+        ]
+        .map(
+            rotulos_tipos
+        )
+    )
+
+    perfil_horario_tipo[
+        "hora_rotulo"
+    ] = (
+        perfil_horario_tipo[
+            "hora"
+        ]
+        .map(
+            lambda hora: (
+                f"{int(hora):02d}:00"
+            )
+        )
+    )
+
+    perfil_horario_tipo[
+        "ordem_tipo"
+    ] = (
+        perfil_horario_tipo[
+            "tipo_curtailment"
+        ]
+        .map(
+            ordem_tipos
+        )
+    )
+
+    perfil_horario_tipo = (
+        perfil_horario_tipo
+        .sort_values(
+            [
+                "hora",
+                "ordem_tipo",
+            ]
+        )
+        .drop(
+            columns="ordem_tipo"
+        )
+        .reset_index(
+            drop=True
+        )
+    )
+
     base_mensal_tipo = (
         df_tipos
         .groupby(
@@ -1281,35 +1567,15 @@ def preparar_analise_individual_ativo_elera(
         "fonte": fonte,
         "estado": estado,
         "fator_atribuicao": participacao_fator,
-        "curtailment_gwh": float(
-            curtailment_total_mwh
-            / 1000
-        ),
-        "geracao_esperada_gwh": float(
-            geracao_esperada_total_mwh
-            / 1000
-        ),
-        "corte_pct": (
-            float(
-                corte_periodo_pct
-            )
-            if corte_periodo_pct is not None
-            else None
-        ),
+        "curtailment_gwh": float(curtailment_total_mwh/ 1000),
+        "geracao_esperada_gwh": float(geracao_esperada_total_mwh/ 1000),
+        "corte_pct": (float(corte_periodo_pct) if corte_periodo_pct is not None else None),
         "mes_critico": mes_critico,
-        "corte_mes_critico_pct": (
-            corte_mes_critico_pct
-        ),
-        "curtailment_mes_critico_gwh": (
-            curtailment_mes_critico_gwh
-        ),
-        "base_mensal_resumo": (
-            resumo_mensal
-        ),
-        "base_mensal_tipo": (
-            base_mensal_tipo
-        ),
-        "composicao_cortes": (
-            composicao_cortes
-        ),
+        "corte_mes_critico_pct": (corte_mes_critico_pct),
+        "curtailment_mes_critico_gwh": (curtailment_mes_critico_gwh),
+        "base_mensal_resumo": (resumo_mensal),
+        "base_mensal_tipo": (base_mensal_tipo),
+        "perfil_horario_resumo": (perfil_horario_resumo),
+        "perfil_horario_tipo": (perfil_horario_tipo),
+        "composicao_cortes": (composicao_cortes),
     }
