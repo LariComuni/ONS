@@ -5001,7 +5001,7 @@ def renderizar_pagina_ativos_elera(
     # ============================================================
     
     cores_fontes_elera = {
-        "Solar": "#F28500",
+        "Solar": "#FF7538",
         "Eólica": "#318CE7",
     }
     
