@@ -1186,20 +1186,26 @@ st.markdown(
             display: grid;
             grid-template-columns:
                 repeat(3, minmax(0, 1fr));
-            gap: 0.55rem;
+            align-items: stretch;
+            gap: 0.6rem;
         
+            width: 100%;
+        
+            margin-top: 0.15rem;
             margin-bottom: 1.25rem;
         }
-        
         .resumo-ativo-kpi {
             display: flex;
             flex-direction: column;
+            align-items: center;
             justify-content: center;
         
             min-width: 0;
             min-height: 82px;
         
-            padding: 0.8rem 0.75rem;
+            padding: 0.75rem 0.65rem;
+        
+            text-align: center;
         
             background-color: #f8fafc;
         
@@ -1213,29 +1219,37 @@ st.markdown(
         .resumo-ativo-kpi small {
             display: block;
         
+            width: 100%;
+        
             color: #7c8ca0;
-            font-size: 0.72rem;
+        
+            font-size: 0.7rem;
             line-height: 1.3;
+            text-align: center;
         }
         
         .resumo-ativo-kpi strong {
             display: block;
         
-            margin-top: 0.3rem;
+            width: 100%;
+        
+            margin-top: 0.28rem;
         
             overflow: hidden;
         
             color: #102d57;
+        
             font-size: 1rem;
             font-weight: 750;
             line-height: 1.2;
+            text-align: center;
         
             text-overflow: ellipsis;
             white-space: nowrap;
         }
         
         .resumo-ativo-kpi small {
-            margin-top: 0.15rem;
+            margin-top: 0.18rem;
         }
         
         /* Composição dos cortes */
@@ -1301,29 +1315,32 @@ st.markdown(
             margin-top: 0.9rem;
         }
         
-       .item-composicao strong {
-            color: #334155;
-            font-size: 0.76rem;
-            line-height: 1.2;
-        }
+       .item-composicao {
+            display: flex;
+            align-items: flex-start;
+            justify-content: flex-start;
+            gap: 0.45rem;
         
-        .item-composicao div > span {
-            margin-top: 0.15rem;
-        
-            color: #7c8ca0;
-            font-size: 0.72rem;
-            line-height: 1.2;
+            min-width: 0;
         }
         
         .bolinha-composicao {
-            flex: 0 0 auto;
+            display: inline-block;
+            flex: 0 0 10px;
         
             width: 10px;
-            height: 10px;
+            min-width: 10px;
+            max-width: 10px;
         
-            margin-top: 0.15rem;
+            height: 10px;
+            min-height: 10px;
+            max-height: 10px;
+        
+            margin-top: 0.18rem;
         
             border-radius: 50%;
+        
+            box-sizing: border-box;
         }
         
         .bolinha-composicao.ene {
@@ -4984,8 +5001,8 @@ def renderizar_pagina_ativos_elera(
     # ============================================================
     
     cores_fontes_elera = {
-        "Solar": "#F59E0B",
-        "Eólica": "#2F6690",
+        "Solar": "#F28500",
+        "Eólica": "#318CE7",
     }
     
     cores_tipos_elera = {
@@ -4993,7 +5010,7 @@ def renderizar_pagina_ativos_elera(
         "Elétrico": "#F5A65B",
         "Confiabilidade": "#A58ACB",
     }
-
+    cor_geracao_esperada_elera = "#034694"
     # ============================================================
     # GRÁFICOS MENSAIS E PARTICIPAÇÃO
     # ============================================================
@@ -5168,7 +5185,7 @@ def renderizar_pagina_ativos_elera(
                     )
     
                     fig_mensal_elera.update_traces(
-                        marker_color="#2F6690",
+                        marker_color=cor_geracao_esperada_elera,
                         marker_line_color=(
                             "rgba(255,255,255,0.75)"
                         ),
@@ -5668,7 +5685,7 @@ def renderizar_pagina_ativos_elera(
                     )
                 
                     fig_ativo_elera.update_traces(
-                        marker_color="#2979E8",
+                        marker_color=cor_geracao_esperada_elera,
                         marker_line_color="#FFFFFF",
                         marker_line_width=0.5,
                         hovertemplate=(
