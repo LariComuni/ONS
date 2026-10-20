@@ -5793,11 +5793,10 @@ def renderizar_pagina_ativos_elera(
         
                     ordem_eixo_x = [f"{hora:02d}:00" for hora in range(24)]
         
-                    fig_ativo_elera = px.line(
+                    fig_ativo_elera = px.bar(
                         base_grafico_ativo,
                         x="hora_rotulo",
                         y="geracao_esperada_mw",
-                        markers=True,
                         category_orders={
                             "hora_rotulo": ordem_eixo_x,
                         },
@@ -5810,18 +5809,11 @@ def renderizar_pagina_ativos_elera(
                     )
         
                     fig_ativo_elera.update_traces(
-                        line={
-                            "color": (
-                                cor_geracao_esperada_elera
-                            ),
-                            "width": 2.5,
-                        },
-                        marker={
-                            "color": (
-                                cor_geracao_esperada_elera
-                            ),
-                            "size": 6,
-                        },
+                        marker_color=(
+                            cor_geracao_esperada_elera
+                        ),
+                        marker_line_color="#FFFFFF",
+                        marker_line_width=0.4,
                         hovertemplate=(
                             "<b>Geração esperada</b>"
                             "<br>Hora: %{x}"
@@ -5830,7 +5822,6 @@ def renderizar_pagina_ativos_elera(
                             "<extra></extra>"
                         ),
                     )
-        
                     titulo_eixo_ativo = ("Geração esperada média (MW)")
         
                     mostrar_legenda_ativo = False
