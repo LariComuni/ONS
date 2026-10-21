@@ -26,13 +26,13 @@ jobs:
 
       - name: Executar download dos arquivos da CCEE
         run: |
-          python pld/ccee/scripts/baixar_pld.py
+          python pld-ccee/scripts/baixar_pld.py
 
       - name: Publicar arquivos como artefato
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: pld-ccee
-          path: pld/ccee/dados/*.csv
+          path: pld-ccee/dados/*.csv
           if-no-files-found: warn
           retention-days: 30
