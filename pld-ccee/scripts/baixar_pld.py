@@ -11,7 +11,9 @@ URLS_PLD = {
 }
 
 
-PASTA_SAIDA = Path("dados")
+BASE_DIR = Path(__file__).resolve().parent.parent
+PASTA_SAIDA = BASE_DIR / "dados"
+
 PASTA_SAIDA.mkdir(parents=True,exist_ok=True)
 
 def baixar_pld(ano, url):
