@@ -1404,7 +1404,7 @@ st.markdown(
         /* Exportação detalhada dos ativos Elera */
 
         .st-key-card_exportacao_ativos_elera {
-            width: min(1280px, calc(100vw - 3rem));
+            width: min(1500px, calc(100vw - 3rem));
         
             margin-top: 0;
             margin-right: auto;
@@ -6374,7 +6374,7 @@ def renderizar_pagina_ativos_elera(
             st.error("Não foi possível preparar a base detalhada para exportação.")
             st.exception(erro)
 
-        return
+            return
         
         nomes_recortes_arquivo = {
             "Portfólio inteiro": "portfolio_inteiro",
