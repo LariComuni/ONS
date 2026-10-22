@@ -1400,8 +1400,60 @@ st.markdown(
             font-size: 0.68rem;
             line-height: 1.2;
         }
+
+        /* Exportação detalhada dos ativos Elera */
+
+        .st-key-card_exportacao_ativos_elera {
+            width: min(1280px, calc(100vw - 3rem));
         
-        /* botões de download da aba de subsistemas*/
+            margin-top: 0;
+            margin-right: auto;
+            margin-bottom: 2rem;
+            margin-left: auto;
+        
+            padding: 0.85rem 0.95rem;
+        
+            background-color: #ffffff;
+        
+            border: 1px solid #e2e8f0;
+            border-radius: 13px;
+        
+            box-shadow:
+                0 6px 18px rgba(15, 42, 70, 0.08);
+        
+            box-sizing: border-box;
+        }
+        
+        .st-key-card_exportacao_ativos_elera
+        div[data-testid="stVerticalBlockBorderWrapper"] {
+            border: 0;
+            box-shadow: none;
+        }
+        
+        .cabecalho-exportacao-elera {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        
+            min-height: 46px;
+        }
+        
+        .subtitulo-exportacao-elera {
+            margin-top: 0.25rem;
+        
+            color: #64748b;
+            font-size: 0.76rem;
+            line-height: 1.35;
+        }
+        
+        .st-key-card_exportacao_ativos_elera
+        div[data-testid="stSelectbox"] label {
+            color: #53667c;
+            font-size: 0.76rem;
+            font-weight: 600;
+        }
+        
+        /* botões de download*/
 
         .st-key-download_mensal,
         .st-key-download_heatmap,
@@ -1409,7 +1461,8 @@ st.markdown(
         .st-key-download_resumo,
         .st-key-download_detalhado,
         .st-key-download_portfolio_elera,
-        .st-key-download_ativo_elera {
+        .st-key-download_ativo_elera,
+        .st-key-download_detalhado_elera {
             display: flex;
             align-items: center;
             justify-content: flex-end;
@@ -1429,6 +1482,8 @@ st.markdown(
         .st-key-download_portfolio_elera
         div[data-testid="stDownloadButton"],
         .st-key-download_ativo_elera
+        div[data-testid="stDownloadButton"],
+        .st-key-download_detalhado_elera
         div[data-testid="stDownloadButton"] {
             display: flex;
             align-items: center;
@@ -1449,7 +1504,9 @@ st.markdown(
         .st-key-download_portfolio_elera
         div[data-testid="stDownloadButton"] button,
         .st-key-download_ativo_elera
-        div[data-testid="stDownloadButton"] button{
+        div[data-testid="stDownloadButton"] button,
+        .st-key-download_detalhado_elera
+        div[data-testid="stDownloadButton"] button {
             position: relative;
         
             display: inline-flex;
@@ -1498,7 +1555,9 @@ st.markdown(
         .st-key-download_portfolio_elera
         div[data-testid="stDownloadButton"] button:hover,
         .st-key-download_ativo_elera
-        div[data-testid="stDownloadButton"] button:hover{
+        div[data-testid="stDownloadButton"] button:hover,
+        .st-key-download_detalhado_elera
+        div[data-testid="stDownloadButton"] button:hover {
             background-color: #6b9de8 !important;
         
             border: 0 !important;
@@ -1522,7 +1581,9 @@ st.markdown(
         .st-key-download_portfolio_elera
         div[data-testid="stDownloadButton"] button:active,
         .st-key-download_ativo_elera
-        div[data-testid="stDownloadButton"] button:active{
+        div[data-testid="stDownloadButton"] button:active,
+        .st-key-download_detalhado_elera
+        div[data-testid="stDownloadButton"] button:active {
             background-color: #5d8ed7 !important;
             transform: translateY(0);
         }
@@ -1540,6 +1601,8 @@ st.markdown(
         .st-key-download_portfolio_elera
         div[data-testid="stDownloadButton"] button:focus-visible,
         .st-key-download_ativo_elera
+        div[data-testid="stDownloadButton"] button:focus-visible,
+        .st-key-download_detalhado_elera
         div[data-testid="stDownloadButton"] button:focus-visible {
             outline: 3px solid rgba(122, 170, 240, 0.35);
             outline-offset: 2px;
@@ -1574,6 +1637,10 @@ st.markdown(
         .st-key-download_ativo_elera
         div[data-testid="stDownloadButton"] button p,
         .st-key-download_ativo_elera
+        div[data-testid="stDownloadButton"] button span,
+        .st-key-download_detalhado_elera
+        div[data-testid="stDownloadButton"] button p,
+        .st-key-download_detalhado_elera
         div[data-testid="stDownloadButton"] button span {
             visibility: hidden;
         
@@ -1599,6 +1666,8 @@ st.markdown(
         .st-key-download_portfolio_elera
         div[data-testid="stDownloadButton"] button::before,
         .st-key-download_ativo_elera
+        div[data-testid="stDownloadButton"] button::before,
+        .st-key-download_detalhado_elera
         div[data-testid="stDownloadButton"] button::before {
             content: "";
         
@@ -2016,7 +2085,10 @@ st.markdown(
             .resumo-ativo-kpis {
                 grid-template-columns:
                     repeat(3, minmax(0, 1fr));
-            }       
+            }
+            .st-key-card_exportacao_ativos_elera {
+                width: calc(100vw - 1rem);
+            }
         }
     </style>
     """,
@@ -6333,7 +6405,6 @@ def renderizar_pagina_ativos_elera(
     
         arquivo_exportacao_detalhada_elera = (
             gerar_excel_dataframe(df=base_exportacao_detalhada_elera,nome_planilha=(nome_planilha_exportacao),))
-    
         nome_arquivo_exportacao_elera = (
             "SINmulator_"
             "analise_detalhada_elera_"
@@ -6343,6 +6414,17 @@ def renderizar_pagina_ativos_elera(
             f"{periodo_final_exportacao}"
             ".xlsx"
         )
+        with coluna_download_exportacao_elera:
+            with st.container(key="download_detalhado_elera"):
+                st.download_button(
+                    label="Baixar",
+                    data=(arquivo_exportacao_detalhada_elera),
+                    file_name=(nome_arquivo_exportacao_elera),
+                    mime=("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"),
+                    help=("Baixar a análise detalhada dos ativos selecionados"),
+                    key=("botao_download_detalhado_elera_"
+                        f"{nome_recorte_arquivo}_{nome_granularidade_arquivo}"),
+                )
 
 @st.cache_data(show_spinner=False)
 def calcular_kpis_subsistemas_aplicacao(
