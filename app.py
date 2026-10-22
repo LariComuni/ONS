@@ -42,6 +42,7 @@ from src.analise_ativos_elera import (
     preparar_participacao_curtailment_ativos_elera,
     preparar_participacao_geracao_ativos_elera,
     preparar_analise_individual_ativo_elera,
+    preparar_exportacao_detalhada_ativos_elera,
 )
 # ============================================================
 # CONFIGURAÇÃO
@@ -6231,7 +6232,118 @@ def renderizar_pagina_ativos_elera(
                 )
     
                 st.html(html_resumo_ativo)
-            
+    # ============================================================
+    # EXPORTAÇÃO DETALHADA DOS ATIVOS ELERA
+    # ============================================================
+    
+    with st.container(border=True,key="card_exportacao_ativos_elera"):
+        (
+            coluna_titulo_exportacao_elera,
+            coluna_recorte_exportacao_elera,
+            coluna_granularidade_exportacao_elera,
+            coluna_download_exportacao_elera,
+        ) = st.columns([2.7,1.2,1.2,0.35],gap="medium",vertical_alignment="center")
+    
+        with coluna_titulo_exportacao_elera:
+            st.html(
+                """
+                <div class="cabecalho-exportacao-elera">
+                    <div class="titulo-card-grafico">
+                        Exportar análise detalhada
+                    </div>
+    
+                    <div class="subtitulo-exportacao-elera">
+                        Curtailment por tipo, geração esperada e
+                        corte percentual, separados por ativo,
+                        fonte e estado.
+                    </div>
+                </div>
+                """
+            )
+    
+        with coluna_recorte_exportacao_elera:
+            opcoes_recorte_exportacao = [
+                "Portfólio inteiro",
+                "Somente solares",
+                "Somente eólicas",
+                *ORDEM_ATIVOS_ELERA,
+            ]
+    
+            recorte_exportacao_elera = st.selectbox(
+                "Ativos",
+                options=opcoes_recorte_exportacao,
+                index=0,
+                key="recorte_exportacao_elera",
+            )
+    
+        with coluna_granularidade_exportacao_elera:
+            granularidade_exportacao_elera = st.selectbox(
+                "Granularidade",
+                options=[
+                    "Mês e hora",
+                    "Dia e hora",
+                    "Dia",
+                    "Mês",
+                    "Ano",
+                ],
+                index=2,
+                key="granularidade_exportacao_elera",
+            )
+        try:
+            base_exportacao_detalhada_elera = (
+                preparar_exportacao_detalhada_elera_aplicacao(
+                    df_curtailment=(df_curtailment_ativos_elera),
+                    recorte_selecionado=(recorte_exportacao_elera),
+                    granularidade=(granularidade_exportacao_elera),
+                )
+            )
+    
+        except (TypeError,ValueError,KeyError) as erro:
+            st.error("Não foi possível preparar a base detalhada para exportação.")
+            st.exception(erro)
+
+        return
+        
+        nomes_recortes_arquivo = {
+            "Portfólio inteiro": "portfolio_inteiro",
+            "Somente solares": "somente_solares",
+            "Somente eólicas": "somente_eolicas",
+            "Janaúba": "janauba",
+            "Alex": "alex",
+            "Alto Sertão": "alto_sertao",
+            "Renascença": "renascenca",
+            "Pontal": "pontal",
+            "Seridó": "serido",
+            "Faísa": "faisa",
+        }
+    
+        nomes_granularidades_arquivo = {
+            "Mês e hora": "mes_hora",
+            "Dia e hora": "dia_hora",
+            "Dia": "dia",
+            "Mês": "mes",
+            "Ano": "ano",
+        }
+    
+        nome_recorte_arquivo = (nomes_recortes_arquivo[recorte_exportacao_elera])
+        nome_granularidade_arquivo = (nomes_granularidades_arquivo[granularidade_exportacao_elera])
+        periodo_inicial_exportacao = (f"{periodo_processado['ano_inicial']}-{periodo_processado['mes_inicial']:02d}")
+        periodo_final_exportacao = (f"{periodo_processado['ano_final']}-{periodo_processado['mes_final']:02d}")
+        nome_planilha_exportacao = ("Análise detalhada")
+    
+        arquivo_exportacao_detalhada_elera = (
+            gerar_excel_dataframe(df=base_exportacao_detalhada_elera,nome_planilha=(nome_planilha_exportacao),))
+    
+        nome_arquivo_exportacao_elera = (
+            "SINmulator_"
+            "analise_detalhada_elera_"
+            f"{nome_recorte_arquivo}_"
+            f"{nome_granularidade_arquivo}_"
+            f"{periodo_inicial_exportacao}_"
+            f"{periodo_final_exportacao}"
+            ".xlsx"
+        )
+
 @st.cache_data(show_spinner=False)
 def calcular_kpis_subsistemas_aplicacao(
     df_curtailment,
@@ -6301,6 +6413,14 @@ def preparar_analise_individual_elera_aplicacao(
     ativo_selecionado,
 ):
     return preparar_analise_individual_ativo_elera(df=df_curtailment, ativo_selecionado=ativo_selecionado)
+
+@st.cache_data(show_spinner=False)
+def preparar_exportacao_detalhada_elera_aplicacao(df_curtailment,recorte_selecionado,granularidade):
+    """
+    Prepara a base detalhada para exportação.
+    """
+
+    return preparar_exportacao_detalhada_ativos_elera(df=df_curtailment,recorte_selecionado=recorte_selecionado,granularidade=granularidade)
 
 @st.cache_data(show_spinner=False)
 def preparar_resumo_subsistemas_aplicacao(
