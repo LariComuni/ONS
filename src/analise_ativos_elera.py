@@ -2092,7 +2092,6 @@ pandas.DataFrame
                 "Data",
                 "Mês",
                 "Ano",
-                "Hora numérica",
                 "Hora",
             ]
             if coluna in base_exportacao.columns
@@ -2131,20 +2130,30 @@ pandas.DataFrame
             ]
             if coluna in base_exportacao.columns
         ]
-    
+    base_exportacao = (
+        base_exportacao
+        .sort_values(
+            colunas_ordenacao,
+            kind="stable",
+        )
+        .reset_index(
+            drop=True
+        )
+    )
+    if "Mês" in base_exportacao.columns:
+        base_exportacao["Mês"] = (
+            pd.to_datetime(
+                base_exportacao["Mês"],
+                errors="coerce",
+            )
+            .dt.strftime("%m/%Y")
+        )
     base_exportacao = (
             base_exportacao[
                 colunas_resultado
             ]
-            .sort_values(
-                colunas_ordenacao,
-                kind="stable",
-            )
-            .reset_index(
-                drop=True
-            )
         )
-    
+
     # ========================================================
     # METADADOS DA EXPORTAÇÃO
     # ========================================================
