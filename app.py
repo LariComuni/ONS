@@ -3415,7 +3415,7 @@ def renderizar_pagina_subsistemas(
                             ),
                         )
                         
-                        fig_mensal.update_layout(
+                        fig_mensal.(
                             barmode="stack",
                             height=325,
                             margin={
@@ -3734,7 +3734,7 @@ def renderizar_pagina_subsistemas(
                                 )
                             )
                 
-                            fig_participacao.update_layout(
+                            fig_participacao.(
                                 height=365,
                                 margin={
                                     "l": 55,
@@ -6326,7 +6326,7 @@ def renderizar_pagina_ativos_elera(
                     ),
                 )
                 fig_composicao_ativo.update_layout(
-                    height=235,
+                    height=180,
                     margin={
                         "l": 0,
                         "r": 0,
@@ -6386,7 +6386,7 @@ def renderizar_pagina_ativos_elera(
                 st.plotly_chart(
                     fig_composicao_ativo,
                     width="stretch",
-                    height=235,
+                    height=180,
                     config={
                         "displayModeBar": False,
                         "responsive": True,
