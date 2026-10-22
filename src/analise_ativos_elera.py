@@ -1600,7 +1600,6 @@ diferentes em uma mesma linha.
 
 As granularidades disponíveis são:
 
-- Instante;
 - Mês e hora;
 - Dia e hora;
 - Dia;
@@ -1669,7 +1668,6 @@ pandas.DataFrame
         )
 
     granularidades_permitidas = {
-        "Instante",
         "Mês e hora",
         "Dia e hora",
         "Dia",
@@ -1877,21 +1875,16 @@ pandas.DataFrame
     # DEFINIÇÃO DA GRANULARIDADE
     # ========================================================
     
-    if granularidade == "Instante":
+    if granularidade == "Dia e hora":
         colunas_tempo = [
-            "din_instante",
+            "data",
+            "hora",
+            "hora_rotulo",
         ]
     
     elif granularidade == "Mês e hora":
         colunas_tempo = [
             "mes",
-            "hora",
-            "hora_rotulo",
-        ]
-    
-    elif granularidade == "Dia e hora":
-        colunas_tempo = [
-            "data",
             "hora",
             "hora_rotulo",
         ]
@@ -2002,11 +1995,11 @@ pandas.DataFrame
         )
     )
 
-        # ========================================================
-        # UNIÃO E TOTAIS
-        # ========================================================
+    # ========================================================
+    # UNIÃO E TOTAIS
+    # ========================================================
     
-        base_exportacao = (
+    base_exportacao = (
             geracao_esperada
             .merge(
                 curtailment_tipos,
@@ -2014,45 +2007,25 @@ pandas.DataFrame
                 how="left",
                 validate="one_to_one",
             )
-        )
+    )
     
-        colunas_curtailment = [
+    colunas_curtailment = [
             "Curtailment ENE (MWh)",
             "Curtailment REL (MWh)",
             "Curtailment CNF (MWh)",
-        ]
+    ]
     
-        base_exportacao[
-            colunas_curtailment
-        ] = (
-            base_exportacao[
-                colunas_curtailment
-            ]
-            .fillna(0.0)
-        )
+    base_exportacao[colunas_curtailment] = (base_exportacao[colunas_curtailment].fillna(0.0))
     
-        base_exportacao[
-            "Curtailment Todos (MWh)"
-        ] = (
-            base_exportacao[
-                colunas_curtailment
-            ]
-            .sum(
-                axis=1
-            )
-        )
+    base_exportacao["Curtailment Todos (MWh)"] = (base_exportacao[colunas_curtailment].sum(axis=1))
     
-        # ========================================================
-        # PERCENTUAIS DE CORTE
-        # ========================================================
+    # ========================================================
+    # PERCENTUAIS DE CORTE
+    # ========================================================
     
-        geracao_positiva = (
-            base_exportacao[
-                "Geração Esperada (MWh)"
-            ] > 0
-        )
+    geracao_positiva = (base_exportacao["Geração Esperada (MWh)"] > 0)
     
-        calculos_corte = {
+    calculos_corte = {
             "Corte ENE (%)": (
                 "Curtailment ENE (MWh)"
             ),
@@ -2067,17 +2040,13 @@ pandas.DataFrame
             ),
         }
     
-        for coluna_corte, coluna_volume in (
-            calculos_corte.items()
-        ):
-            base_exportacao[
-                coluna_corte
-            ] = 0.0
+    for coluna_corte, coluna_volume in (calculos_corte.items()):
+        base_exportacao[coluna_corte] = 0.0
     
-            base_exportacao.loc[
+        base_exportacao.loc[
                 geracao_positiva,
                 coluna_corte,
-            ] = (
+        ] = (
                 100
                 * base_exportacao.loc[
                     geracao_positiva,
@@ -2089,18 +2058,15 @@ pandas.DataFrame
                 ]
             )
     
-        # ========================================================
-        # NOMES DAS COLUNAS DE IDENTIFICAÇÃO E TEMPO
-        # ========================================================
+    # ========================================================
+    # NOMES DAS COLUNAS DE IDENTIFICAÇÃO E TEMPO
+    # ========================================================
     
-        base_exportacao = (
-            base_exportacao
-            .rename(
+    base_exportacao = (base_exportacao.rename(
                 columns={
                     "ativo_elera": "Ativo",
                     "fonte_elera": "Fonte",
                     "estado_elera": "Estado",
-                    "din_instante": "Instante",
                     "data": "Data",
                     "ano": "Ano",
                     "mes": "Mês",
@@ -2108,22 +2074,21 @@ pandas.DataFrame
                     "hora_rotulo": "Hora",
                 }
             )
-        )
+    )
     
-        # ========================================================
-        # ORDENAÇÃO DAS COLUNAS
-        # ========================================================
+    # ========================================================
+    # ORDENAÇÃO DAS COLUNAS
+    # ========================================================
     
-        colunas_identificacao_resultado = [
+    colunas_identificacao_resultado = [
             "Ativo",
             "Fonte",
             "Estado",
         ]
     
-        colunas_tempo_resultado = [
+    colunas_tempo_resultado = [
             coluna
             for coluna in [
-                "Instante",
                 "Data",
                 "Mês",
                 "Ano",
@@ -2133,7 +2098,7 @@ pandas.DataFrame
             if coluna in base_exportacao.columns
         ]
     
-        colunas_indicadores_resultado = [
+    colunas_indicadores_resultado = [
             "Curtailment ENE (MWh)",
             "Curtailment REL (MWh)",
             "Curtailment CNF (MWh)",
@@ -2145,21 +2110,20 @@ pandas.DataFrame
             "Corte Todos (%)",
         ]
     
-        colunas_resultado = (
+    colunas_resultado = (
             colunas_identificacao_resultado
             + colunas_tempo_resultado
             + colunas_indicadores_resultado
         )
     
-        # ========================================================
-        # ORDENAÇÃO DAS LINHAS
-        # ========================================================
+    # ========================================================
+    # ORDENAÇÃO DAS LINHAS
+    # ========================================================
     
-        colunas_ordenacao = [
+    colunas_ordenacao = [
             coluna
             for coluna in [
                 "Ativo",
-                "Instante",
                 "Data",
                 "Mês",
                 "Ano",
@@ -2168,7 +2132,7 @@ pandas.DataFrame
             if coluna in base_exportacao.columns
         ]
     
-        base_exportacao = (
+    base_exportacao = (
             base_exportacao[
                 colunas_resultado
             ]
@@ -2181,16 +2145,16 @@ pandas.DataFrame
             )
         )
     
-        # ========================================================
-        # METADADOS DA EXPORTAÇÃO
-        # ========================================================
+    # ========================================================
+    # METADADOS DA EXPORTAÇÃO
+    # ========================================================
     
-        base_exportacao.attrs[
+    base_exportacao.attrs[
             "recorte"
         ] = recorte_selecionado
     
-        base_exportacao.attrs[
+    base_exportacao.attrs[
             "granularidade"
         ] = granularidade
     
-        return base_exportacao
+    return base_exportacao
