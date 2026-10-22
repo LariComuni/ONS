@@ -1140,24 +1140,26 @@ st.markdown(
             display: flex;
             flex-direction: column;
         
-            min-height: 405px;
-        
-            padding: 0.35rem 0.25rem;
+            padding: 0.35rem 0.25rem 0;
         
             box-sizing: border-box;
         }
-        .bloco-composicao-cortes {
+        .titulo-composicao-circular {
             margin-top: auto;
-            padding-top: 1.35rem;
+            margin-bottom: 0.15rem;
+            padding-top: 0.75rem;
+        
+            color: #102d57;
+            font-size: 0.85rem;
+            font-weight: 700;
+            line-height: 1.2;
         }
         .resumo-ativo-cabecalho {
             display: flex;
             align-items: center;
             justify-content: space-between;
             gap: 1rem;
-        
             padding-bottom: 0.85rem;
-        
             border-bottom: 1px solid #e2e8f0;
         }
         
@@ -6235,75 +6237,162 @@ def renderizar_pagina_ativos_elera(
                 
                     '</div>'
                 
-                    # ========================================================
-                    # COMPOSIÇÃO DOS CORTES
-                    # ========================================================
-                
-                    '<div class="bloco-composicao-cortes">'
-                
-                    '<div class="composicao-cortes-titulo">'
-                    'Composição dos cortes no período'
-                    '</div>'
-                
-                    '<div class="barra-composicao-cortes">'
-                
-                    '<div class="segmento-composicao segmento-ene" '
-                    f'style="width:{ene_pct}%">'
-                    f'{ene_pct:.1f}%'
-                    '</div>'
-                
-                    '<div class="segmento-composicao segmento-rel" '
-                    f'style="width:{rel_pct}%">'
-                    f'{rel_pct:.1f}%'
-                    '</div>'
-                
-                    '<div class="segmento-composicao segmento-cnf" '
-                    f'style="width:{cnf_pct}%">'
-                    f'{cnf_pct:.1f}%'
-                    '</div>'
-                
-                    '</div>'
-                
-                    # ========================================================
-                    # LEGENDA DA COMPOSIÇÃO
-                    # ========================================================
-                
-                    '<div class="legenda-composicao-cortes">'
-                
-                    '<div class="item-composicao">'
-                    '<span class="bolinha-composicao ene"></span>'
-                    '<div>'
-                    '<strong>ENE</strong>'
-                    f'<span>{ene_gwh_formatado} GWh</span>'
-                    '</div>'
-                    '</div>'
-                
-                    '<div class="item-composicao">'
-                    '<span class="bolinha-composicao rel"></span>'
-                    '<div>'
-                    '<strong>REL</strong>'
-                    f'<span>{rel_gwh_formatado} GWh</span>'
-                    '</div>'
-                    '</div>'
-                
-                    '<div class="item-composicao">'
-                    '<span class="bolinha-composicao cnf"></span>'
-                    '<div>'
-                    '<strong>CNF</strong>'
-                    f'<span>{cnf_gwh_formatado} GWh</span>'
-                    '</div>'
-                    '</div>'
-                
-                    '</div>'
-                
-                    # Fecha bloco-composicao-cortes.
-                    '</div>'
-                
                     # Fecha resumo-ativo-elera.
                     '</div>'
                 )
     
                 st.html(html_resumo_ativo)
+                base_composicao_grafico = (analise_ativo_elera["composicao_cortes"][["tipo_curtailment","tipo_rotulo","curtailment_gwh","composicao_pct"]].copy())
+                st.html(
+                    """
+                    <div class="titulo-composicao-circular">
+                        Composição dos cortes no período
+                    </div>
+                    """
+                )
+                ordem_tipos_composicao = ["ENE","REL","CNF"]
+                cores_composicao_cortes = {"ENE": "#3275C9","REL": "#2EAAA5","CNF": "#FF646B"}
+                
+                base_composicao_grafico["tipo_curtailment"] = pd.Categorical(
+                    base_composicao_grafico["tipo_curtailment"],
+                    categories=ordem_tipos_composicao,
+                    ordered=True,
+                )
+                
+                base_composicao_grafico = (
+                    base_composicao_grafico
+                    .sort_values("tipo_curtailment")
+                    .reset_index(drop=True)
+                )
+
+                total_curtailment_composicao = (
+                    base_composicao_grafico[
+                        "curtailment_gwh"
+                    ]
+                    .sum()
+                )
+                
+                total_curtailment_central = (
+                    formatar_numero_brasileiro(
+                        total_curtailment_composicao,
+                        casas_decimais=2,
+                    )
+                )
+                
+                fig_composicao_ativo = px.pie(
+                    base_composicao_grafico,
+                    names="tipo_curtailment",
+                    values="curtailment_gwh",
+                    hole=0.64,
+                    category_orders={"tipo_curtailment": (ordem_tipos_composicao),
+                    },
+                    color="tipo_curtailment",
+                    color_discrete_map=(cores_composicao_cortes),
+                    custom_data=["tipo_rotulo","composicao_pct","curtailment_gwh"]
+                )
+                fig_composicao_ativo.update_traces(
+                    texttemplate="%{percent:.1%}",
+                    textposition="inside",
+                    textfont={
+                        "color": "#FFFFFF",
+                        "size": 11,
+                        "family": (
+                            "Segoe UI, Arial, sans-serif"
+                        ),
+                    },
+                    marker={
+                        "line": {
+                            "color": "#FFFFFF",
+                            "width": 2,
+                        },
+                    },
+                    sort=False,
+                    direction="clockwise",
+                    domain={
+                        "x": [
+                            0.0,
+                            0.72,
+                        ],
+                        "y": [
+                            0.0,
+                            1.0,
+                        ],
+                    },
+                    hovertemplate=(
+                        "<b>%{label} | %{customdata[0]}</b>"
+                        "<br>Participação: %{customdata[1]:.2f}%"
+                        "<br>Curtailment: %{customdata[2]:,.2f} GWh"
+                        "<extra></extra>"
+                    ),
+                )
+                fig_composicao_ativo.update_layout(
+                    height=235,
+                    margin={
+                        "l": 0,
+                        "r": 0,
+                        "t": 5,
+                        "b": 5,
+                    },
+                    paper_bgcolor="rgba(0,0,0,0)",
+                    plot_bgcolor="rgba(0,0,0,0)",
+                    font={
+                        "family": (
+                            "Segoe UI, Arial, sans-serif"
+                        ),
+                        "color": "#334155",
+                        "size": 11,
+                    },
+                    legend={
+                        "title": {
+                            "text": "",
+                        },
+                        "orientation": "v",
+                        "yanchor": "middle",
+                        "y": 0.5,
+                        "xanchor": "left",
+                        "x": 0.82,
+                        "font": {
+                            "size": 11,
+                            "color": "#334155",
+                        },
+                    },
+                    annotations=[
+                        {
+                            "text": (
+                                f"<b>{total_curtailment_central}</b>"
+                                "<br><span style='font-size:10px'>"
+                                "GWh"
+                                "</span>"
+                            ),
+                            "x": 0.36,
+                            "y": 0.5,
+                            "showarrow": False,
+                            "align": "center",
+                            "font": {
+                                "size": 13,
+                                "color": "#102D57",
+                            },
+                        }
+                    ],
+                    hoverlabel={
+                        "bgcolor": "#FFFFFF",
+                        "bordercolor": "#D9E2EC",
+                        "font": {
+                            "color": "#102D57",
+                            "size": 12,
+                        },
+                    },
+                )
+                st.plotly_chart(
+                    fig_composicao_ativo,
+                    width="stretch",
+                    height=235,
+                    config={
+                        "displayModeBar": False,
+                        "responsive": True,
+                    },
+                    key=(f"grafico_composicao_ativo_elera_{ativo_selecionado_elera}"),
+                )
     # ============================================================
     # EXPORTAÇÃO DETALHADA DOS ATIVOS ELERA
     # ============================================================
