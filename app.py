@@ -3734,7 +3734,7 @@ def renderizar_pagina_subsistemas(
                                 )
                             )
                 
-                            fig_participacao.(
+                            fig_participacao.update_layout(
                                 height=365,
                                 margin={
                                     "l": 55,
