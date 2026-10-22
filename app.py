@@ -1406,7 +1406,9 @@ st.markdown(
         .st-key-download_heatmap,
         .st-key-download_corte,
         .st-key-download_resumo,
-        .st-key-download_detalhado {
+        .st-key-download_detalhado,
+        .st-key-download_portfolio_elera,
+        .st-key-download_ativo_elera {
             display: flex;
             align-items: center;
             justify-content: flex-end;
@@ -1422,6 +1424,10 @@ st.markdown(
         .st-key-download_resumo
         div[data-testid="stDownloadButton"],
         .st-key-download_detalhado
+        div[data-testid="stDownloadButton"],
+        .st-key-download_portfolio_elera
+        div[data-testid="stDownloadButton"],
+        .st-key-download_ativo_elera
         div[data-testid="stDownloadButton"] {
             display: flex;
             align-items: center;
@@ -1438,7 +1444,11 @@ st.markdown(
         .st-key-download_resumo
         div[data-testid="stDownloadButton"] button,
         .st-key-download_detalhado
-        div[data-testid="stDownloadButton"] button {
+        div[data-testid="stDownloadButton"] button,
+        .st-key-download_portfolio_elera
+        div[data-testid="stDownloadButton"] button,
+        .st-key-download_ativo_elera
+        div[data-testid="stDownloadButton"] button{
             position: relative;
         
             display: inline-flex;
@@ -1483,7 +1493,11 @@ st.markdown(
         .st-key-download_resumo
         div[data-testid="stDownloadButton"] button:hover,
         .st-key-download_detalhado
-        div[data-testid="stDownloadButton"] button:hover {
+        div[data-testid="stDownloadButton"] button:hover,
+        .st-key-download_portfolio_elera
+        div[data-testid="stDownloadButton"] button:hover,
+        .st-key-download_ativo_elera
+        div[data-testid="stDownloadButton"] button:hover{
             background-color: #6b9de8 !important;
         
             border: 0 !important;
@@ -1503,7 +1517,11 @@ st.markdown(
         .st-key-download_resumo
         div[data-testid="stDownloadButton"] button:active,
         .st-key-download_detalhado
-        div[data-testid="stDownloadButton"] button:active {
+        div[data-testid="stDownloadButton"] button:active,
+        .st-key-download_portfolio_elera
+        div[data-testid="stDownloadButton"] button:active,
+        .st-key-download_ativo_elera
+        div[data-testid="stDownloadButton"] button:active{
             background-color: #5d8ed7 !important;
             transform: translateY(0);
         }
@@ -1517,6 +1535,10 @@ st.markdown(
         .st-key-download_resumo
         div[data-testid="stDownloadButton"] button:focus-visible,
         .st-key-download_detalhado
+        div[data-testid="stDownloadButton"] button:focus-visible,
+        .st-key-download_portfolio_elera
+        div[data-testid="stDownloadButton"] button:focus-visible,
+        .st-key-download_ativo_elera
         div[data-testid="stDownloadButton"] button:focus-visible {
             outline: 3px solid rgba(122, 170, 240, 0.35);
             outline-offset: 2px;
@@ -1543,6 +1565,14 @@ st.markdown(
         .st-key-download_detalhado
         div[data-testid="stDownloadButton"] button p,
         .st-key-download_detalhado
+        div[data-testid="stDownloadButton"] button span,
+        .st-key-download_portfolio_elera
+        div[data-testid="stDownloadButton"] button p,
+        .st-key-download_portfolio_elera
+        div[data-testid="stDownloadButton"] button span,
+        .st-key-download_ativo_elera
+        div[data-testid="stDownloadButton"] button p,
+        .st-key-download_ativo_elera
         div[data-testid="stDownloadButton"] button span {
             visibility: hidden;
         
@@ -1564,6 +1594,10 @@ st.markdown(
         .st-key-download_resumo
         div[data-testid="stDownloadButton"] button::before,
         .st-key-download_detalhado
+        div[data-testid="stDownloadButton"] button::before,
+        .st-key-download_portfolio_elera
+        div[data-testid="stDownloadButton"] button::before,
+        .st-key-download_ativo_elera
         div[data-testid="stDownloadButton"] button::before {
             content: "";
         
@@ -5063,17 +5097,8 @@ def renderizar_pagina_ativos_elera(
                 # CABEÇALHO E SELETOR
                 # =================================================
     
-                (
-                    coluna_titulo_mensal,
-                    coluna_seletor_mensal,
-                ) = st.columns(
-                    [
-                        3,
-                        2.1,
-                    ],
-                    vertical_alignment="center",
-                )
-    
+                (coluna_titulo_mensal,coluna_seletor_mensal,coluna_download_portfolio) = st.columns([2.7,2.1,0.35],vertical_alignment="center")
+                
                 with coluna_titulo_mensal:
                     st.html(
                         """
@@ -5105,18 +5130,9 @@ def renderizar_pagina_ativos_elera(
     
                 if metrica_elera == "Curtailment":
                     ordem_meses_elera = (
-                        base_mensal_curtailment_elera[
-                            [
-                                "mes",
-                                "mes_rotulo",
-                            ]
-                        ]
+                        base_mensal_curtailment_elera[["mes","mes_rotulo"]]
                         .drop_duplicates()
-                        .sort_values(
-                            "mes"
-                        )[
-                            "mes_rotulo"
-                        ]
+                        .sort_values("mes")["mes_rotulo"]
                         .tolist()
                     )
     
@@ -5136,28 +5152,17 @@ def renderizar_pagina_ativos_elera(
                             "mes_rotulo": ordem_meses_elera,
                             "tipo_rotulo": ordem_tipos_elera,
                         },
-                        color_discrete_map=(
-                            cores_tipos_elera
-                        ),
+                        color_discrete_map=(cores_tipos_elera),
                         labels={
                             "mes_rotulo": "Mês",
-                            "curtailment_gwh": (
-                                "Curtailment (GWh)"
-                            ),
-                            "tipo_rotulo": (
-                                "Tipo de curtailment"
-                            ),
+                            "curtailment_gwh": ("Curtailment (GWh)"),
+                            "tipo_rotulo": ("Tipo de curtailment"),
                         },
-                        custom_data=[
-                            "tipo_rotulo",
-                            "tipo_curtailment",
-                        ],
+                        custom_data=["tipo_rotulo","tipo_curtailment"],
                     )
     
                     fig_mensal_elera.update_traces(
-                        marker_line_color=(
-                            "rgba(255,255,255,0.75)"
-                        ),
+                        marker_line_color=("rgba(255,255,255,0.75)"),
                         marker_line_width=0.5,
                         hovertemplate=(
                             "<b>%{customdata[0]}</b>"
@@ -5168,11 +5173,31 @@ def renderizar_pagina_ativos_elera(
                         ),
                     )
     
-                    titulo_eixo_y = (
-                        "Curtailment (GWh)"
-                    )
-    
+                    titulo_eixo_y = ("Curtailment (GWh)")
                     mostrar_legenda = True
+                    base_download_portfolio_elera = (
+                        base_mensal_curtailment_elera[
+                            [
+                                "mes",
+                                "mes_rotulo",
+                                "tipo_curtailment",
+                                "tipo_rotulo",
+                                "curtailment_gwh",
+                            ]
+                        ]
+                        .copy()
+                        .rename(
+                            columns={"mes": "Mês",
+                                     "mes_rotulo": "Competência",
+                                     "tipo_curtailment": ("Código do curtailment"),
+                                     "tipo_rotulo": ("Tipo de curtailment"),
+                                     "curtailment_gwh": ("Curtailment (GWh)")
+                            }
+                        )
+                    )
+                    
+                    nome_planilha_portfolio_elera = ("Curtailment mensal")
+                    nome_metrica_arquivo_portfolio = ("curtailment")
     
                 # =================================================
                 # GRÁFICO DE GERAÇÃO ESPERADA
@@ -5180,18 +5205,9 @@ def renderizar_pagina_ativos_elera(
     
                 else:
                     ordem_meses_elera = (
-                        base_mensal_geracao_elera[
-                            [
-                                "mes",
-                                "mes_rotulo",
-                            ]
-                        ]
+                        base_mensal_geracao_elera[["mes","mes_rotulo"]]
                         .drop_duplicates()
-                        .sort_values(
-                            "mes"
-                        )[
-                            "mes_rotulo"
-                        ]
+                        .sort_values("mes")["mes_rotulo"]
                         .tolist()
                     )
     
@@ -5225,12 +5241,62 @@ def renderizar_pagina_ativos_elera(
                         ),
                     )
     
-                    titulo_eixo_y = (
-                        "Geração esperada (GWh)"
-                    )
-    
+                    titulo_eixo_y = ("Geração esperada (GWh)")
                     mostrar_legenda = False
-    
+                    base_download_portfolio_elera = (
+                        base_mensal_geracao_elera[["mes","mes_rotulo","geracao_esperada_gwh"]]
+                        .copy()
+                        .rename(
+                            columns={
+                                "mes": "Mês",
+                                "mes_rotulo": "Competência",
+                                "geracao_esperada_gwh": ("Geração esperada (GWh)")
+                            }
+                        )
+                    )
+                    
+                    nome_planilha_portfolio_elera = ("Geração mensal")
+                    nome_metrica_arquivo_portfolio = ("geracao_esperada")
+
+                # =================================================
+                # DOWNLOAD PORTFOLIO
+                # =================================================
+                arquivo_download_portfolio_elera = (
+                    gerar_excel_dataframe(
+                        df=base_download_portfolio_elera,
+                        nome_planilha=(nome_planilha_portfolio_elera)
+                    )
+                )
+                
+                periodo_inicial_arquivo = (
+                    f"{periodo_processado['ano_inicial']}-"
+                    f"{periodo_processado['mes_inicial']:02d}"
+                )
+                
+                periodo_final_arquivo = (
+                    f"{periodo_processado['ano_final']}-"
+                    f"{periodo_processado['mes_final']:02d}"
+                )
+                
+                nome_arquivo_portfolio_elera = (
+                    "SINmulator_"
+                    "portfolio_elera_"
+                    f"{nome_metrica_arquivo_portfolio}_"
+                    f"{periodo_inicial_arquivo}_"
+                    f"{periodo_final_arquivo}"
+                    ".xlsx"
+                )
+                with coluna_download_portfolio:
+                    with st.container(key="download_portfolio_elera"):
+                        st.download_button(
+                            label="Baixar",
+                            data=arquivo_download_portfolio_elera,
+                            file_name=(nome_arquivo_portfolio_elera),
+                            mime=("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"),
+                            help=("Baixar os dados exibidos no gráfico mensal do portfólio"),
+                            key=(f"botao_download_portfolio_elera_{metrica_elera}")
+                        )
+                                
                 # =================================================
                 # FORMATAÇÃO COMPARTILHADA
                 # =================================================
@@ -5454,9 +5520,7 @@ def renderizar_pagina_ativos_elera(
         "Faísa": "≈ Faísa",
     }
     
-    with st.container(
-        key="seletor_ativo_elera",
-    ):
+    with st.container(key="seletor_ativo_elera"):
         ativo_selecionado_elera = st.pills(
             "Selecione o ativo",
             options=ORDEM_ATIVOS_ELERA,
@@ -5563,7 +5627,10 @@ def renderizar_pagina_ativos_elera(
         
         with coluna_grafico_ativo:
             with st.container(border=True,key="card_grafico_ativo_elera"):
-                (coluna_titulo_grafico_ativo,coluna_visao_grafico_ativo,coluna_metrica_grafico_ativo,) = st.columns([1.7,1.6,2.1,],vertical_alignment="center",)
+                (coluna_titulo_grafico_ativo,
+                    coluna_visao_grafico_ativo,
+                    coluna_metrica_grafico_ativo,
+                    coluna_download_ativo) = st.columns([1.55,1.6,2.1,0.35],vertical_alignment="center")
             
                 with coluna_titulo_grafico_ativo:
                     st.html(
@@ -5607,26 +5674,12 @@ def renderizar_pagina_ativos_elera(
                 # ============================================================
                 
                 if (visao_individual_elera == "Volume Mensal" and metrica_individual_elera == "Curtailment"):
-                    base_grafico_ativo = (
-                        analise_ativo_elera[
-                            "base_mensal_tipo"
-                        ]
-                        .copy()
-                    )
+                    base_grafico_ativo = (analise_ativo_elera["base_mensal_tipo"].copy())
         
                     ordem_eixo_x = (
-                        base_grafico_ativo[
-                            [
-                                "mes",
-                                "mes_rotulo",
-                            ]
-                        ]
+                        base_grafico_ativo[["mes","mes_rotulo"]]
                         .drop_duplicates()
-                        .sort_values(
-                            "mes"
-                        )[
-                            "mes_rotulo"
-                        ]
+                        .sort_values("mes")["mes_rotulo"]
                         .tolist()
                     )
         
@@ -5673,11 +5726,27 @@ def renderizar_pagina_ativos_elera(
                         ),
                     )
         
-                    titulo_eixo_ativo = (
-                        "Curtailment (GWh)"
-                    )
-        
+                    titulo_eixo_ativo = ("Curtailment (GWh)")
                     mostrar_legenda_ativo = True
+
+                    base_download_ativo_elera = (
+                        analise_ativo_elera["base_mensal_tipo"][["mes","mes_rotulo","tipo_curtailment","tipo_rotulo","curtailment_gwh"]]
+                        .copy()
+                        .rename(
+                            columns={
+                                "mes": "Mês",
+                                "mes_rotulo": "Competência",
+                                "tipo_curtailment": ("Código do curtailment"),
+                                "tipo_rotulo": ("Tipo de curtailment"),
+                                "curtailment_gwh": ("Curtailment (GWh)")
+                            }
+                        )
+                    )
+                    
+                    nome_planilha_ativo_elera = ("Curtailment mensal")
+                    
+                    nome_visao_arquivo_ativo = "mensal"
+                    nome_metrica_arquivo_ativo = "curtailment"
                 
                 # ============================================================
                 # GRÁFICO DE GERAÇÃO ESPERADA
@@ -5727,6 +5796,16 @@ def renderizar_pagina_ativos_elera(
                     )
         
                     mostrar_legenda_ativo = False
+                    base_download_ativo_elera = (
+                        analise_ativo_elera["base_mensal_resumo"][["mes","mes_rotulo","geracao_esperada_gwh"]]
+                        .copy()
+                        .rename(columns={"mes": "Mês","mes_rotulo": "Competência","geracao_esperada_gwh": ("Geração esperada (GWh)")})
+                    )
+                    
+                    nome_planilha_ativo_elera = ("Geração mensal")
+                    
+                    nome_visao_arquivo_ativo = "mensal"
+                    nome_metrica_arquivo_ativo = "geracao_esperada"
 
                 # ============================================================
                 # PERFIL HORÁRIO COM CURTAILMENT
@@ -5779,11 +5858,27 @@ def renderizar_pagina_ativos_elera(
                         ),
                     )
         
-                    titulo_eixo_ativo = (
-                        "Curtailment médio (MW)"
-                    )
+                    titulo_eixo_ativo = ("Curtailment médio (MW)")
         
                     mostrar_legenda_ativo = True
+                    base_download_ativo_elera = (
+                        analise_ativo_elera["perfil_horario_tipo"][["hora","hora_rotulo","tipo_curtailment","tipo_rotulo","curtailment_mw"]]
+                        .copy()
+                        .rename(
+                            columns={
+                                "hora": "Hora numérica",
+                                "hora_rotulo": "Hora",
+                                "tipo_curtailment": ("Código do curtailment"),
+                                "tipo_rotulo": ("Tipo de curtailment"),
+                                "curtailment_mw": ("Curtailment médio (MW)"),
+                            }
+                        )
+                    )
+                    
+                    nome_planilha_ativo_elera = ("Curtailment horário")
+                    
+                    nome_visao_arquivo_ativo = "perfil_horario"
+                    nome_metrica_arquivo_ativo = "curtailment"
 
                 # ============================================================
                 # PERFIL HORÁRIO COM GERAÇÃO ESPERADA
@@ -5825,6 +5920,71 @@ def renderizar_pagina_ativos_elera(
                     titulo_eixo_ativo = ("Geração esperada média (MW)")
         
                     mostrar_legenda_ativo = False
+                    base_download_ativo_elera = (
+                        analise_ativo_elera["perfil_horario_resumo"][["hora","hora_rotulo","geracao_esperada_mw"]]
+                        .copy()
+                        .rename(
+                            columns={"hora": "Hora numérica","hora_rotulo": "Hora","geracao_esperada_mw": ("Geração esperada média (MW)")}
+                        )
+                    )
+                    
+                    nome_planilha_ativo_elera = ("Geração horária")
+                    
+                    nome_visao_arquivo_ativo = "perfil_horario"
+                    nome_metrica_arquivo_ativo = "geracao_esperada"
+
+                # ============================================================
+                # DOWNLOAD DO GRÁFICO INDIVIDUAL
+                # ============================================================
+                
+                base_download_ativo_elera.insert(0,"Ativo",analise_ativo_elera["ativo"])
+                
+                base_download_ativo_elera.insert(1,"Fonte",analise_ativo_elera["fonte"])
+                
+                base_download_ativo_elera.insert(2,"Estado",analise_ativo_elera["estado"])
+                
+                arquivo_download_ativo_elera = (gerar_excel_dataframe(df=base_download_ativo_elera,nome_planilha=(nome_planilha_ativo_elera)))
+                nome_ativo_arquivo = (ativo_selecionado_elera.strip().lower()
+                    .replace(" ","_")
+                    .replace("ã","a")
+                    .replace("á","a")
+                    .replace("â","a")
+                    .replace("é","e")
+                    .replace("ê","e")
+                    .replace("í","i")
+                    .replace("ó","o")
+                    .replace("ô","o")
+                    .replace("ú","u")
+                    .replace("ç","c")
+                )
+                periodo_inicial_arquivo = (f"{periodo_processado['ano_inicial']}-{periodo_processado['mes_inicial']:02d}")
+                periodo_final_arquivo = (f"{periodo_processado['ano_final']}-{periodo_processado['mes_final']:02d}")
+                nome_arquivo_ativo_elera = (
+                    "SINmulator_ativo_elera_"
+                    f"{nome_ativo_arquivo}_"
+                    f"{nome_visao_arquivo_ativo}_"
+                    f"{nome_metrica_arquivo_ativo}_"
+                    f"{periodo_inicial_arquivo}_"
+                    f"{periodo_final_arquivo}"
+                    ".xlsx"
+                )
+
+                with coluna_download_ativo:
+                    with st.container(
+                        key="download_ativo_elera",
+                    ):
+                        st.download_button(
+                            label="Baixar",
+                            data=arquivo_download_ativo_elera,
+                            file_name=(nome_arquivo_ativo_elera),
+                            mime=("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"),
+                            help=("Baixar os dados exibidos no gráfico do ativo selecionado"),
+                            key=("botao_download_ativo_elera_"
+                                f"{ativo_selecionado_elera}_"
+                                f"{visao_individual_elera}_"
+                                f"{metrica_individual_elera}"
+                            ),
+                        )
                 # ============================================================
                 # FORMATAÇÃO COMPARTILHADA
                 # ============================================================
