@@ -1154,59 +1154,101 @@ st.markdown(
             font-weight: 700;
             line-height: 1.2;
         }
-        .resumo-ativo-cabecalho {
+        /* Cabeçalho compacto do ativo */
+
+        .resumo-ativo-cabecalho-compacto {
             display: flex;
             align-items: center;
             justify-content: space-between;
-            gap: 1rem;
-            padding-bottom: 0.85rem;
+            gap: 0.75rem;
+        
+            width: 100%;
+        
+            padding: 0.15rem 0 0.7rem;
+        
             border-bottom: 1px solid #e2e8f0;
+        
+            box-sizing: border-box;
         }
         
-        .resumo-ativo-rotulo {
-            color: #7c8ca0;
-            font-size: 0.72rem;
-            line-height: 1.2;
+        .resumo-ativo-identificacao {
+            display: flex;
+            align-items: center;
+            gap: 0.55rem;
+        
+            min-width: 0;
         }
         
-        .resumo-ativo-nome {
-            margin-top: 0.15rem;
+        .resumo-ativo-nome-compacto {
+            overflow: hidden;
         
             color: #102d57;
-            font-size: 1.35rem;
+            font-size: 1.1rem;
             font-weight: 750;
             line-height: 1.2;
+        
+            text-overflow: ellipsis;
+            white-space: nowrap;
         }
-        
-        .resumo-ativo-fonte {
-            flex: 0 0 auto;
-        
-            padding: 0.35rem 0.65rem;
-        
-            color: #2f6690;
-            background-color: #eaf3f9;
-        
-            border-radius: 999px;
-        
-            font-size: 0.74rem;
-            font-weight: 650;
-            line-height: 1;
-        }
-        
-        .resumo-ativo-local {
+
+        .resumo-ativo-selos {
             display: flex;
             align-items: center;
-            justify-content: space-between;
+            justify-content: flex-end;
+            gap: 0.45rem;
         
-            padding: 0.75rem 0;
-        
-            color: #64748b;
-            font-size: 0.82rem;
+            flex: 0 0 auto;
         }
         
-        .resumo-ativo-local strong {
-            color: #334155;
+        .resumo-ativo-selo {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.3rem;
+        
+            padding: 0.35rem 0.55rem;
+        
+            border: 1px solid transparent;
+            border-radius: 999px;
+        
+            font-size: 0.72rem;
             font-weight: 650;
+            line-height: 1;
+            white-space: nowrap;
+        }
+        
+        .resumo-ativo-selo-solar {
+            color: #d97706;
+            background-color: #fff6dc;
+        
+            border-color: #fde7a9;
+        }
+        
+        .resumo-ativo-selo-eolica {
+            color: #2f78ad;
+            background-color: #eaf4fb;
+        
+            border-color: #d2e7f5;
+        }
+        
+        .resumo-ativo-selo-local {
+            color: #40668c;
+            background-color: #f5f8fb;
+        
+            border-color: #dfe7ef;
+        }
+        
+        .resumo-ativo-selo-icone {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+        
+            font-family:
+                "Segoe UI Symbol",
+                Arial,
+                sans-serif;
+            font-size: 0.8rem;
+            line-height: 1;
         }
         
         /* KPIs internos do ativo */
@@ -1220,8 +1262,8 @@ st.markdown(
         
             width: 100%;
         
-            margin-top: 0.15rem;
-            margin-bottom: 1.25rem;
+            margin-top: 0.65rem;
+            margin-bottom: 0.25rem;
         }
         .resumo-ativo-kpi {
             display: flex;
@@ -6173,36 +6215,53 @@ def renderizar_pagina_ativos_elera(
 
         with coluna_resumo_ativo:
             with st.container(border=True,key="card_resumo_ativo_elera"):
+                fonte_ativo_resumo = (analise_ativo_elera["fonte"])
+        
+                if fonte_ativo_resumo == "Solar":
+                    simbolo_fonte_ativo = "☀"
+                    classe_fonte_ativo = "solar"
+        
+                else:
+                    simbolo_fonte_ativo = "≋"
+                    classe_fonte_ativo = "eolica"
+                    
                 html_resumo_ativo = (
                     '<div class="resumo-ativo-elera">'
                 
                     # ========================================================
-                    # CABEÇALHO DO ATIVO
+                    # CABEÇALHO COM ATIVO, FONTE E ESTADO
                     # ========================================================
                 
-                    '<div class="resumo-ativo-cabecalho">'
-                    '<div>'
-                    '<div class="resumo-ativo-rotulo">'
-                    'Ativo selecionado'
-                    '</div>'
-                    '<div class="resumo-ativo-nome">'
+                    '<div class="resumo-ativo-cabecalho-compacto">'
+                
+                    '<div class="resumo-ativo-identificacao">'
+                
+                    '<strong class="resumo-ativo-nome-compacto">'
                     f'{analise_ativo_elera["ativo"]}'
-                    '</div>'
-                    '</div>'
-                    '<div class="resumo-ativo-fonte">'
-                    f'{analise_ativo_elera["fonte"]}'
-                    '</div>'
-                    '</div>'
-                
-                    # ========================================================
-                    # LOCAL
-                    # ========================================================
-                
-                    '<div class="resumo-ativo-local">'
-                    '<span>Local</span>'
-                    '<strong>'
-                    f'{analise_ativo_elera["estado"]}'
                     '</strong>'
+                
+                    '</div>'
+                
+                    '<div class="resumo-ativo-selos">'
+                
+                    '<span class="resumo-ativo-selo '
+                    f'resumo-ativo-selo-{classe_fonte_ativo}">'
+                    '<span class="resumo-ativo-selo-icone">'
+                    f'{simbolo_fonte_ativo}'
+                    '</span>'
+                    f'{analise_ativo_elera["fonte"]}'
+                    '</span>'
+                
+                    '<span class="resumo-ativo-selo '
+                    'resumo-ativo-selo-local">'
+                    '<span class="resumo-ativo-selo-icone">'
+                    '⌖'
+                    '</span>'
+                    f'{analise_ativo_elera["estado"]}'
+                    '</span>'
+                
+                    '</div>'
+                
                     '</div>'
                 
                     # ========================================================
@@ -6237,7 +6296,6 @@ def renderizar_pagina_ativos_elera(
                 
                     '</div>'
                 
-                    # Fecha resumo-ativo-elera.
                     '</div>'
                 )
     
