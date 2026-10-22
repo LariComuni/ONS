@@ -6336,9 +6336,7 @@ def renderizar_pagina_ativos_elera(
                     paper_bgcolor="rgba(0,0,0,0)",
                     plot_bgcolor="rgba(0,0,0,0)",
                     font={
-                        "family": (
-                            "Segoe UI, Arial, sans-serif"
-                        ),
+                        "family": ("Segoe UI, Arial, sans-serif"),
                         "color": "#334155",
                         "size": 11,
                     },
