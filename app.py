@@ -5630,7 +5630,7 @@ def renderizar_pagina_ativos_elera(
                 (coluna_titulo_grafico_ativo,
                     coluna_visao_grafico_ativo,
                     coluna_metrica_grafico_ativo,
-                    coluna_download_ativo) = st.columns([1.55,1.6,2.1,0.35],vertical_alignment="center")
+                    coluna_download_ativo) = st.columns([1.20,1.85,2.1,0.35],vertical_alignment="center")
             
                 with coluna_titulo_grafico_ativo:
                     st.html(
