@@ -1579,3 +1579,618 @@ def preparar_analise_individual_ativo_elera(
         "perfil_horario_tipo": (perfil_horario_tipo),
         "composicao_cortes": (composicao_cortes),
     }
+
+
+def preparar_exportacao_detalhada_ativos_elera(df,recorte_selecionado,granularidade):
+    """
+Prepara a base detalhada de exportação dos ativos
+da Elera.
+
+O usuário pode selecionar:
+
+- Portfólio inteiro;
+- Somente solares;
+- Somente eólicas;
+- Um ativo específico.
+
+Em todos os recortes, os dados permanecem separados
+por ativo, fonte e estado. O recorte determina quais
+ativos entram no arquivo, mas não consolida ativos
+diferentes em uma mesma linha.
+
+As granularidades disponíveis são:
+
+- Instante;
+- Mês e hora;
+- Dia e hora;
+- Dia;
+- Mês;
+- Ano.
+
+Para Conj. Faísa, os valores originais são
+multiplicados pelo fator 0.5992 antes das
+agregações.
+
+Os registros originais representam intervalos
+de 30 minutos. Portanto:
+
+MW * 0.5 = MWh
+
+Parâmetros
+----------
+df : pandas.DataFrame
+    Base calculada de curtailment.
+
+recorte_selecionado : str
+    Portfólio inteiro, Somente solares,
+    Somente eólicas ou nome de um ativo.
+
+granularidade : str
+    Nível temporal de agregação.
+
+Retorno
+-------
+pandas.DataFrame
+    Base separada por ativo, fonte, estado e período,
+    com curtailment por tipo, geração esperada e
+    percentuais de corte.
+"""
+
+    if not isinstance(
+        df,
+        pd.DataFrame,
+    ):
+        raise TypeError(
+            "df deve ser um DataFrame."
+        )
+
+    if df.empty:
+        raise ValueError(
+            "A base informada está vazia."
+        )
+
+    colunas_obrigatorias = {
+        "din_instante",
+        "nom_usina",
+        "cod_razaorestricao",
+        "val_curtailment",
+        "val_geracao_esperada",
+    }
+
+    colunas_ausentes = (
+        colunas_obrigatorias
+        - set(df.columns)
+    )
+
+    if colunas_ausentes:
+        raise ValueError(
+            "A base não possui as colunas obrigatórias: "
+            f"{sorted(colunas_ausentes)}."
+        )
+
+    granularidades_permitidas = {
+        "Instante",
+        "Mês e hora",
+        "Dia e hora",
+        "Dia",
+        "Mês",
+        "Ano",
+    }
+
+    if granularidade not in granularidades_permitidas:
+        raise ValueError(
+            "Granularidade inválida. Opções permitidas: "
+            f"{sorted(granularidades_permitidas)}."
+        )
+
+    recortes_permitidos = {
+        "Portfólio inteiro",
+        "Somente solares",
+        "Somente eólicas",
+        *ORDEM_ATIVOS_ELERA,
+    }
+
+    if recorte_selecionado not in recortes_permitidos:
+        raise ValueError(
+            "O recorte selecionado não é válido."
+        )
+
+    # filtrar_ativos_elera aplica o fator 0.5992
+    # ao Conj. Faísa e 1.0 aos demais ativos.
+
+    df_elera = filtrar_ativos_elera(
+        df
+    )
+
+    colunas_ajustadas = {
+        "ativo_elera",
+        "fonte_elera",
+        "estado_elera",
+        "val_curtailment_elera",
+        "val_geracao_esperada_elera",
+    }
+
+    colunas_ajustadas_ausentes = (
+        colunas_ajustadas
+        - set(df_elera.columns)
+    )
+
+    if colunas_ajustadas_ausentes:
+        raise ValueError(
+            "A base filtrada não possui as colunas "
+            "ajustadas necessárias: "
+            f"{sorted(colunas_ajustadas_ausentes)}."
+        )
+
+    # ========================================================
+    # APLICAÇÃO DO RECORTE
+    # ========================================================
+    
+    # O recorte determina quais ativos entram no arquivo.
+    # Mesmo para o portfólio inteiro ou para os recortes
+    # por fonte, os ativos permanecem separados na base.
+    
+    if recorte_selecionado == "Somente solares":
+        df_elera = df_elera[
+            df_elera["fonte_elera"]
+            == "Solar"
+        ].copy()
+    
+    elif recorte_selecionado == "Somente eólicas":
+        df_elera = df_elera[
+            df_elera["fonte_elera"]
+            == "Eólica"
+        ].copy()
+    
+    elif recorte_selecionado in ORDEM_ATIVOS_ELERA:
+        df_elera = df_elera[
+            df_elera["ativo_elera"]
+            == recorte_selecionado
+        ].copy()
+    
+    # Para "Portfólio inteiro", todos os ativos são mantidos.
+
+    # ========================================================
+    # TRATAMENTO
+    # ========================================================
+    if df_elera.empty:
+        raise ValueError("Não foram encontrados registros para o recorte selecionado.")
+
+    df_elera["din_instante"] = pd.to_datetime(
+        df_elera["din_instante"],
+        errors="coerce",
+    )
+
+    df_elera[
+        "val_curtailment_elera"
+    ] = pd.to_numeric(
+        df_elera[
+            "val_curtailment_elera"
+        ],
+        errors="coerce",
+    )
+
+    df_elera[
+        "val_geracao_esperada_elera"
+    ] = pd.to_numeric(
+        df_elera[
+            "val_geracao_esperada_elera"
+        ],
+        errors="coerce",
+    )
+
+    df_elera["tipo_curtailment"] = (
+        df_elera["cod_razaorestricao"]
+        .astype("string")
+        .str.strip()
+        .str.upper()
+        .fillna("SEM_CODIGO")
+        .replace(
+            "",
+            "SEM_CODIGO",
+        )
+    )
+
+    df_elera = df_elera.dropna(
+        subset=[
+            "din_instante",
+            "ativo_elera",
+            "fonte_elera",
+            "val_curtailment_elera",
+            "val_geracao_esperada_elera",
+        ]
+    ).copy()
+
+    if df_elera.empty:
+        raise ValueError(
+            "Não restaram registros válidos após "
+            "o tratamento da base."
+        )
+
+    # Valores negativos não devem compor energia
+    # restringida ou geração esperada.
+
+    df_elera["curtailment_mwh"] = (
+        df_elera[
+            "val_curtailment_elera"
+        ]
+        .clip(lower=0)
+        * 0.5
+    )
+
+    df_elera["geracao_esperada_mwh"] = (
+        df_elera[
+            "val_geracao_esperada_elera"
+        ]
+        .clip(lower=0)
+        * 0.5
+    )
+
+    # ========================================================
+    # COLUNAS TEMPORAIS
+    # ========================================================
+    
+    df_elera["data"] = (
+        df_elera["din_instante"]
+        .dt.normalize()
+    )
+    
+    df_elera["ano"] = (
+        df_elera["din_instante"]
+        .dt.year
+    )
+    
+    df_elera["mes"] = (
+        df_elera["din_instante"]
+        .dt.to_period("M")
+        .dt.to_timestamp()
+    )
+    
+    df_elera["hora"] = (
+        df_elera["din_instante"]
+        .dt.hour
+    )
+    
+    df_elera["hora_rotulo"] = (
+        df_elera["hora"]
+        .map(
+            lambda hora: (
+                f"{int(hora):02d}:00"
+            )
+        )
+    )
+    
+    # ========================================================
+    # COLUNAS DE IDENTIFICAÇÃO
+    # ========================================================
+    
+    # Ativo, fonte e estado são preservados em todos
+    # os recortes e granularidades.
+    
+    colunas_identificacao = [
+        "ativo_elera",
+        "fonte_elera",
+        "estado_elera",
+    ]
+    
+    # ========================================================
+    # DEFINIÇÃO DA GRANULARIDADE
+    # ========================================================
+    
+    if granularidade == "Instante":
+        colunas_tempo = [
+            "din_instante",
+        ]
+    
+    elif granularidade == "Mês e hora":
+        colunas_tempo = [
+            "mes",
+            "hora",
+            "hora_rotulo",
+        ]
+    
+    elif granularidade == "Dia e hora":
+        colunas_tempo = [
+            "data",
+            "hora",
+            "hora_rotulo",
+        ]
+    
+    elif granularidade == "Dia":
+        colunas_tempo = [
+            "data",
+        ]
+    
+    elif granularidade == "Mês":
+        colunas_tempo = [
+            "mes",
+        ]
+    
+    else:
+        colunas_tempo = [
+            "ano",
+        ]
+    
+    colunas_grupo = (
+        colunas_identificacao
+        + colunas_tempo
+    )
+    # ========================================================
+    # CURTAILMENT POR TIPO
+    # ========================================================
+
+    tipos_permitidos = [
+        "ENE",
+        "REL",
+        "CNF",
+    ]
+
+    df_tipos = df_elera[
+        df_elera["tipo_curtailment"]
+        .isin(
+            tipos_permitidos
+        )
+    ].copy()
+
+    curtailment_tipos = (
+        df_tipos
+        .groupby(
+            colunas_grupo
+            + [
+                "tipo_curtailment",
+            ],
+            as_index=False,
+            observed=True,
+            dropna=False,
+        )
+        .agg(
+            curtailment_mwh=(
+                "curtailment_mwh",
+                "sum",
+            )
+        )
+    )
+
+    curtailment_tipos = (
+        curtailment_tipos
+        .pivot_table(
+            index=colunas_grupo,
+            columns="tipo_curtailment",
+            values="curtailment_mwh",
+            aggfunc="sum",
+            fill_value=0.0,
+        )
+        .reindex(
+            columns=tipos_permitidos,
+            fill_value=0.0,
+        )
+        .reset_index()
+    )
+
+    curtailment_tipos.columns.name = None
+
+    curtailment_tipos = (
+        curtailment_tipos
+        .rename(
+            columns={
+                "ENE": "Curtailment ENE (MWh)",
+                "REL": "Curtailment REL (MWh)",
+                "CNF": "Curtailment CNF (MWh)",
+            }
+        )
+    )
+
+    # ========================================================
+    # GERAÇÃO ESPERADA
+    # ========================================================
+
+    geracao_esperada = (
+        df_elera
+        .groupby(
+            colunas_grupo,
+            as_index=False,
+            observed=True,
+            dropna=False,
+        )
+        .agg(
+            **{
+                "Geração Esperada (MWh)": (
+                    "geracao_esperada_mwh",
+                    "sum",
+                ),
+            }
+        )
+    )
+
+        # ========================================================
+        # UNIÃO E TOTAIS
+        # ========================================================
+    
+        base_exportacao = (
+            geracao_esperada
+            .merge(
+                curtailment_tipos,
+                on=colunas_grupo,
+                how="left",
+                validate="one_to_one",
+            )
+        )
+    
+        colunas_curtailment = [
+            "Curtailment ENE (MWh)",
+            "Curtailment REL (MWh)",
+            "Curtailment CNF (MWh)",
+        ]
+    
+        base_exportacao[
+            colunas_curtailment
+        ] = (
+            base_exportacao[
+                colunas_curtailment
+            ]
+            .fillna(0.0)
+        )
+    
+        base_exportacao[
+            "Curtailment Todos (MWh)"
+        ] = (
+            base_exportacao[
+                colunas_curtailment
+            ]
+            .sum(
+                axis=1
+            )
+        )
+    
+        # ========================================================
+        # PERCENTUAIS DE CORTE
+        # ========================================================
+    
+        geracao_positiva = (
+            base_exportacao[
+                "Geração Esperada (MWh)"
+            ] > 0
+        )
+    
+        calculos_corte = {
+            "Corte ENE (%)": (
+                "Curtailment ENE (MWh)"
+            ),
+            "Corte REL (%)": (
+                "Curtailment REL (MWh)"
+            ),
+            "Corte CNF (%)": (
+                "Curtailment CNF (MWh)"
+            ),
+            "Corte Todos (%)": (
+                "Curtailment Todos (MWh)"
+            ),
+        }
+    
+        for coluna_corte, coluna_volume in (
+            calculos_corte.items()
+        ):
+            base_exportacao[
+                coluna_corte
+            ] = 0.0
+    
+            base_exportacao.loc[
+                geracao_positiva,
+                coluna_corte,
+            ] = (
+                100
+                * base_exportacao.loc[
+                    geracao_positiva,
+                    coluna_volume,
+                ]
+                / base_exportacao.loc[
+                    geracao_positiva,
+                    "Geração Esperada (MWh)",
+                ]
+            )
+    
+        # ========================================================
+        # NOMES DAS COLUNAS DE IDENTIFICAÇÃO E TEMPO
+        # ========================================================
+    
+        base_exportacao = (
+            base_exportacao
+            .rename(
+                columns={
+                    "ativo_elera": "Ativo",
+                    "fonte_elera": "Fonte",
+                    "estado_elera": "Estado",
+                    "din_instante": "Instante",
+                    "data": "Data",
+                    "ano": "Ano",
+                    "mes": "Mês",
+                    "hora": "Hora numérica",
+                    "hora_rotulo": "Hora",
+                }
+            )
+        )
+    
+        # ========================================================
+        # ORDENAÇÃO DAS COLUNAS
+        # ========================================================
+    
+        colunas_identificacao_resultado = [
+            "Ativo",
+            "Fonte",
+            "Estado",
+        ]
+    
+        colunas_tempo_resultado = [
+            coluna
+            for coluna in [
+                "Instante",
+                "Data",
+                "Mês",
+                "Ano",
+                "Hora numérica",
+                "Hora",
+            ]
+            if coluna in base_exportacao.columns
+        ]
+    
+        colunas_indicadores_resultado = [
+            "Curtailment ENE (MWh)",
+            "Curtailment REL (MWh)",
+            "Curtailment CNF (MWh)",
+            "Curtailment Todos (MWh)",
+            "Geração Esperada (MWh)",
+            "Corte ENE (%)",
+            "Corte REL (%)",
+            "Corte CNF (%)",
+            "Corte Todos (%)",
+        ]
+    
+        colunas_resultado = (
+            colunas_identificacao_resultado
+            + colunas_tempo_resultado
+            + colunas_indicadores_resultado
+        )
+    
+        # ========================================================
+        # ORDENAÇÃO DAS LINHAS
+        # ========================================================
+    
+        colunas_ordenacao = [
+            coluna
+            for coluna in [
+                "Ativo",
+                "Instante",
+                "Data",
+                "Mês",
+                "Ano",
+                "Hora numérica",
+            ]
+            if coluna in base_exportacao.columns
+        ]
+    
+        base_exportacao = (
+            base_exportacao[
+                colunas_resultado
+            ]
+            .sort_values(
+                colunas_ordenacao,
+                kind="stable",
+            )
+            .reset_index(
+                drop=True
+            )
+        )
+    
+        # ========================================================
+        # METADADOS DA EXPORTAÇÃO
+        # ========================================================
+    
+        base_exportacao.attrs[
+            "recorte"
+        ] = recorte_selecionado
+    
+        base_exportacao.attrs[
+            "granularidade"
+        ] = granularidade
+    
+        return base_exportacao
