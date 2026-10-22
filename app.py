@@ -3415,7 +3415,7 @@ def renderizar_pagina_subsistemas(
                             ),
                         )
                         
-                        fig_mensal.(
+                        fig_mensal.update_layout(
                             barmode="stack",
                             height=325,
                             margin={
