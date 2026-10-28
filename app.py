@@ -6860,7 +6860,7 @@ if not CAMINHO_UFS.exists():
 
 pagina_ativa = st.query_params.get("pagina","mapa")
 
-paginas_permitidas = {"mapa","subsistemas","ativos_elera"}
+paginas_permitidas = {"mapa","subsistemas","ativos_elera","cp45"}
 
 if pagina_ativa not in paginas_permitidas:
     pagina_ativa = "mapa"
