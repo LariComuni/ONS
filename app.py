@@ -6571,6 +6571,34 @@ def renderizar_pagina_ativos_elera(
                         f"{nome_recorte_arquivo}_{nome_granularidade_arquivo}"),
                 )
 
+def renderizar_pagina_cp45(hoje,ultimo_ano_completo,ultimo_mes_completo):
+    """
+    Renderiza a página de análise da CP45.
+    """
+
+    st.html(
+        """
+        <div class="cabecalho-cp45">
+            <h1>CP45</h1>
+            <p>
+                Análise dos cenários de rateio do curtailment
+                e dos impactos nos ativos da Elera.
+            </p>
+        </div>
+        """)
+
+    with st.container(border=True,key="card_cp45_inicial"):
+        st.html(
+            """
+            <div class="cp45-conteudo-inicial">
+                <strong>Análise CP45</strong>
+                <span>
+                    Os filtros, cenários e resultados serão
+                    adicionados nas próximas etapas.
+                </span>
+            </div>
+            """)
+
 @st.cache_data(show_spinner=False)
 def calcular_kpis_subsistemas_aplicacao(
     df_curtailment,
@@ -6862,7 +6890,11 @@ classe_ativos_elera = (
         "sin-navbar-item "
         "sin-navbar-item-elera")
 )
-
+classe_cp45 = (
+    "sin-navbar-item sin-navbar-item-ativo"
+    if pagina_ativa == "cp45"
+    else "sin-navbar-item"
+)
 logo_elera_base64 = carregar_imagem_base64(CAMINHO_LOGO_ELERA)
 
 if logo_elera_base64 is not None:
@@ -6930,6 +6962,16 @@ html_navbar = (
     f'{html_logo_elera}'
     '<span>Ativos Elera</span>'
     '</a>'
+    
+    f'<a class="{classe_cp45}" '
+    'href="?pagina=cp45" target="_self" '
+    'title="Visualizar a análise da CP45">'
+    '<span class="sin-navbar-item-icone" '
+    'aria-hidden="true">'
+    '▤'
+    '</span>'
+    '<span>CP45</span>'
+    '</a>'
 
     '</div>'
     '</div>'
@@ -6941,7 +6983,6 @@ st.html(html_navbar)
 # ============================================================
 # CONTEÚDO DA ABA SUBSISTEMAS
 # ============================================================
-
 if pagina_ativa == "subsistemas":
     renderizar_pagina_subsistemas(
         hoje=hoje,
@@ -6950,11 +6991,9 @@ if pagina_ativa == "subsistemas":
     )
 
     st.stop()
-
 # ============================================================
 # CONTEÚDO DA ABA ATIVOS ELERA
 # ============================================================
-
 if pagina_ativa == "ativos_elera":
     renderizar_pagina_ativos_elera(
         hoje=hoje,
@@ -6964,9 +7003,19 @@ if pagina_ativa == "ativos_elera":
 
     st.stop()
 # ============================================================
+# CONTEÚDO DA ABA CP45
+# ============================================================
+if pagina_ativa == "cp45":
+    renderizar_pagina_cp45(
+        hoje=hoje,
+        ultimo_ano_completo=ultimo_ano_completo,
+        ultimo_mes_completo=ultimo_mes_completo,
+    )
+
+    st.stop()
+# ============================================================
 # FILTROS SUSPENSOS DO MAPA
 # ============================================================
-
 anos_disponiveis = list(
     range(
         ANO_MINIMO,
