@@ -44,6 +44,24 @@ from src.analise_ativos_elera import (
     preparar_analise_individual_ativo_elera,
     preparar_exportacao_detalhada_ativos_elera,
 )
+from src.coleta_evt import (
+    carregar_periodo_evt,
+)
+from src.dados_pld import (
+    carregar_bases_pld,
+    preparar_pld_aberto,
+)
+from src.preparacao_cp45 import (
+    montar_base_fontes_cp45,
+    preparar_ativos_horarios_cp45,
+)
+from src.cenarios_cp45 import (
+    montar_base_cenarios_cp45,
+)
+from src.analise_cp45 import (
+    obter_opcoes_filtros_cp45,
+    preparar_analise_individual_cp45,
+)
 # ============================================================
 # CONFIGURAÇÃO
 # ============================================================
@@ -2362,9 +2380,7 @@ def validar_periodo_interface(
             "está completamente disponível."
         )
 
-@st.cache_resource(
-    show_spinner=False,
-)
+@st.cache_resource(show_spinner=False)
 def executar_pipeline_aplicacao(
     ano_inicial,
     mes_inicial,
@@ -6676,6 +6692,37 @@ def preparar_exportacao_detalhada_elera_aplicacao(df_curtailment,recorte_selecio
     """
 
     return preparar_exportacao_detalhada_ativos_elera(df=df_curtailment,recorte_selecionado=recorte_selecionado,granularidade=granularidade)
+    
+# FUNCOES COM CACHE: BASES DE PLD DA CP45
+
+@st.cache_data(show_spinner=False)
+def carregar_pld_cp45_aplicacao():
+    """
+    Carrega e trata os arquivos anuais de PLD
+    armazenados no repositório.
+
+    Retorna
+    -------
+    tuple
+        Base longa de PLD e relatório de carregamento.
+    """
+
+    return carregar_bases_pld()
+
+@st.cache_data(show_spinner=False)
+def preparar_pld_aberto_cp45_aplicacao(
+    df_pld,
+):
+    """
+    Abre os valores de PLD por submercado e calcula
+    o descolamento horário.
+    """
+
+    return preparar_pld_aberto(
+        df_pld
+    )
+
+# FUNCOES COM CACHE: SUBSISTEMAS
 
 @st.cache_data(show_spinner=False)
 def preparar_resumo_subsistemas_aplicacao(
@@ -6686,6 +6733,149 @@ def preparar_resumo_subsistemas_aplicacao(
     """
 
     return preparar_resumo_subsistemas(df_curtailment)
+# ============================================================
+# CACHE: ENERGIA VERTIDA TURBINÁVEL
+# ============================================================
+
+@st.cache_data(show_spinner=False,ttl=3600)
+def carregar_evt_ano_cp45_aplicacao(
+    ano,
+    mes_inicial,
+    mes_final,
+):
+    """
+    Carrega um intervalo mensal da base EVT para um ano.
+    """
+
+    df_evt, relatorio_evt = (
+        carregar_periodo_evt(
+            ano=int(
+                ano
+            ),
+            mes_inicial=int(
+                mes_inicial
+            ),
+            mes_final=int(
+                mes_final
+            ),
+        )
+    )
+
+    return (df_evt,relatorio_evt)
+
+# ============================================================
+# CACHE: PREPARAÇÃO HORÁRIA DA CP45
+# ============================================================
+
+@st.cache_data(
+    show_spinner=False,
+)
+def montar_base_fontes_cp45_aplicacao(
+    df_curtailment,
+    df_evt,
+    df_pld_aberto,
+):
+    """
+    Monta a base horária por fonte e subsistema.
+    """
+
+    return montar_base_fontes_cp45(
+        df_curtailment=(
+            df_curtailment
+        ),
+        df_evt=df_evt,
+        df_pld_aberto=(
+            df_pld_aberto
+        ),
+    )
+
+@st.cache_data(
+    show_spinner=False,
+)
+def preparar_ativos_cp45_aplicacao(
+    df_curtailment,
+):
+    """
+    Prepara todos os ativos EOL e UFV em
+    granularidade horária.
+    """
+
+    return preparar_ativos_horarios_cp45(df_curtailment=(df_curtailment))
+
+# ============================================================
+# CACHE: CENÁRIOS DA CP45
+# ============================================================
+
+@st.cache_data(
+    show_spinner=False,
+)
+def montar_cenarios_cp45_aplicacao(
+    df_base_fontes_cp45,
+    df_ativos_cp45,
+):
+    """
+    Calcula as taxas dos cenários e aplica os
+    resultados aos ativos.
+    """
+
+    return montar_base_cenarios_cp45(df_base_fontes_cp45=(df_base_fontes_cp45),df_ativos_cp45=(df_ativos_cp45))
+
+# ============================================================
+# CACHE: OPÇÕES DOS FILTROS DA CP45
+# ============================================================
+
+@st.cache_data(
+    show_spinner=False,
+)
+def obter_opcoes_cp45_aplicacao(
+    df_ativos_cenarios_cp45,
+):
+    """
+    Retorna usinas e limites temporais disponíveis.
+    """
+
+    return obter_opcoes_filtros_cp45(df_ativos_cenarios_cp45)
+# ============================================================
+# CACHE: ANÁLISE INDIVIDUAL DA CP45
+# ============================================================
+
+@st.cache_data(
+    show_spinner=False,
+)
+def preparar_analise_cp45_aplicacao(
+    df_ativos_cenarios_cp45,
+    ano_inicial,
+    mes_inicial,
+    ano_final,
+    mes_final,
+    usina_selecionada,
+):
+    """
+    Prepara indicadores, resumo dos cenários e
+    resultados mensais da usina selecionada.
+    """
+
+    return preparar_analise_individual_cp45(
+        df=(
+            df_ativos_cenarios_cp45
+        ),
+        ano_inicial=int(
+            ano_inicial
+        ),
+        mes_inicial=int(
+            mes_inicial
+        ),
+        ano_final=int(
+            ano_final
+        ),
+        mes_final=int(
+            mes_final
+        ),
+        usina_selecionada=str(
+            usina_selecionada
+        ).strip(),
+    )
+
 
 @st.cache_data(show_spinner=False)
 def gerar_excel_dataframe(
