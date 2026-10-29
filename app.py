@@ -2785,7 +2785,6 @@ def renderizar_filtros_ativos_elera(
 def renderizar_filtros_cp45(
     ultimo_ano_completo,
     ultimo_mes_completo,
-    usinas_disponiveis,
 ):
     """
     Renderiza os filtros independentes da página CP45.
