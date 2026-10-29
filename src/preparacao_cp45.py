@@ -1221,20 +1221,37 @@ def preparar_ativos_horarios_cp45(
         ordem_colunas
     ]
 
+    chave_analitica = [
+        "din_instante",
+        "ativo",
+        "subsistema",
+        "fonte",
+    ]
+    
     duplicidades = resultado.duplicated(
-        subset=[
-            "din_instante",
-            "ativo",
-        ],
+        subset=chave_analitica,
         keep=False,
     )
-
+    
     if duplicidades.any():
+        exemplos_duplicados = (
+            resultado.loc[
+                duplicidades,
+                chave_analitica,
+            ]
+            .head(10)
+            .to_dict(
+                orient="records"
+            )
+        )
+    
         raise ValueError(
             "A base de ativos possui "
             f"{int(duplicidades.sum())} linhas "
-            "envolvidas em duplicidades de "
-            "din_instante e ativo."
+            "envolvidas em duplicidades da chave "
+            "din_instante, ativo, subsistema e fonte. "
+            "Exemplos: "
+            f"{exemplos_duplicados}"
         )
 
     return (
