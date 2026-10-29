@@ -1243,4 +1243,255 @@ def aplicar_cenarios_ativos_cp45(
             drop=True
         )
     )
-  
+
+def montar_base_cenarios_cp45(
+    df_base_fontes_cp45,
+    df_ativos_cp45,
+):
+    """
+    Calcula as taxas horárias dos cenários da CP45
+    e aplica essas taxas à base horária dos ativos.
+
+    Esta função coordena:
+
+    1. cálculo das taxas dos cenários 1A a 4B;
+    2. aplicação das taxas à geração esperada dos ativos;
+    3. validação da base final.
+
+    Parâmetros
+    ----------
+    df_base_fontes_cp45 : pandas.DataFrame
+        Base horária por subsistema produzida por
+        montar_base_fontes_cp45().
+
+    df_ativos_cp45 : pandas.DataFrame
+        Base horária por ativo produzida por
+        preparar_ativos_horarios_cp45().
+
+    Retorno
+    -------
+    dict
+        Dicionário contendo:
+
+        - taxas:
+          taxas horárias por instante e subsistema;
+
+        - ativos:
+          base horária dos ativos com cenário atual
+          e cenários simulados;
+
+        - diagnostico:
+          informações de validação do processamento.
+    """
+
+    if not isinstance(
+        df_base_fontes_cp45,
+        pd.DataFrame,
+    ):
+        raise TypeError(
+            "df_base_fontes_cp45 deve ser "
+            "um DataFrame."
+        )
+
+    if not isinstance(
+        df_ativos_cp45,
+        pd.DataFrame,
+    ):
+        raise TypeError(
+            "df_ativos_cp45 deve ser "
+            "um DataFrame."
+        )
+
+    if df_base_fontes_cp45.empty:
+        raise ValueError(
+            "A base horária de fontes está vazia."
+        )
+
+    if df_ativos_cp45.empty:
+        raise ValueError(
+            "A base horária de ativos está vazia."
+        )
+
+    # ========================================================
+    # CÁLCULO DAS TAXAS
+    # ========================================================
+
+    df_taxas_cp45 = (
+        calcular_taxas_cenarios_cp45(
+            df_base_fontes=(
+                df_base_fontes_cp45
+            )
+        )
+    )
+
+    # ========================================================
+    # APLICAÇÃO AOS ATIVOS
+    # ========================================================
+
+    df_ativos_cenarios_cp45 = (
+        aplicar_cenarios_ativos_cp45(
+            df_ativos_cp45=(
+                df_ativos_cp45
+            ),
+            df_taxas_cp45=(
+                df_taxas_cp45
+            ),
+        )
+    )
+
+    # ========================================================
+    # DIAGNÓSTICO
+    # ========================================================
+
+    colunas_cenarios = [
+        coluna
+        for coluna
+        in df_ativos_cenarios_cp45.columns
+        if (
+            coluna.startswith(
+                "corte_"
+            )
+            or coluna.startswith(
+                "curtailment_"
+            )
+        )
+    ]
+
+    quantidade_nulos = int(
+        df_ativos_cenarios_cp45[
+            colunas_cenarios
+        ]
+        .isna()
+        .sum()
+        .sum()
+    )
+
+    quantidade_infinitos = int(
+        np.isinf(
+            df_ativos_cenarios_cp45[
+                colunas_cenarios
+            ]
+            .to_numpy(
+                dtype=float
+            )
+        )
+        .sum()
+    )
+
+    duplicidades_taxas = int(
+        df_taxas_cp45
+        .duplicated(
+            subset=[
+                "din_instante",
+                "subsistema",
+            ]
+        )
+        .sum()
+    )
+
+    duplicidades_ativos = int(
+        df_ativos_cenarios_cp45
+        .duplicated(
+            subset=[
+                "din_instante",
+                "ativo",
+                "subsistema",
+                "fonte",
+            ]
+        )
+        .sum()
+    )
+
+    linhas_sem_taxa = int(
+        df_ativos_cenarios_cp45
+        .attrs
+        .get(
+            "linhas_sem_taxa_correspondente",
+            0,
+        )
+    )
+
+    diagnostico = {
+        "quantidade_linhas_taxas": (
+            len(
+                df_taxas_cp45
+            )
+        ),
+        "quantidade_linhas_ativos": (
+            len(
+                df_ativos_cenarios_cp45
+            )
+        ),
+        "quantidade_ativos": int(
+            df_ativos_cenarios_cp45[
+                "ativo"
+            ]
+            .nunique()
+        ),
+        "periodo_inicial": (
+            df_ativos_cenarios_cp45[
+                "din_instante"
+            ]
+            .min()
+        ),
+        "periodo_final": (
+            df_ativos_cenarios_cp45[
+                "din_instante"
+            ]
+            .max()
+        ),
+        "linhas_sem_taxa_correspondente": (
+            linhas_sem_taxa
+        ),
+        "duplicidades_taxas": (
+            duplicidades_taxas
+        ),
+        "duplicidades_ativos": (
+            duplicidades_ativos
+        ),
+        "quantidade_nulos": (
+            quantidade_nulos
+        ),
+        "quantidade_infinitos": (
+            quantidade_infinitos
+        ),
+    }
+
+    # ========================================================
+    # VALIDAÇÃO FINAL
+    # ========================================================
+
+    problemas = {
+        chave: valor
+        for chave, valor in {
+            "linhas_sem_taxa_correspondente": (
+                linhas_sem_taxa
+            ),
+            "duplicidades_taxas": (
+                duplicidades_taxas
+            ),
+            "duplicidades_ativos": (
+                duplicidades_ativos
+            ),
+            "quantidade_nulos": (
+                quantidade_nulos
+            ),
+            "quantidade_infinitos": (
+                quantidade_infinitos
+            ),
+        }.items()
+        if valor > 0
+    }
+
+    if problemas:
+        raise ValueError(
+            "A base final da CP45 apresentou "
+            "problemas de consistência: "
+            f"{problemas}."
+        )
+
+    return {
+        "taxas": df_taxas_cp45,
+        "ativos": df_ativos_cenarios_cp45,
+        "diagnostico": diagnostico,
+    }
