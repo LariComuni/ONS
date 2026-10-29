@@ -6745,17 +6745,6 @@ def renderizar_pagina_cp45(
     Renderiza a página CP45.
     """
 
-    st.html(
-        """
-        <div class="cabecalho-cp45">
-            <h1>CP45</h1>
-            <p>
-                Análise dos cenários de rateio do
-                curtailment e seus impactos.
-            </p>
-        </div>
-        """
-    )
     # ========================================================
     # FILTROS
     # ========================================================
@@ -6924,6 +6913,20 @@ def renderizar_pagina_cp45(
             )
 
             return
+    # ========================================================
+    # CABEÇALHO
+    # ========================================================
+    st.html(
+        """
+        <div class="cabecalho-cp45">
+            <h1>CP45</h1>
+            <p>
+                Análise dos cenários de rateio do
+                curtailment e seus impactos.
+            </p>
+        </div>
+        """
+    )
 
     # ========================================================
     # RESULTADOS
@@ -7129,12 +7132,6 @@ def renderizar_pagina_cp45(
         config={
             "displayModeBar": False
         },
-    )
-
-    st.dataframe(
-        resumo_cenarios,
-        width="stretch",
-        hide_index=True,
     )
 
     # ========================================================
