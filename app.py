@@ -6956,15 +6956,15 @@ def renderizar_pagina_cp45(
         </div>
         """
     )
-    usina_selecionada = st.pills(
-        "Selecione a usina",
-        options=usinas_disponiveis,
-        default=usinas_disponiveis[0],
-        selection_mode="single",
-        key="cp45_usina",
-        label_visibility="collapsed",
-        width="stretch",
-    )
+    with st.container(
+        border=True,
+    ):
+        usina_selecionada = st.selectbox(
+            "Selecione a usina",
+            options=usinas_disponiveis,
+            index=0,
+            key="cp45_usina",
+        )
     # ========================================================
     # PREPARA ANÁLISE DA USINA
     # ========================================================
