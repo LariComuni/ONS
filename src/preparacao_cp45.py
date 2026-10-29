@@ -283,6 +283,11 @@ def preparar_curtailment_horario_fonte_cp45(
         .astype("string")
         .str.strip()
         .str.upper()
+        .fillna("SEM_CODIGO")
+        .replace(
+            "",
+            "SEM_CODIGO",
+        )
     )
 
     base["val_curtailment"] = (
@@ -324,12 +329,19 @@ def preparar_curtailment_horario_fonte_cp45(
         .dt.floor("h")
     )
 
-    base["curtailment_ene_mwh"] = np.where(
-        base[
-            "cod_razaorestricao"
-        ].eq(
+    mascara_curtailment_ene = (
+        base["cod_razaorestricao"]
+        .eq(
             TIPO_CURTAILMENT_CP45
-        ),
+        )
+        .fillna(False)
+        .to_numpy(
+            dtype=bool
+        )
+    )
+    
+    base["curtailment_ene_mwh"] = np.where(
+        mascara_curtailment_ene,
         base["val_curtailment"] * 0.5,
         0.0,
     )
@@ -1036,6 +1048,11 @@ def preparar_ativos_horarios_cp45(
         .astype("string")
         .str.strip()
         .str.upper()
+        .fillna("SEM_CODIGO")
+        .replace(
+            "",
+            "SEM_CODIGO",
+        )
     )
 
     base["val_curtailment"] = (
@@ -1082,19 +1099,21 @@ def preparar_ativos_horarios_cp45(
         .dt.floor("h")
     )
 
-    base["curtailment_atual_mwh"] = (
-        np.where(
-            base[
-                "cod_razaorestricao"
-            ].eq(
-                TIPO_CURTAILMENT_CP45
-            ),
-            (
-                base["val_curtailment"]
-                * 0.5
-            ),
-            0.0,
+    mascara_curtailment_ene = (
+        base["cod_razaorestricao"]
+        .eq(
+            TIPO_CURTAILMENT_CP45
         )
+        .fillna(False)
+        .to_numpy(
+            dtype=bool
+        )
+    )
+    
+    base["curtailment_atual_mwh"] = np.where(
+        mascara_curtailment_ene,
+        base["val_curtailment"] * 0.5,
+        0.0,
     )
 
     base[
