@@ -17,15 +17,14 @@ import pandas as pd
 # CAMINHOS
 # ============================================================
 
-RAIZ_PROJETO = (
+PASTA_SRC = (
     Path(__file__)
     .resolve()
-    .parent
     .parent
 )
 
 PASTA_PLD = (
-    RAIZ_PROJETO
+    PASTA_SRC
     / "data"
     / "cp45"
     / "pld"
