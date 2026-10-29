@@ -2782,6 +2782,161 @@ def renderizar_filtros_ativos_elera(
         resumo_ativos_elera,
     )
 
+def renderizar_filtros_cp45(
+    ultimo_ano_completo,
+    ultimo_mes_completo,
+    usinas_disponiveis,
+):
+    """
+    Renderiza os filtros independentes da página CP45.
+
+    Retorno
+    -------
+    dict ou None
+        Configuração selecionada quando o botão Aplicar
+        for acionado. Caso contrário, retorna None.
+    """
+
+    anos_disponiveis = list(
+        range(
+            ANO_MINIMO,
+            ultimo_ano_completo + 1,
+        )
+    )
+
+    with st.container(
+        border=True,
+        key="filtros_cp45",
+    ):
+        (
+            coluna_ano_inicial,
+            coluna_mes_inicial,
+            coluna_ano_final,
+            coluna_mes_final,
+            coluna_usina,
+            coluna_botao,
+        ) = st.columns(
+            [
+                0.8,
+                1.3,
+                0.8,
+                1.3,
+                1.9,
+                1,
+            ],
+            vertical_alignment="bottom",
+        )
+
+        with coluna_ano_inicial:
+            ano_inicial = st.selectbox(
+                "Ano inicial",
+                options=anos_disponiveis,
+                index=len(
+                    anos_disponiveis
+                ) - 1,
+                key="cp45_ano_inicial",
+            )
+
+        meses_iniciais = obter_meses_disponiveis(
+            ano=ano_inicial,
+            ultimo_ano_completo=(
+                ultimo_ano_completo
+            ),
+            ultimo_mes_completo=(
+                ultimo_mes_completo
+            ),
+        )
+
+        with coluna_mes_inicial:
+            mes_inicial = st.selectbox(
+                "Mês inicial",
+                options=meses_iniciais,
+                index=0,
+                format_func=formatar_mes,
+                key="cp45_mes_inicial",
+            )
+
+        with coluna_ano_final:
+            ano_final = st.selectbox(
+                "Ano final",
+                options=anos_disponiveis,
+                index=len(
+                    anos_disponiveis
+                ) - 1,
+                key="cp45_ano_final",
+            )
+
+        meses_finais = obter_meses_disponiveis(
+            ano=ano_final,
+            ultimo_ano_completo=(
+                ultimo_ano_completo
+            ),
+            ultimo_mes_completo=(
+                ultimo_mes_completo
+            ),
+        )
+
+        with coluna_mes_final:
+            mes_final = st.selectbox(
+                "Mês final",
+                options=meses_finais,
+                index=len(
+                    meses_finais
+                ) - 1,
+                format_func=formatar_mes,
+                key="cp45_mes_final",
+            )
+
+        with coluna_usina:
+            usina = st.selectbox(
+                "Usina",
+                options=usinas_disponiveis,
+                index=0,
+                key="cp45_usina",
+            )
+
+        with coluna_botao:
+            aplicar_filtros = st.button(
+                "Aplicar",
+                use_container_width=True,
+                type="primary",
+                key="cp45_aplicar",
+            )
+
+        status_cp45 = st.empty()
+        resumo_cp45 = st.empty()
+
+    if not aplicar_filtros:
+        return (
+            None,
+            status_cp45,
+            resumo_cp45,
+        )
+
+    validar_periodo_interface(
+        ano_inicial=ano_inicial,
+        mes_inicial=mes_inicial,
+        ano_final=ano_final,
+        mes_final=mes_final,
+        ultimo_ano_completo=(
+            ultimo_ano_completo
+        ),
+        ultimo_mes_completo=(
+            ultimo_mes_completo
+        ),
+    )
+
+    return (
+        {
+            "ano_inicial": ano_inicial,
+            "mes_inicial": mes_inicial,
+            "ano_final": ano_final,
+            "mes_final": mes_final,
+            "usina": usina,
+        },
+        status_cp45,
+        resumo_cp45,
+    )
 def renderizar_pagina_subsistemas(
     hoje,
     ultimo_ano_completo,
@@ -6598,22 +6753,27 @@ def renderizar_pagina_cp45(hoje,ultimo_ano_completo,ultimo_mes_completo):
             <h1>CP45</h1>
             <p>
                 Análise dos cenários de rateio do curtailment
-                e dos impactos nos ativos da Elera.
+                e seus impactos.
             </p>
         </div>
         """)
+    df_cp45 = carregar_cenarios_cp45()
+    
+    with st.container(border=True):
 
-    with st.container(border=True,key="card_cp45_inicial"):
-        st.html(
-            """
-            <div class="cp45-conteudo-inicial">
-                <strong>Análise CP45</strong>
-                <span>
-                    Os filtros, cenários e resultados serão
-                    adicionados nas próximas etapas.
-                </span>
-            </div>
-            """)
+        col1, col2 = st.columns(2)
+    
+        usinas = sorted(
+            df_cp45["nom_usina"]
+            .dropna()
+            .unique()
+        )
+    
+        usinas_selecionadas = col1.multiselect(
+            "Usinas",
+            usinas
+        )
+
 
 @st.cache_data(show_spinner=False)
 def calcular_kpis_subsistemas_aplicacao(
