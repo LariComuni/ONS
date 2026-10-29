@@ -2813,7 +2813,6 @@ def renderizar_filtros_cp45(
             coluna_mes_inicial,
             coluna_ano_final,
             coluna_mes_final,
-            coluna_usina,
             coluna_botao,
         ) = st.columns(
             [
@@ -2821,8 +2820,7 @@ def renderizar_filtros_cp45(
                 1.3,
                 0.8,
                 1.3,
-                1.9,
-                1,
+                1.0,
             ],
             vertical_alignment="bottom",
         )
@@ -2887,14 +2885,6 @@ def renderizar_filtros_cp45(
                 key="cp45_mes_final",
             )
 
-        with coluna_usina:
-            usina = st.selectbox(
-                "Usina",
-                options=usinas_disponiveis,
-                index=0,
-                key="cp45_usina",
-            )
-
         with coluna_botao:
             aplicar_filtros = st.button(
                 "Aplicar",
@@ -2932,11 +2922,11 @@ def renderizar_filtros_cp45(
             "mes_inicial": mes_inicial,
             "ano_final": ano_final,
             "mes_final": mes_final,
-            "usina": usina,
         },
         status_cp45,
         resumo_cp45,
     )
+    
 def renderizar_pagina_subsistemas(
     hoje,
     ultimo_ano_completo,
@@ -6762,16 +6752,6 @@ def renderizar_pagina_cp45(
         </div>
         """
     )
-
-    # ========================================================
-    # USINAS TEMPORÁRIAS
-    # ========================================================
-
-    usinas_disponiveis = st.session_state.get(
-        "cp45_usinas_disponiveis",
-        ["Carregue a análise"]
-    )
-
     # ========================================================
     # FILTROS
     # ========================================================
@@ -6788,9 +6768,6 @@ def renderizar_pagina_cp45(
             ),
             ultimo_mes_completo=(
                 ultimo_mes_completo
-            ),
-            usinas_disponiveis=(
-                usinas_disponiveis
             ),
         )
 
@@ -6844,23 +6821,14 @@ def renderizar_pagina_cp45(
                     # BASES
                     # ------------------------------------
 
-                    dados_subsistemas = (
-                        st.session_state.get(
-                            "dados_subsistemas"
-                        )
-                    )
-
-                    if dados_subsistemas is None:
-
-                        raise ValueError(
-                            "Execute primeiro uma análise "
-                            "na aba Subsistemas."
-                        )
-
                     df_curtailment = (
-                        dados_subsistemas[
-                            "df_curtailment"
-                        ]
+                        carregar_base_curtailment_cp45(
+                            ano_inicial=filtros_cp45["ano_inicial"],
+                            mes_inicial=filtros_cp45["mes_inicial"],
+                            ano_final=filtros_cp45["ano_final"],
+                            mes_final=filtros_cp45["mes_final"],
+                            hoje=hoje,
+                        )
                     )
 
                     df_pld, _ = (
@@ -6939,57 +6907,6 @@ def renderizar_pagina_cp45(
                         df_ativos_cenarios_cp45
                     )
 
-                    opcoes_cp45 = (
-                        obter_opcoes_cp45_aplicacao(
-                            df_ativos_cenarios_cp45
-                        )
-                    )
-
-                    st.session_state[
-                        "cp45_usinas_disponiveis"
-                    ] = (
-                        opcoes_cp45[
-                            "usinas"
-                        ]
-                    )
-
-                    analise_cp45 = (
-                        preparar_analise_cp45_aplicacao(
-                            df_ativos_cenarios_cp45=(
-                                df_ativos_cenarios_cp45
-                            ),
-                            ano_inicial=(
-                                filtros_cp45[
-                                    "ano_inicial"
-                                ]
-                            ),
-                            mes_inicial=(
-                                filtros_cp45[
-                                    "mes_inicial"
-                                ]
-                            ),
-                            ano_final=(
-                                filtros_cp45[
-                                    "ano_final"
-                                ]
-                            ),
-                            mes_final=(
-                                filtros_cp45[
-                                    "mes_final"
-                                ]
-                            ),
-                            usina_selecionada=(
-                                filtros_cp45[
-                                    "usina"
-                                ]
-                            ),
-                        )
-                    )
-
-            st.session_state[
-                "analise_cp45"
-            ] = analise_cp45
-
             st.session_state[
                 "processar_cp45"
             ] = False
@@ -7012,12 +6929,80 @@ def renderizar_pagina_cp45(
     # RESULTADOS
     # ========================================================
 
-    analise_cp45 = st.session_state.get(
-        "analise_cp45"
+    df_ativos_cenarios_cp45 = (
+        st.session_state.get(
+            "df_ativos_cenarios_cp45"
+        )
     )
-
-    if analise_cp45 is None:
+    
+    if df_ativos_cenarios_cp45 is None:
         return
+        
+    usinas_disponiveis = sorted(
+        df_ativos_cenarios_cp45[
+            "Ativo"
+        ]
+        .dropna()
+        .unique()
+        .tolist()
+    )
+    if not usinas_disponiveis:
+        st.warning(
+            "Nenhuma usina encontrada para o período selecionado."
+        )
+        return
+    # ========================================================
+    # SELETOR DE USINA
+    # ========================================================
+    st.html(
+        """
+        <div class="titulo-secao-cp45">
+            Análise por usina
+        </div>
+        """
+    )
+    usina_selecionada = st.pills(
+        "Selecione a usina",
+        options=usinas_disponiveis,
+        default=usinas_disponiveis[0],
+        selection_mode="single",
+        key="cp45_usina",
+        label_visibility="collapsed",
+        width="stretch",
+    )
+    # ========================================================
+    # PREPARA ANÁLISE DA USINA
+    # ========================================================
+    analise_cp45 = (
+        preparar_analise_cp45_aplicacao(
+            df_ativos_cenarios_cp45=(
+                df_ativos_cenarios_cp45
+            ),
+            ano_inicial=(
+                filtros_cp45[
+                    "ano_inicial"
+                ]
+            ),
+            mes_inicial=(
+                filtros_cp45[
+                    "mes_inicial"
+                ]
+            ),
+            ano_final=(
+                filtros_cp45[
+                    "ano_final"
+                ]
+            ),
+            mes_final=(
+                filtros_cp45[
+                    "mes_final"
+                ]
+            ),
+            usina_selecionada=(
+                usina_selecionada
+            ),
+        )
+    )
 
     indicadores = (
         analise_cp45[
@@ -7263,6 +7248,26 @@ def preparar_exportacao_detalhada_elera_aplicacao(df_curtailment,recorte_selecio
     return preparar_exportacao_detalhada_ativos_elera(df=df_curtailment,recorte_selecionado=recorte_selecionado,granularidade=granularidade)
     
 # FUNCOES COM CACHE: BASES DE PLD DA CP45
+
+@st.cache_resource(show_spinner=False)
+def carregar_base_curtailment_cp45(
+    ano_inicial,
+    mes_inicial,
+    ano_final,
+    mes_final,
+    hoje,
+):
+    dados_pipeline = executar_pipeline_aplicacao(
+        ano_inicial=ano_inicial,
+        mes_inicial=mes_inicial,
+        ano_final=ano_final,
+        mes_final=mes_final,
+        fontes=("EOL", "UFV"),
+        data_referencia=hoje,
+        timeout=TIMEOUT_PIPELINE,
+    )
+
+    return dados_pipeline["df_curtailment"]
 
 @st.cache_data(show_spinner=False)
 def carregar_pld_cp45_aplicacao():
