@@ -2458,7 +2458,7 @@ def construir_mapa_aplicacao(
         relatorio_mapa,
     )
 
-def renderizar_filtros_subsistemas(
+def _filtros_subsistemas(
     ultimo_ano_completo,
     ultimo_mes_completo,
 ):
@@ -2624,7 +2624,7 @@ def renderizar_filtros_subsistemas(
         resumo_subsistemas,
     )
 
-def renderizar_filtros_ativos_elera(
+def _filtros_ativos_elera(
     ultimo_ano_completo,
     ultimo_mes_completo,
 ):
@@ -6748,7 +6748,7 @@ def renderizar_pagina_cp45(
     ultimo_mes_completo,
 ):
     """
-    Renderiza a página de análise da CP45.
+    Renderiza a página CP45.
     """
 
     st.html(
@@ -6756,137 +6756,21 @@ def renderizar_pagina_cp45(
         <div class="cabecalho-cp45">
             <h1>CP45</h1>
             <p>
-                Análise dos cenários de rateio do curtailment
-                e seus impactos.
+                Análise dos cenários de rateio do
+                curtailment e seus impactos.
             </p>
         </div>
         """
     )
 
     # ========================================================
-    # CARREGAMENTO DA BASE CP45
+    # USINAS TEMPORÁRIAS
     # ========================================================
 
-    try:
-
-        if "df_ativos_cenarios_cp45" not in st.session_state:
-
-            with st.spinner(
-                "Preparando base da CP45..."
-            ):
-
-                dados_subsistemas = (
-                    st.session_state.get(
-                        "dados_subsistemas"
-                    )
-                )
-
-                if dados_subsistemas is None:
-                    st.info(
-                        "Execute primeiro a análise da aba Subsistemas."
-                    )
-                    return
-
-                df_curtailment = (
-                    dados_subsistemas[
-                        "df_curtailment"
-                    ]
-                )
-
-                df_pld, _ = (
-                    carregar_pld_cp45_aplicacao()
-                )
-
-                df_pld_aberto = (
-                    preparar_pld_aberto_cp45_aplicacao(
-                        df_pld
-                    )
-                )
-
-                lista_evt = []
-
-                for ano in range(
-                    ANO_MINIMO,
-                    ultimo_ano_completo + 1,
-                ):
-
-                    mes_final = (
-                        ultimo_mes_completo
-                        if ano == ultimo_ano_completo
-                        else 12
-                    )
-
-                    df_evt_ano, _ = (
-                        carregar_evt_ano_cp45_aplicacao(
-                            ano=ano,
-                            mes_inicial=1,
-                            mes_final=mes_final,
-                        )
-                    )
-
-                    lista_evt.append(
-                        df_evt_ano
-                    )
-
-                df_evt = pd.concat(
-                    lista_evt,
-                    ignore_index=True,
-                )
-
-                df_base_fontes_cp45 = (
-                    montar_base_fontes_cp45_aplicacao(
-                        df_curtailment=df_curtailment,
-                        df_evt=df_evt,
-                        df_pld_aberto=df_pld_aberto,
-                    )
-                )
-
-                df_ativos_cp45 = (
-                    preparar_ativos_cp45_aplicacao(
-                        df_curtailment
-                    )
-                )
-
-                (
-                    df_taxas_cp45,
-                    df_ativos_cenarios_cp45,
-                    relatorio_cp45,
-                ) = (
-                    montar_cenarios_cp45_aplicacao(
-                        df_base_fontes_cp45,
-                        df_ativos_cp45,
-                    )
-                )
-
-                st.session_state[
-                    "df_ativos_cenarios_cp45"
-                ] = (
-                    df_ativos_cenarios_cp45
-                )
-
-        df_ativos_cenarios_cp45 = (
-            st.session_state[
-                "df_ativos_cenarios_cp45"
-            ]
-        )
-
-        opcoes_cp45 = (
-            obter_opcoes_cp45_aplicacao(
-                df_ativos_cenarios_cp45
-            )
-        )
-
-    except Exception as erro:
-
-        st.error(
-            "Não foi possível preparar a base da CP45."
-        )
-
-        st.exception(
-            erro
-        )
-
-        return
+    usinas_disponiveis = st.session_state.get(
+        "cp45_usinas_disponiveis",
+        ["Carregue a análise"]
+    )
 
     # ========================================================
     # FILTROS
@@ -6906,7 +6790,7 @@ def renderizar_pagina_cp45(
                 ultimo_mes_completo
             ),
             usinas_disponiveis=(
-                opcoes_cp45["usinas"]
+                usinas_disponiveis
             ),
         )
 
@@ -6918,6 +6802,10 @@ def renderizar_pagina_cp45(
 
         return
 
+    # ========================================================
+    # SALVA FILTROS
+    # ========================================================
+
     if filtros_aplicados is not None:
 
         st.session_state[
@@ -6928,17 +6816,15 @@ def renderizar_pagina_cp45(
             "processar_cp45"
         ] = True
 
-    filtros_cp45 = (
-        st.session_state.get(
-            "filtros_cp45"
-        )
+    filtros_cp45 = st.session_state.get(
+        "filtros_cp45"
     )
 
     if filtros_cp45 is None:
         return
 
     # ========================================================
-    # PROCESSAMENTO DA ANÁLISE
+    # PROCESSAMENTO
     # ========================================================
 
     if st.session_state.get(
@@ -6951,8 +6837,121 @@ def renderizar_pagina_cp45(
             with status_cp45.container():
 
                 with st.spinner(
-                    "Calculando análise CP45..."
+                    "Preparando análise CP45..."
                 ):
+
+                    # ------------------------------------
+                    # BASES
+                    # ------------------------------------
+
+                    dados_subsistemas = (
+                        st.session_state.get(
+                            "dados_subsistemas"
+                        )
+                    )
+
+                    if dados_subsistemas is None:
+
+                        raise ValueError(
+                            "Execute primeiro uma análise "
+                            "na aba Subsistemas."
+                        )
+
+                    df_curtailment = (
+                        dados_subsistemas[
+                            "df_curtailment"
+                        ]
+                    )
+
+                    df_pld, _ = (
+                        carregar_pld_cp45_aplicacao()
+                    )
+
+                    df_pld_aberto = (
+                        preparar_pld_aberto_cp45_aplicacao(
+                            df_pld
+                        )
+                    )
+
+                    lista_evt = []
+
+                    for ano in range(
+                        ANO_MINIMO,
+                        ultimo_ano_completo + 1,
+                    ):
+
+                        mes_final = (
+                            ultimo_mes_completo
+                            if ano
+                            == ultimo_ano_completo
+                            else 12
+                        )
+
+                        df_evt_ano, _ = (
+                            carregar_evt_ano_cp45_aplicacao(
+                                ano=ano,
+                                mes_inicial=1,
+                                mes_final=mes_final,
+                            )
+                        )
+
+                        lista_evt.append(
+                            df_evt_ano
+                        )
+
+                    df_evt = pd.concat(
+                        lista_evt,
+                        ignore_index=True,
+                    )
+
+                    df_base_fontes_cp45 = (
+                        montar_base_fontes_cp45_aplicacao(
+                            df_curtailment=(
+                                df_curtailment
+                            ),
+                            df_evt=df_evt,
+                            df_pld_aberto=(
+                                df_pld_aberto
+                            ),
+                        )
+                    )
+
+                    df_ativos_cp45 = (
+                        preparar_ativos_cp45_aplicacao(
+                            df_curtailment
+                        )
+                    )
+
+                    (
+                        _,
+                        df_ativos_cenarios_cp45,
+                        _,
+                    ) = (
+                        montar_cenarios_cp45_aplicacao(
+                            df_base_fontes_cp45,
+                            df_ativos_cp45,
+                        )
+                    )
+
+                    st.session_state[
+                        "df_ativos_cenarios_cp45"
+                    ] = (
+                        df_ativos_cenarios_cp45
+                    )
+
+                    opcoes_cp45 = (
+                        obter_opcoes_cp45_aplicacao(
+                            df_ativos_cenarios_cp45
+                        )
+                    )
+
+                    st.session_state[
+                        "cp45_usinas_disponiveis"
+                    ] = (
+                        opcoes_cp45[
+                            "usinas"
+                        ]
+                    )
 
                     analise_cp45 = (
                         preparar_analise_cp45_aplicacao(
@@ -6997,11 +6996,6 @@ def renderizar_pagina_cp45(
 
             status_cp45.empty()
 
-            st.toast(
-                "Análise CP45 concluída.",
-                icon="✅",
-            )
-
         except Exception as erro:
 
             st.session_state[
@@ -7014,18 +7008,16 @@ def renderizar_pagina_cp45(
 
             return
 
-    analise_cp45 = (
-        st.session_state.get(
-            "analise_cp45"
-        )
+    # ========================================================
+    # RESULTADOS
+    # ========================================================
+
+    analise_cp45 = st.session_state.get(
+        "analise_cp45"
     )
 
     if analise_cp45 is None:
         return
-
-    # ========================================================
-    # DADOS DA ANÁLISE
-    # ========================================================
 
     indicadores = (
         analise_cp45[
@@ -7044,10 +7036,6 @@ def renderizar_pagina_cp45(
             "resumo_mensal"
         ]
     )
-
-    # ========================================================
-    # RESUMO DA SELEÇÃO
-    # ========================================================
 
     resumo_cp45.html(
         (
@@ -7087,135 +7075,82 @@ def renderizar_pagina_cp45(
 
     col4.metric(
         "Redução Potencial",
-        (
-            f'{indicadores["melhor_reducao_pct"]:.1f}%'
-        )
+        f'{indicadores["melhor_reducao_pct"]:.1f}%'
     )
 
     # ========================================================
-    # GRÁFICOS SUPERIORES
+    # GRÁFICOS
     # ========================================================
 
-    col_esq, col_dir = st.columns(
-        [1, 1],
-        gap="medium",
-    )
+    col_esq, col_dir = st.columns(2)
 
     with col_esq:
 
-        with st.container(
-            border=True,
-        ):
-
-            st.html(
-                """
-                <div class="titulo-card-grafico">
-                    Curtailment por cenário
-                </div>
-                """
-            )
-
-            fig = (
-                grafico_curtailment_cenarios_cp45(
-                    resumo_cenarios
-                )
-            )
-
-            st.plotly_chart(
-                fig,
-                width="stretch",
-                config={
-                    "displayModeBar": False,
-                    "responsive": True,
-                },
-            )
-
-    with col_dir:
-
-        with st.container(
-            border=True,
-        ):
-
-            st.html(
-                """
-                <div class="titulo-card-grafico">
-                    Corte por cenário
-                </div>
-                """
-            )
-
-            fig = (
-                grafico_corte_cenarios_cp45(
-                    resumo_cenarios
-                )
-            )
-
-            st.plotly_chart(
-                fig,
-                width="stretch",
-                config={
-                    "displayModeBar": False,
-                    "responsive": True,
-                },
-            )
-
-    # ========================================================
-    # GRÁFICO MENSAL
-    # ========================================================
-
-    with st.container(
-        border=True,
-    ):
-
-        col_titulo, col_seletor = st.columns(
-            [4, 1]
-        )
-
-        with col_titulo:
-
-            st.html(
-                """
-                <div class="titulo-card-grafico">
-                    Comparação mensal com cenário atual
-                </div>
-                """
-            )
-
-        with col_seletor:
-
-            cenario_mensal = st.selectbox(
-                "Cenário",
-                [
-                    "1A",
-                    "1B",
-                    "2A",
-                    "2B",
-                    "3A",
-                    "3B",
-                    "4A",
-                    "4B",
-                ],
-                key="cp45_cenario_mensal",
-                label_visibility="collapsed",
-            )
-
-        fig_mensal = (
-            grafico_mensal_cenario_cp45(
-                resumo_mensal=resumo_mensal,
-                codigo_cenario=(
-                    cenario_mensal
-                ),
+        fig = (
+            grafico_curtailment_cenarios_cp45(
+                resumo_cenarios
             )
         )
 
         st.plotly_chart(
-            fig_mensal,
+            fig,
             width="stretch",
             config={
-                "displayModeBar": False,
-                "responsive": True,
+                "displayModeBar": False
             },
         )
+
+    with col_dir:
+
+        fig = (
+            grafico_corte_cenarios_cp45(
+                resumo_cenarios
+            )
+        )
+
+        st.plotly_chart(
+            fig,
+            width="stretch",
+            config={
+                "displayModeBar": False
+            },
+        )
+
+    cenario_mensal = st.selectbox(
+        "Comparar mensalmente",
+        [
+            "1A",
+            "1B",
+            "2A",
+            "2B",
+            "3A",
+            "3B",
+            "4A",
+            "4B",
+        ],
+        key="cp45_cenario_mensal",
+    )
+
+    fig_mensal = (
+        grafico_mensal_cenario_cp45(
+            resumo_mensal,
+            cenario_mensal,
+        )
+    )
+
+    st.plotly_chart(
+        fig_mensal,
+        width="stretch",
+        config={
+            "displayModeBar": False
+        },
+    )
+
+    st.dataframe(
+        resumo_cenarios,
+        width="stretch",
+        hide_index=True,
+    )
 
     # ========================================================
     # TABELA RESUMO
