@@ -2458,7 +2458,7 @@ def construir_mapa_aplicacao(
         relatorio_mapa,
     )
 
-def _filtros_subsistemas(
+def renderizar_filtros_subsistemas(
     ultimo_ano_completo,
     ultimo_mes_completo,
 ):
@@ -2624,7 +2624,7 @@ def _filtros_subsistemas(
         resumo_subsistemas,
     )
 
-def _filtros_ativos_elera(
+def renderizar_filtros_ativos_elera(
     ultimo_ano_completo,
     ultimo_mes_completo,
 ):
