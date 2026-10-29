@@ -686,6 +686,26 @@ def obter_indicadores_cp45(
                 "diferenca_atual_gwh"
             ]
         ),
+        "melhor_reducao_pct": (
+            float(
+                100
+                * (
+                    atual[
+                        "curtailment_gwh"
+                    ]
+                    - melhor[
+                        "curtailment_gwh"
+                    ]
+                )
+                / atual[
+                    "curtailment_gwh"
+                ]
+            )
+            if atual[
+                "curtailment_gwh"
+            ] > 0
+            else 0.0
+        ),
         "melhor_diferenca_pp": float(
             melhor[
                 "diferenca_atual_pp"
@@ -705,6 +725,26 @@ def obter_indicadores_cp45(
             pior[
                 "curtailment_gwh"
             ]
+        ),
+        "pior_aumento_pct": (
+            float(
+                100
+                * (
+                    pior[
+                        "curtailment_gwh"
+                    ]
+                    - atual[
+                        "curtailment_gwh"
+                    ]
+                )
+                / atual[
+                    "curtailment_gwh"
+                ]
+            )
+            if atual[
+                "curtailment_gwh"
+            ] > 0
+            else 0.0
         ),
         "pior_corte_pct": float(
             pior[
