@@ -6890,15 +6890,11 @@ def renderizar_pagina_cp45(
                         )
                     )
 
-                    (
-                        _,
-                        df_ativos_cenarios_cp45,
-                        _,
-                    ) = (
+                    df_ativos_cenarios_cp45 = (
                         montar_cenarios_cp45_aplicacao(
                             df_base_fontes_cp45,
                             df_ativos_cp45,
-                        )
+                        )["ativos"]
                     )
 
                     st.session_state[
@@ -6940,7 +6936,7 @@ def renderizar_pagina_cp45(
         
     usinas_disponiveis = sorted(
         df_ativos_cenarios_cp45[
-            "Ativo"
+            "ativo"
         ]
         .dropna()
         .unique()
