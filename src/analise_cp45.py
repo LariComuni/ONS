@@ -913,3 +913,298 @@ def resumir_mensal_cp45(
         )
     )
 
+def preparar_analise_individual_cp45(
+    df,
+    ano_inicial,
+    mes_inicial,
+    ano_final,
+    mes_final,
+    usina_selecionada,
+):
+    """
+    Prepara a análise completa da CP45 para uma usina
+    e um período selecionados.
+
+    A função:
+
+    1. filtra a base horária por período e usina;
+    2. identifica a fonte e o subsistema da usina;
+    3. consolida o cenário atual e os cenários 1A a 4B;
+    4. calcula os principais indicadores;
+    5. prepara a análise mensal;
+    6. cria um diagnóstico da seleção.
+
+    Parâmetros
+    ----------
+    df : pandas.DataFrame
+        Base horária de ativos produzida por
+        montar_base_cenarios_cp45().
+
+    ano_inicial : int
+        Ano inicial da análise.
+
+    mes_inicial : int
+        Mês inicial da análise.
+
+    ano_final : int
+        Ano final da análise.
+
+    mes_final : int
+        Mês final da análise.
+
+    usina_selecionada : str
+        Nome da usina selecionada.
+
+    Retorno
+    -------
+    dict
+        Dicionário contendo a base horária filtrada,
+        resumo dos cenários, indicadores, base mensal
+        e diagnóstico.
+    """
+
+    # ========================================================
+    # FILTRO
+    # ========================================================
+
+    base_filtrada = filtrar_base_cp45(
+        df=df,
+        ano_inicial=ano_inicial,
+        mes_inicial=mes_inicial,
+        ano_final=ano_final,
+        mes_final=mes_final,
+        usina_selecionada=(
+            usina_selecionada
+        ),
+    )
+
+    # ========================================================
+    # VALIDAÇÃO CADASTRAL DA USINA
+    # ========================================================
+
+    cadastro_usina = (
+        base_filtrada[
+            [
+                "ativo",
+                "fonte",
+                "subsistema",
+            ]
+        ]
+        .drop_duplicates()
+        .reset_index(
+            drop=True
+        )
+    )
+
+    if len(cadastro_usina) != 1:
+        raise ValueError(
+            "A usina selecionada possui mais de uma "
+            "combinação de fonte e subsistema no período: "
+            f"{cadastro_usina.to_dict(orient='records')}."
+        )
+
+    ativo = str(
+        cadastro_usina.loc[
+            0,
+            "ativo",
+        ]
+    )
+
+    fonte = str(
+        cadastro_usina.loc[
+            0,
+            "fonte",
+        ]
+    )
+
+    subsistema = str(
+        cadastro_usina.loc[
+            0,
+            "subsistema",
+        ]
+    )
+
+    # ========================================================
+    # RESUMOS E INDICADORES
+    # ========================================================
+
+    resumo_cenarios = resumir_cenarios_cp45(
+        base_filtrada
+    )
+
+    indicadores = obter_indicadores_cp45(
+        base_filtrada
+    )
+
+    resumo_mensal = resumir_mensal_cp45(
+        base_filtrada
+    )
+
+    # ========================================================
+    # DIAGNÓSTICO
+    # ========================================================
+
+    colunas_cenarios = [
+        configuracao[
+            "coluna_curtailment"
+        ]
+        for configuracao
+        in CENARIOS_CP45.values()
+    ]
+
+    quantidade_nulos = int(
+        base_filtrada[
+            [
+                "geracao_esperada_mwh",
+                *colunas_cenarios,
+            ]
+        ]
+        .isna()
+        .sum()
+        .sum()
+    )
+
+    quantidade_infinitos = int(
+        np.isinf(
+            base_filtrada[
+                [
+                    "geracao_esperada_mwh",
+                    *colunas_cenarios,
+                ]
+            ]
+            .to_numpy(
+                dtype=float
+            )
+        )
+        .sum()
+    )
+
+    duplicidades_horarias = int(
+        base_filtrada
+        .duplicated(
+            subset=[
+                "din_instante",
+                "ativo",
+                "subsistema",
+                "fonte",
+            ]
+        )
+        .sum()
+    )
+
+    data_minima = (
+        base_filtrada[
+            "din_instante"
+        ]
+        .min()
+    )
+
+    data_maxima = (
+        base_filtrada[
+            "din_instante"
+        ]
+        .max()
+    )
+
+    horas_esperadas = int(
+        (
+            data_maxima.floor("h")
+            - data_minima.floor("h")
+        )
+        / pd.Timedelta(
+            hours=1
+        )
+        + 1
+    )
+
+    quantidade_horas = int(
+        base_filtrada[
+            "din_instante"
+        ]
+        .nunique()
+    )
+
+    horas_ausentes = max(
+        horas_esperadas
+        - quantidade_horas,
+        0,
+    )
+
+    diagnostico = {
+        "ativo": ativo,
+        "fonte": fonte,
+        "subsistema": subsistema,
+        "data_inicial": data_minima,
+        "data_final": data_maxima,
+        "quantidade_linhas": int(
+            len(
+                base_filtrada
+            )
+        ),
+        "quantidade_horas": (
+            quantidade_horas
+        ),
+        "horas_esperadas": (
+            horas_esperadas
+        ),
+        "horas_ausentes": (
+            horas_ausentes
+        ),
+        "quantidade_meses": int(
+            resumo_mensal[
+                "mes_referencia"
+            ]
+            .nunique()
+        ),
+        "quantidade_cenarios": int(
+            resumo_cenarios[
+                "codigo"
+            ]
+            .nunique()
+        ),
+        "duplicidades_horarias": (
+            duplicidades_horarias
+        ),
+        "quantidade_nulos": (
+            quantidade_nulos
+        ),
+        "quantidade_infinitos": (
+            quantidade_infinitos
+        ),
+    }
+
+    problemas = {
+        chave: valor
+        for chave, valor in {
+            "duplicidades_horarias": (
+                duplicidades_horarias
+            ),
+            "quantidade_nulos": (
+                quantidade_nulos
+            ),
+            "quantidade_infinitos": (
+                quantidade_infinitos
+            ),
+        }.items()
+        if valor > 0
+    }
+
+    if problemas:
+        raise ValueError(
+            "A análise individual da CP45 apresentou "
+            "problemas de consistência: "
+            f"{problemas}."
+        )
+
+    return {
+        "ativo": ativo,
+        "fonte": fonte,
+        "subsistema": subsistema,
+        "periodo_inicial": data_minima,
+        "periodo_final": data_maxima,
+        "base_horaria": base_filtrada,
+        "resumo_cenarios": resumo_cenarios,
+        "indicadores": indicadores,
+        "resumo_mensal": resumo_mensal,
+        "diagnostico": diagnostico,
+    }
