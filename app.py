@@ -62,6 +62,11 @@ from src.analise_cp45 import (
     obter_opcoes_filtros_cp45,
     preparar_analise_individual_cp45,
 )
+from src.graficos_cp45 import (
+    grafico_curtailment_cenarios_cp45,
+    grafico_corte_cenarios_cp45,
+    grafico_mensal_cenario_cp45,
+)
 # ============================================================
 # CONFIGURAÇÃO
 # ============================================================
