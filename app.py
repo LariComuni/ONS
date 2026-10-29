@@ -6742,10 +6742,18 @@ def renderizar_pagina_ativos_elera(
                         f"{nome_recorte_arquivo}_{nome_granularidade_arquivo}"),
                 )
 
-def renderizar_pagina_cp45(hoje,ultimo_ano_completo,ultimo_mes_completo):
+def renderizar_pagina_cp45(
+    hoje,
+    ultimo_ano_completo,
+    ultimo_mes_completo,
+):
     """
     Renderiza a página de análise da CP45.
     """
+
+    # ========================================================
+    # CABEÇALHO
+    # ========================================================
 
     st.html(
         """
@@ -6756,23 +6764,386 @@ def renderizar_pagina_cp45(hoje,ultimo_ano_completo,ultimo_mes_completo):
                 e seus impactos.
             </p>
         </div>
-        """)
-    df_cp45 = carregar_cenarios_cp45()
-    
-    with st.container(border=True):
+        """
+    )
 
-        col1, col2 = st.columns(2)
-    
-        usinas = sorted(
-            df_cp45["nom_usina"]
-            .dropna()
-            .unique()
+    # ========================================================
+    # CARREGAMENTO DAS BASES
+    # ========================================================
+
+    try:
+
+        df_pld, _ = (
+            carregar_pld_cp45_aplicacao()
         )
-    
-        usinas_selecionadas = col1.multiselect(
-            "Usinas",
-            usinas
+
+        df_pld_aberto = (
+            preparar_pld_aberto_cp45_aplicacao(
+                df_pld
+            )
         )
+
+        ano_inicial_evt = ANO_MINIMO
+        ano_final_evt = ultimo_ano_completo
+
+        lista_evt = []
+
+        for ano in range(
+            ano_inicial_evt,
+            ano_final_evt + 1,
+        ):
+
+            mes_inicial_evt = 1
+
+            mes_final_evt = (
+                ultimo_mes_completo
+                if ano == ultimo_ano_completo
+                else 12
+            )
+
+            df_evt_ano, _ = (
+                carregar_evt_ano_cp45_aplicacao(
+                    ano=ano,
+                    mes_inicial=mes_inicial_evt,
+                    mes_final=mes_final_evt,
+                )
+            )
+
+            lista_evt.append(
+                df_evt_ano
+            )
+
+        df_evt = pd.concat(
+            lista_evt,
+            ignore_index=True,
+        )
+
+        dados_subsistemas = (
+            st.session_state.get(
+                "dados_subsistemas"
+            )
+        )
+
+        if dados_subsistemas is None:
+
+            st.info(
+                "Execute primeiro a análise de Subsistemas."
+            )
+
+            return
+
+        df_curtailment = (
+            dados_subsistemas[
+                "df_curtailment"
+            ]
+        )
+
+        df_base_fontes_cp45 = (
+            montar_base_fontes_cp45_aplicacao(
+                df_curtailment=df_curtailment,
+                df_evt=df_evt,
+                df_pld_aberto=df_pld_aberto,
+            )
+        )
+
+        df_ativos_cp45 = (
+            preparar_ativos_cp45_aplicacao(
+                df_curtailment
+            )
+        )
+
+        (
+            df_taxas_cp45,
+            df_ativos_cenarios_cp45,
+            _
+        ) = montar_cenarios_cp45_aplicacao(
+            df_base_fontes_cp45=(
+                df_base_fontes_cp45
+            ),
+            df_ativos_cp45=(
+                df_ativos_cp45
+            ),
+        )
+
+        opcoes_cp45 = (
+            obter_opcoes_cp45_aplicacao(
+                df_ativos_cenarios_cp45
+            )
+        )
+
+    except Exception as erro:
+
+        st.error(
+            "Não foi possível preparar a base da CP45."
+        )
+
+        st.exception(
+            erro
+        )
+
+        return
+
+    # ========================================================
+    # FILTROS
+    # ========================================================
+
+    try:
+
+        (
+            filtros_aplicados,
+            status_cp45,
+            resumo_cp45,
+        ) = renderizar_filtros_cp45(
+            ultimo_ano_completo=(
+                ultimo_ano_completo
+            ),
+            ultimo_mes_completo=(
+                ultimo_mes_completo
+            ),
+            usinas_disponiveis=(
+                opcoes_cp45[
+                    "usinas"
+                ]
+            ),
+        )
+
+    except ValueError as erro:
+
+        st.error(
+            str(erro)
+        )
+
+        return
+
+    # ========================================================
+    # SESSION STATE
+    # ========================================================
+
+    if filtros_aplicados is not None:
+
+        st.session_state[
+            "filtros_cp45"
+        ] = filtros_aplicados
+
+        st.session_state[
+            "processar_cp45"
+        ] = True
+
+    filtros_cp45 = (
+        st.session_state.get(
+            "filtros_cp45"
+        )
+    )
+
+    if filtros_cp45 is None:
+        return
+
+    # ========================================================
+    # PROCESSAMENTO DA ANÁLISE
+    # ========================================================
+
+    if st.session_state.get(
+        "processar_cp45",
+        False,
+    ):
+
+        try:
+
+            with status_cp45.container():
+
+                with st.spinner(
+                    "Preparando análise da usina..."
+                ):
+
+                    analise_cp45 = (
+                        preparar_analise_cp45_aplicacao(
+                            df_ativos_cenarios_cp45=(
+                                df_ativos_cenarios_cp45
+                            ),
+                            ano_inicial=(
+                                filtros_cp45[
+                                    "ano_inicial"
+                                ]
+                            ),
+                            mes_inicial=(
+                                filtros_cp45[
+                                    "mes_inicial"
+                                ]
+                            ),
+                            ano_final=(
+                                filtros_cp45[
+                                    "ano_final"
+                                ]
+                            ),
+                            mes_final=(
+                                filtros_cp45[
+                                    "mes_final"
+                                ]
+                            ),
+                            usina_selecionada=(
+                                filtros_cp45[
+                                    "usina"
+                                ]
+                            ),
+                        )
+                    )
+
+            st.session_state[
+                "analise_cp45"
+            ] = analise_cp45
+
+            st.session_state[
+                "processar_cp45"
+            ] = False
+
+            status_cp45.empty()
+
+        except Exception as erro:
+
+            st.session_state[
+                "processar_cp45"
+            ] = False
+
+            st.exception(
+                erro
+            )
+
+            return
+
+    analise_cp45 = (
+        st.session_state.get(
+            "analise_cp45"
+        )
+    )
+
+    if analise_cp45 is None:
+        return
+
+    # ========================================================
+    # RESUMO
+    # ========================================================
+
+    indicadores = (
+        analise_cp45[
+            "indicadores"
+        ]
+    )
+
+    resumo_cp45.html(
+        (
+            '<div class="resumo-subsistemas-filtros">'
+            '<span class="resumo-subsistemas-indicador">●</span>'
+            '<span>'
+            f'Usina: <strong>{indicadores["ativo"]}</strong> | '
+            f'Fonte: <strong>{indicadores["fonte"]}</strong> | '
+            f'Subsistema: <strong>{indicadores["subsistema"]}</strong>'
+            '</span>'
+            '</div>'
+        )
+    )
+
+    # ========================================================
+    # KPIs
+    # ========================================================
+
+    col1, col2, col3, col4 = st.columns(4)
+
+    col1.metric(
+        "Geração esperada",
+        f'{indicadores["geracao_esperada_gwh"]:,.0f} GWh'
+    )
+
+    col2.metric(
+        "Curtailment atual",
+        f'{indicadores["curtailment_atual_gwh"]:,.1f} GWh'
+    )
+
+    col3.metric(
+        "Melhor cenário",
+        indicadores[
+            "melhor_cenario_codigo"
+        ]
+    )
+
+    col4.metric(
+        "Redução máxima",
+        (
+            f'{indicadores["melhor_reducao_pct"]:.1f}%'
+        )
+    )
+
+    # ========================================================
+    # DADOS DOS GRÁFICOS
+    # ========================================================
+
+    resumo_cenarios = (
+        analise_cp45[
+            "resumo_cenarios"
+        ]
+    )
+
+    resumo_mensal = (
+        analise_cp45[
+            "resumo_mensal"
+        ]
+    )
+
+    # ========================================================
+    # GRÁFICO 1
+    # COMPARAÇÃO DE CENÁRIOS
+    # ========================================================
+
+    st.subheader(
+        "Comparação dos Cenários"
+    )
+
+    fig_cenarios = px.bar(
+        resumo_cenarios,
+        x="codigo",
+        y="curtailment_gwh",
+        color="perimetro",
+        text="curtailment_gwh",
+    )
+
+    st.plotly_chart(
+        fig_cenarios,
+        width="stretch",
+    )
+
+    # ========================================================
+    # GRÁFICO 2
+    # EVOLUÇÃO MENSAL
+    # ========================================================
+
+    st.subheader(
+        "Evolução Mensal"
+    )
+
+    fig_mensal = px.line(
+        resumo_mensal,
+        x="mes_referencia",
+        y="curtailment_gwh",
+        color="codigo",
+    )
+
+    st.plotly_chart(
+        fig_mensal,
+        width="stretch",
+    )
+
+    # ========================================================
+    # TABELA DOS CENÁRIOS
+    # ========================================================
+
+    st.subheader(
+        "Resumo dos Cenários"
+    )
+
+    st.dataframe(
+        resumo_cenarios,
+        width="stretch",
+        hide_index=True,
+    )
 
 
 @st.cache_data(show_spinner=False)
