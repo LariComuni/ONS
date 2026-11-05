@@ -7549,27 +7549,7 @@ def renderizar_pagina_cp45(
                     "diferenca_atual_gwh",
                     "diferenca_atual_pp",
                 ]
-            ]
-            .copy()
-        )
-        for coluna in [
-            "curtailment_gwh",
-            "corte_pct",
-            "diferenca_atual_gwh",
-            "diferenca_atual_pp",
-        ]:
-            tabela_resumo_cp45[coluna] = (
-                tabela_resumo_cp45[coluna]
-                .apply(
-                    lambda valor:
-                    formatar_numero_brasileiro(
-                        valor,
-                        casas_decimais=2,
-                    )
-                )
-            )
-        tabela_resumo_cp45 = (
-            tabela_resumo_cp45.rename(
+            ].rename(
                 columns={
                     "codigo": "Código",
                     "cenario": "Cenário",
@@ -7580,6 +7560,19 @@ def renderizar_pagina_cp45(
                 }
             )
         )
+        tabela_resumo_cp45 = (
+            tabela_resumo_cp45.style.format(
+                {
+                    "Curtailment (GWh)": "{:,.2f}",
+                    "Corte (%)": "{:,.2f}",
+                    "Diferença vs. atual (GWh)": "{:,.2f}",
+                    "Diferença vs. atual (p.p.)": "{:,.2f}",
+                },
+                decimal=",",
+                thousands=".",
+            )
+        )
+        
         st.dataframe(
             tabela_resumo_cp45,
             hide_index=True,
