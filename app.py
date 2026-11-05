@@ -7332,6 +7332,26 @@ def renderizar_pagina_cp45(
             "melhor_cenario_codigo"
         ],
     )
+    geracao_esperada_cp45 = (
+        formatar_numero_brasileiro(
+            indicadores["geracao_esperada_gwh"],
+            casas_decimais=1,
+        )
+    )
+    
+    curtailment_atual_cp45 = (
+        formatar_numero_brasileiro(
+            indicadores["curtailment_atual_gwh"],
+            casas_decimais=1,
+        )
+    )
+    
+    reducao_potencial_cp45 = (
+        formatar_numero_brasileiro(
+            indicadores["melhor_reducao_pct"],
+            casas_decimais=1,
+        )
+    )
 
     resumo_cp45.html(
         (
@@ -7361,7 +7381,7 @@ def renderizar_pagina_cp45(
         '<div class="kpi-cp45-conteudo">'
         '<div class="kpi-cp45-titulo">Geração esperada</div>'
         '<div class="kpi-cp45-valor">'
-        f'{indicadores["geracao_esperada_gwh"]:,.1f} GWh'
+        f'{geracao_esperada_cp45} GWh'
         '</div>'
         '</div>'
         '</div>'
@@ -7374,7 +7394,7 @@ def renderizar_pagina_cp45(
         '<div class="kpi-cp45-conteudo">'
         '<div class="kpi-cp45-titulo">Curtailment atual</div>'
         '<div class="kpi-cp45-valor">'
-        f'{indicadores["curtailment_atual_gwh"]:,.1f} GWh'
+        f'{curtailment_atual_cp45} GWh'
         '</div>'
         '</div>'
         '</div>'
@@ -7400,7 +7420,7 @@ def renderizar_pagina_cp45(
         '<div class="kpi-cp45-conteudo">'
         '<div class="kpi-cp45-titulo">Redução potencial</div>'
         '<div class="kpi-cp45-valor">'
-        f'{indicadores["melhor_reducao_pct"]:.1f}%'
+        f'{reducao_potencial_cp45}%'
         '</div>'
         '</div>'
         '</div>'
@@ -7519,8 +7539,23 @@ def renderizar_pagina_cp45(
             </div>
             """
         )
-    
-        st.dataframe(
+        for coluna in [
+            "curtailment_gwh",
+            "corte_pct",
+            "diferenca_atual_gwh",
+            "diferenca_atual_pp",
+        ]:
+            tabela_resumo_cp45[coluna] = (
+                tabela_resumo_cp45[coluna]
+                .apply(
+                    lambda valor:
+                    formatar_numero_brasileiro(
+                        valor,
+                        casas_decimais=2,
+                    )
+                )
+            )
+        tabela_resumo_cp45 = (
             resumo_cenarios[
                 [
                     "codigo",
@@ -7530,7 +7565,20 @@ def renderizar_pagina_cp45(
                     "diferenca_atual_gwh",
                     "diferenca_atual_pp",
                 ]
-            ],
+            ]
+            .rename(
+                columns={
+                    "codigo": "Código",
+                    "cenario": "Cenário",
+                    "curtailment_gwh": "Curtailment (GWh)",
+                    "corte_pct": "Corte (%)",
+                    "diferenca_atual_gwh": "Diferença vs. atual (GWh)",
+                    "diferenca_atual_pp": "Diferença vs. atual (p.p.)",
+                }
+            )
+        )
+        st.dataframe(
+            tabela_resumo_cp45,
             hide_index=True,
             width="stretch",
         )
