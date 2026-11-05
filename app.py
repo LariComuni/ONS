@@ -6920,10 +6920,6 @@ def renderizar_pagina_cp45(
         """
         <div class="cabecalho-cp45">
             <h1>CP45</h1>
-            <p>
-                Análise dos cenários de rateio do
-                curtailment e seus impactos.
-            </p>
         </div>
         """
     )
@@ -6957,18 +6953,11 @@ def renderizar_pagina_cp45(
     # ========================================================
     # SELETOR DE USINA
     # ========================================================
-    st.html(
-        """
-        <div class="titulo-secao-cp45">
-            Análise por usina
-        </div>
-        """
-    )
     with st.container(
         border=True,
     ):
         usina_selecionada = st.selectbox(
-            "Selecione a usina",
+            "Usina",
             options=usinas_disponiveis,
             index=0,
             key="cp45_usina",
