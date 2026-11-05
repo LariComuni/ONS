@@ -573,6 +573,54 @@ st.markdown(
             font-weight: 600;
         }
         
+        /* Filtros da página CP45 */
+        .st-key-filtros_cp45 {
+            position: relative;
+            z-index: 10;
+        
+            width: min(1120px, calc(100vw - 3rem));
+        
+            margin-top: 14px;
+            margin-right: auto;
+            margin-bottom: 1.25rem;
+            margin-left: auto;
+        
+            padding: 0.55rem 0.75rem 0.7rem;
+        
+            background-color: rgba(255,255,255,0.97);
+            backdrop-filter: blur(12px);
+        
+            border: 1px solid rgba(203,213,225,0.95);
+            border-radius: 13px;
+        
+            box-shadow:
+                0 10px 28px rgba(15,23,42,0.14);
+        
+            box-sizing: border-box;
+        }
+        
+        .st-key-filtros_cp45
+        div[data-testid="stVerticalBlockBorderWrapper"] {
+            padding: 0;
+            background: transparent;
+            border: 0;
+            box-shadow: none;
+        }
+        
+        .st-key-filtros_cp45
+        div[data-testid="stSelectbox"] label {
+            color: #334155;
+            font-size: 0.78rem;
+            font-weight: 600;
+        }
+        
+        .st-key-filtros_cp45
+        div[data-testid="stButton"] button {
+            min-height: 40px;
+            border-radius: 9px;
+            font-weight: 600;
+        }
+        
         /* Spinner apenas da aba Subsistemas */
 
         .st-key-filtros_subsistemas
@@ -958,6 +1006,147 @@ st.markdown(
             background-color: #ffe8ed;
         }
 
+        /* KPIs CP45 */
+        
+        .kpis-cp45 {
+            display: grid;
+        
+            grid-template-columns:
+                repeat(4, minmax(0, 1fr));
+        
+            gap: 1rem;
+        
+            width: min(1500px, calc(100vw - 3rem));
+        
+            margin-top: 1rem;
+            margin-right: auto;
+            margin-bottom: 1.25rem;
+            margin-left: auto;
+        }
+        .kpi-cp45-card {
+            display: flex;
+            align-items: center;
+            gap: 0.85rem;
+        
+            min-width: 0;
+            min-height: 96px;
+        
+            padding: 0.95rem 1.05rem;
+        
+            background:
+                linear-gradient(
+                    135deg,
+                    #ffffff 0%,
+                    #fbfdff 100%
+                );
+        
+            border: 1px solid #e5edf5;
+            border-radius: 13px;
+        
+            box-shadow:
+                0 6px 18px rgba(15, 42, 70, 0.08);
+        
+            box-sizing: border-box;
+        }
+        
+        .kpi-cp45-icone {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+        
+            flex: 0 0 auto;
+        
+            width: 48px;
+            height: 48px;
+        
+            border-radius: 50%;
+        }
+        
+        .kpi-cp45-simbolo {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+        
+            width: 100%;
+            height: 100%;
+        
+            color: currentColor;
+        
+            font-family:
+                "Segoe UI Symbol",
+                Arial,
+                sans-serif;
+        
+            font-size: 1.55rem;
+            font-weight: 700;
+            line-height: 1;
+        
+            user-select: none;
+        }
+        
+        .kpi-cp45-conteudo {
+            min-width: 0;
+        }
+        
+        .kpi-cp45-titulo {
+            margin-bottom: 0.25rem;
+        
+            color: #53667c;
+        
+            font-size: 0.82rem;
+            font-weight: 650;
+            line-height: 1.2;
+        }
+        
+        .kpi-cp45-valor {
+            overflow: hidden;
+        
+            color: #102d57;
+        
+            font-size: 1.22rem;
+            font-weight: 750;
+            line-height: 1.2;
+        
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+        
+        .kpi-cp45-detalhe {
+            margin-top: 0.22rem;
+        
+            color: #7c8ca0;
+        
+            font-size: 0.75rem;
+            line-height: 1.3;
+        }
+        /* Geração esperada */
+
+        .kpi-cp45-icone-geracao {
+            color: #2979e8;
+            background-color: #e4f0ff;
+        }
+        
+        /* Curtailment */
+        
+        .kpi-cp45-icone-curtailment {
+            color: #e05454;
+            background-color: #ffe9e9;
+        }
+        
+        /* Melhor cenário */
+        
+        .kpi-cp45-icone-cenario {
+            color: #7959da;
+            background-color: #eee9ff;
+        }
+        
+        /* Redução potencial */
+        
+        .kpi-cp45-icone-reducao {
+            color: #05aaa4;
+            background-color: #ddf8f6;
+        }
+        
         /* GRÁFICO CURT */
 
         .cabecalho-card-grafico {
@@ -2182,6 +2371,12 @@ st.markdown(
             /* KPIs Ativos Elera */
 
             .kpis-ativos-elera {
+                grid-template-columns:
+                    repeat(2, minmax(0, 1fr));
+            }
+            /* KPIs CP45*/
+
+            .kpis-cp45{
                 grid-template-columns:
                     repeat(2, minmax(0, 1fr));
             }
@@ -7099,29 +7294,64 @@ def renderizar_pagina_cp45(
     # KPIs
     # ========================================================
 
-    col1, col2, col3, col4 = st.columns(4)
-
-    col1.metric(
-        "Geração Esperada",
+    html_kpis_cp45 = (
+        '<div class="kpis-cp45">'
+    
+        # Geração esperada
+        '<div class="kpi-cp45-card">'
+        '<div class="kpi-cp45-icone kpi-cp45-icone-geracao">'
+        '<span class="kpi-cp45-simbolo">⚡︎</span>'
+        '</div>'
+        '<div class="kpi-cp45-conteudo">'
+        '<div class="kpi-cp45-titulo">Geração esperada</div>'
+        '<div class="kpi-cp45-valor">'
         f'{indicadores["geracao_esperada_gwh"]:,.1f} GWh'
-    )
-
-    col2.metric(
-        "Curtailment Atual",
+        '</div>'
+        '</div>'
+        '</div>'
+    
+        # Curtailment
+        '<div class="kpi-cp45-card">'
+        '<div class="kpi-cp45-icone kpi-cp45-icone-curtailment">'
+        '<span class="kpi-cp45-simbolo">⚠</span>'
+        '</div>'
+        '<div class="kpi-cp45-conteudo">'
+        '<div class="kpi-cp45-titulo">Curtailment atual</div>'
+        '<div class="kpi-cp45-valor">'
         f'{indicadores["curtailment_atual_gwh"]:,.1f} GWh'
-    )
-
-    col3.metric(
-        "Melhor Cenário",
-        indicadores[
-            "melhor_cenario_codigo"
-        ]
-    )
-
-    col4.metric(
-        "Redução Potencial",
+        '</div>'
+        '</div>'
+        '</div>'
+    
+        # Melhor cenário
+        '<div class="kpi-cp45-card">'
+        '<div class="kpi-cp45-icone kpi-cp45-icone-cenario">'
+        '<span class="kpi-cp45-simbolo">◎</span>'
+        '</div>'
+        '<div class="kpi-cp45-conteudo">'
+        '<div class="kpi-cp45-titulo">Melhor cenário</div>'
+        '<div class="kpi-cp45-valor">'
+        f'{indicadores["melhor_cenario_codigo"]}'
+        '</div>'
+        '</div>'
+        '</div>'
+    
+        # Redução potencial
+        '<div class="kpi-cp45-card">'
+        '<div class="kpi-cp45-icone kpi-cp45-icone-reducao">'
+        '<span class="kpi-cp45-simbolo">%</span>'
+        '</div>'
+        '<div class="kpi-cp45-conteudo">'
+        '<div class="kpi-cp45-titulo">Redução potencial</div>'
+        '<div class="kpi-cp45-valor">'
         f'{indicadores["melhor_reducao_pct"]:.1f}%'
+        '</div>'
+        '</div>'
+        '</div>'
+    
+        '</div>'
     )
+    st.html(html_kpis_cp45)
 
     # ========================================================
     # GRÁFICOS
