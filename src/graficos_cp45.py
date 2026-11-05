@@ -281,13 +281,14 @@ def grafico_curtailment_cenarios_cp45(
             )
         )
     )
-    print(
+    st.write(
         base[
             [
                 "curtailment_gwh",
                 "curtailment_gwh_rotulo",
             ]
-        ].head()
+        ]
+        .head()
     )
 
     fig = px.bar(
