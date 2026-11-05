@@ -7539,6 +7539,19 @@ def renderizar_pagina_cp45(
             </div>
             """
         )
+        tabela_resumo_cp45 = (
+            resumo_cenarios[
+                [
+                    "codigo",
+                    "cenario",
+                    "curtailment_gwh",
+                    "corte_pct",
+                    "diferenca_atual_gwh",
+                    "diferenca_atual_pp",
+                ]
+            ]
+            .copy()
+        )
         for coluna in [
             "curtailment_gwh",
             "corte_pct",
