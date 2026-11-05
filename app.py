@@ -465,11 +465,11 @@ st.markdown(
             width: min(720px, calc(100vw - 3rem));
         
             margin-top: 1rem;
-            margin-right: auto;
             margin-bottom: 2rem;
-            margin-left: auto;
+        
+            margin-left: 0;
+            margin-right: auto;
         }
-
         /* Filtros da página Subsistemas */
 
         .st-key-filtros_subsistemas {
