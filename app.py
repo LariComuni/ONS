@@ -672,6 +672,23 @@ st.markdown(
             font-weight: 700;
             line-height: 1.2;
         }
+        /* Cabeçalho CP45 */
+        .cabecalho-cp45 {
+            width: min(1500px, calc(100vw - 3rem));
+        
+            margin-top: 0.35rem;
+            margin-right: auto;
+            margin-bottom: 0.85rem;
+            margin-left: auto;
+        }
+        /* Seletor de usina CP45*/
+        .st-key-seletor_usina_cp45 {
+            width: min(1500px, calc(100vw - 3rem));
+        
+            margin-right: auto;
+            margin-left: auto;
+            margin-bottom: 0.85rem;
+        }
         
         /* KPIS */
         .kpis-subsistemas {
@@ -1519,9 +1536,60 @@ st.markdown(
             font-size: 0.76rem;
             font-weight: 600;
         }
+
+        /* Gráfico CP45 */
+        .st-key-card_comparacao_cp45 {
+            width: min(1500px, calc(100vw - 3rem));
+        
+            margin-right: auto;
+            margin-left: auto;
+            margin-bottom: 1rem;
+        
+            padding: 0.8rem 0.9rem;
+        
+            background-color: #ffffff;
+        
+            border: 1px solid #e2e8f0;
+            border-radius: 13px;
+        
+            box-shadow:
+                0 6px 18px rgba(15, 42, 70, 0.08);
+        }
+        .st-key-card_mensal_cp45 {
+            width: min(1500px, calc(100vw - 3rem));
+        
+            margin-right: auto;
+            margin-left: auto;
+            margin-bottom: 1rem;
+        
+            padding: 0.8rem 0.9rem;
+        
+            background-color: #ffffff;
+        
+            border: 1px solid #e2e8f0;
+            border-radius: 13px;
+        
+            box-shadow:
+                0 6px 18px rgba(15, 42, 70, 0.08);
+        }
+        /* Tabela CP45 */
+        .st-key-card_tabela_cp45 {
+            width: min(1500px, calc(100vw - 3rem));
+        
+            margin-right: auto;
+            margin-left: auto;
+            margin-bottom: 1rem;
+        }
+        /* Premissas CP45 */
+        .st-key-card_premissas_cp45 {
+            width: min(1500px, calc(100vw - 3rem));
+        
+            margin-right: auto;
+            margin-left: auto;
+            margin-bottom: 2rem;
+        }
         
         /* botões de download*/
-
         .st-key-download_mensal,
         .st-key-download_heatmap,
         .st-key-download_corte,
@@ -6936,6 +7004,8 @@ def renderizar_pagina_cp45(
     
     if df_ativos_cenarios_cp45 is None:
         return
+    
+    col_esq, col_centro, col_dir = st.columns([1, 8, 1])
         
     usinas_disponiveis = sorted(
         df_ativos_cenarios_cp45[
@@ -6953,9 +7023,7 @@ def renderizar_pagina_cp45(
     # ========================================================
     # SELETOR DE USINA
     # ========================================================
-    with st.container(
-        border=True,
-    ):
+    with st.container(border=True,key="seletor_usina_cp45"):
         usina_selecionada = st.selectbox(
             "Usina",
             options=usinas_disponiveis,
@@ -7059,77 +7127,103 @@ def renderizar_pagina_cp45(
     # GRÁFICOS
     # ========================================================
 
-    col_esq, col_dir = st.columns(2)
+    with st.container(border=True, key="card_comparacao_cp45"):
+        (coluna_titulo,coluna_metrica) = st.columns([2.5, 1.2],vertical_alignment="center")
 
-    with col_esq:
-
-        fig = (
-            grafico_curtailment_cenarios_cp45(
-                resumo_cenarios
+        with coluna_titulo:
+            st.html(
+                """
+                <div class="titulo-card-grafico">
+                    Comparação dos cenários
+                </div>
+                """
             )
-        )
-
-        st.plotly_chart(
-            fig,
-            width="stretch",
-            config={
-                "displayModeBar": False
-            },
-        )
-
-    with col_dir:
-
-        fig = (
-            grafico_corte_cenarios_cp45(
-                resumo_cenarios
+        with coluna_metrica:
+            metrica_cp45 = st.segmented_control(
+                "Métrica",
+                options=["Curtailment (GWh)","Corte (%)"],
+                default="Curtailment (GWh)",
+                key="cp45_metrica_comparacao",
+                label_visibility="collapsed",
+                selection_mode="single",
             )
+        if metrica_cp45 == "Curtailment (GWh)":
+            fig = (grafico_curtailment_cenarios_cp45(resumo_cenarios))
+        else:
+            fig = (grafico_corte_cenarios_cp45(resumo_cenarios))
+                
+        st.plotly_chart(fig,width="stretch",config={"displayModeBar": False})
+
+    with st.container(border=True, key="card_mensal_cp45"):
+        st.html(
+            """
+            <div class="titulo-card-grafico">
+                Evolução mensal
+            </div>
+            """
         )
-
-        st.plotly_chart(
-            fig,
-            width="stretch",
-            config={
-                "displayModeBar": False
-            },
-        )
-
-    cenario_mensal = st.selectbox(
-        "Comparar mensalmente",
-        [
-            "1A",
-            "1B",
-            "2A",
-            "2B",
-            "3A",
-            "3B",
-            "4A",
-            "4B",
-        ],
-        key="cp45_cenario_mensal",
-    )
-
-    fig_mensal = (
-        grafico_mensal_cenario_cp45(
-            resumo_mensal,
-            cenario_mensal,
-        )
-    )
-
-    st.plotly_chart(
-        fig_mensal,
-        width="stretch",
-        config={
-            "displayModeBar": False
-        },
-    )
+        
+        (coluna_cenario,coluna_rateio_mensal) = st.columns([3, 1.3])
+        with coluna_cenario:
+            cenario_base = st.selectbox(
+                "Cenário",
+                options=[1,2,3,4],
+                format_func=lambda valor: {
+                    1: "EVT nos conjuntos vertendo",
+                    2: "EVT parque hidráulico completo",
+                    3: "EOL + UFV",
+                    4: "Rateio por fonte",
+                }[valor],
+                key="cp45_cenario_base",
+            )
+        with coluna_rateio_mensal:
+            tipo_rateio_mensal = st.radio(
+                "Rateio",
+                options=[
+                    "Nacional",
+                    "Descolamento de submercado",
+                ],
+                index=0,
+                horizontal=True,
+                key="cp45_rateio_mensal",
+            )
+        if cenario_base == 1:
+            codigo_cenario = (
+                "1A"
+                if tipo_rateio_mensal == "Nacional"
+                else "1B"
+            )
+        
+        elif cenario_base == 2:
+        
+            codigo_cenario = (
+                "2A"
+                if tipo_rateio_mensal == "Nacional"
+                else "2B"
+            )
+        
+        elif cenario_base == 3:
+        
+            codigo_cenario = (
+                "3A"
+                if tipo_rateio_mensal == "Nacional"
+                else "3B"
+            )
+        
+        else:
+        
+            codigo_cenario = (
+                "4A"
+                if tipo_rateio_mensal == "Nacional"
+                else "4B"
+            )
+        fig_mensal = (grafico_mensal_cenario_cp45(resumo_mensal,codigo_cenario))
+        st.plotly_chart(fig_mensal,width="stretch",config={"displayModeBar": False})
 
     # ========================================================
     # TABELA RESUMO
     # ========================================================
-
-    with st.container(
-        border=True,
-    ):
+    with st.container(border=True,key="card_tabela_cp45"):
 
         st.html(
             """
@@ -7153,7 +7247,42 @@ def renderizar_pagina_cp45(
             hide_index=True,
             width="stretch",
         )
-
+    # ====================================================
+    # CARD PREMISSAS
+    # ====================================================
+    with st.container(border=True,key="card_premissas_cp45"):
+        st.html(
+            """
+            <div class="titulo-card-grafico">
+                Premissas da análise
+            </div>
+            """
+        )
+        
+        st.markdown(
+            """
+            **Atual**
+            - Curtailment observado pelo ONS.
+        
+            **1**
+            - EVT nos conjuntos vertendo.
+        
+            **2**
+            - EVT no parque hidráulico completo.
+        
+            **3**
+            - Rateio apenas entre EOL e UFV.
+        
+            **4**
+            - Rateio por fonte.
+        
+            **Nacional**
+            - Rateio proporcional considerando todo o SIN.
+        
+            **Condicionado ao descolamento**
+            - Rateio ajustado pelo descolamento de PLD entre submercados.
+            """
+        )
 
 @st.cache_data(show_spinner=False)
 def calcular_kpis_subsistemas_aplicacao(
