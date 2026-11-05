@@ -462,14 +462,42 @@ st.markdown(
         }
         /* Premissas da CP45 */
         .st-key-informacoes_cp45 {
-            width: min(720px, calc(100vw - 3rem));
+            width: min(1500px, calc(100vw - 3rem));
         
             margin-top: 1rem;
-            margin-bottom: 2rem;
-        
-            margin-left: 0;
             margin-right: auto;
+            margin-bottom: 2rem;
+            margin-left: auto;
         }
+        .st-key-informacoes_cp45 details {
+            width: 720px;
+        }
+        .st-key-informacoes_cp45
+        div[data-testid="stMarkdownContainer"] {
+            color: #64748b;
+        
+            font-size: 0.78rem;
+            line-height: 1.45;
+        }
+        
+        .st-key-informacoes_cp45
+        div[data-testid="stMarkdownContainer"] ul {
+            margin-top: 0.25rem;
+            margin-bottom: 0;
+            padding-left: 1.15rem;
+        }
+        
+        .st-key-informacoes_cp45
+        div[data-testid="stMarkdownContainer"] li {
+            margin-bottom: 0.28rem;
+        }
+        
+        .st-key-informacoes_cp45
+        strong {
+            font-size: 0.78rem;
+            font-weight: 600;
+        }
+
         /* Filtros da página Subsistemas */
 
         .st-key-filtros_subsistemas {
@@ -7286,6 +7314,25 @@ def renderizar_pagina_cp45(
         ]
     )
 
+    nomes_cenarios_cp45 = {
+        "1A": "EVT vertendo",
+        "1B": "EVT vertendo (PLD)",
+        "2A": "EVT Parque completo",
+        "2B": "EVT Parque completo (PLD)",
+        "3A": "EOL + UFV",
+        "3B": "EOL + UFV (PLD)",
+        "4A": "Por fonte",
+        "4B": "Por fonte (PLD)",
+    }
+    melhor_cenario = nomes_cenarios_cp45.get(
+        indicadores[
+            "melhor_cenario_codigo"
+        ],
+        indicadores[
+            "melhor_cenario_codigo"
+        ],
+    )
+
     resumo_cp45.html(
         (
             '<div class="resumo-subsistemas-filtros">'
@@ -7340,7 +7387,7 @@ def renderizar_pagina_cp45(
         '<div class="kpi-cp45-conteudo">'
         '<div class="kpi-cp45-titulo">Melhor cenário</div>'
         '<div class="kpi-cp45-valor">'
-        f'{indicadores["melhor_cenario_codigo"]}'
+        f'{melhor_cenario}'
         '</div>'
         '</div>'
         '</div>'
