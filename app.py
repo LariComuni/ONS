@@ -7569,17 +7569,7 @@ def renderizar_pagina_cp45(
                 )
             )
         tabela_resumo_cp45 = (
-            resumo_cenarios[
-                [
-                    "codigo",
-                    "cenario",
-                    "curtailment_gwh",
-                    "corte_pct",
-                    "diferenca_atual_gwh",
-                    "diferenca_atual_pp",
-                ]
-            ]
-            .rename(
+            tabela_resumo_cp45.rename(
                 columns={
                     "codigo": "Código",
                     "cenario": "Cenário",
