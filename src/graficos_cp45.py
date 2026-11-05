@@ -42,6 +42,26 @@ ORDEM_CENARIOS_CP45 = [
     "4B",
 ]
 
+def formatar_numero_cp45(
+    valor,
+    casas_decimais=1,
+):
+    """
+    Formata números no padrão brasileiro.
+    """
+
+    if pd.isna(valor):
+        return ""
+
+    texto = (
+        f"{valor:,.{casas_decimais}f}"
+        .replace(",", "X")
+        .replace(".", ",")
+        .replace("X", ".")
+    )
+
+    return texto
+
 def validar_resumo_cenarios_cp45(
     resumo_cenarios,
 ):
@@ -251,13 +271,23 @@ def grafico_curtailment_cenarios_cp45(
         base["codigo"]
         .tolist()
     )
+    base["curtailment_gwh_rotulo"] = (
+        base["curtailment_gwh"]
+        .apply(
+            lambda valor:
+            formatar_numero_cp45(
+                valor,
+                casas_decimais=1,
+            )
+        )
+    )
 
     fig = px.bar(
         base,
         x="codigo",
         y="curtailment_gwh",
         color="perimetro",
-        text="curtailment_gwh",
+        text="curtailment_gwh_rotulo",
         category_orders={
             "codigo": ordem_codigos,
             "perimetro": [
@@ -344,13 +374,23 @@ def grafico_corte_cenarios_cp45(
         base["codigo"]
         .tolist()
     )
+    base["corte_pct_rotulo"] = (
+        base["corte_pct"]
+        .apply(
+            lambda valor:
+            formatar_numero_cp45(
+                valor,
+                casas_decimais=1,
+            )
+        )
+    )
 
     fig = px.bar(
         base,
         x="codigo",
         y="corte_pct",
         color="perimetro",
-        text="corte_pct",
+        text="corte_pct_rotulo",
         category_orders={
             "codigo": ordem_codigos,
             "perimetro": [
