@@ -460,6 +460,15 @@ st.markdown(
         div[data-testid="stMarkdownContainer"] li {
             margin-bottom: 0.28rem;
         }
+        /* Premissas da CP45 */
+        .st-key-informacoes_cp45 {
+            width: min(720px, calc(100vw - 3rem));
+        
+            margin-top: 1rem;
+            margin-right: auto;
+            margin-bottom: 2rem;
+            margin-left: auto;
+        }
 
         /* Filtros da página Subsistemas */
 
@@ -7453,64 +7462,50 @@ def renderizar_pagina_cp45(
     # ========================================================
     # TABELA RESUMO
     # ========================================================
-    with st.container(border=True,key="card_tabela_cp45"):
-
-        st.html(
-            """
-            <div class="titulo-card-grafico">
-                Resumo dos Cenários
-            </div>
-            """
-        )
-
-        st.dataframe(
-            resumo_cenarios[
-                [
-                    "codigo",
-                    "cenario",
-                    "curtailment_gwh",
-                    "corte_pct",
-                    "diferenca_atual_gwh",
-                    "diferenca_atual_pp",
-                ]
-            ],
-            hide_index=True,
-            width="stretch",
-        )
+    with st.container(key="informacoes_cp45"):
+        with st.container(border=True,key="card_tabela_cp45"):
+    
+            st.html(
+                """
+                <div class="titulo-card-grafico">
+                    Resumo dos Cenários
+                </div>
+                """
+            )
+    
+            st.dataframe(
+                resumo_cenarios[
+                    [
+                        "codigo",
+                        "cenario",
+                        "curtailment_gwh",
+                        "corte_pct",
+                        "diferenca_atual_gwh",
+                        "diferenca_atual_pp",
+                    ]
+                ],
+                hide_index=True,
+                width="stretch",
+            )
     # ====================================================
     # CARD PREMISSAS
     # ====================================================
-    with st.container(border=True,key="card_premissas_cp45"):
-        st.html(
-            """
-            <div class="titulo-card-grafico">
-                Premissas da análise
-            </div>
-            """
-        )
-        
+    with st.expander("Premissas da análise",expanded=False):
         st.markdown(
             """
-            **Atual**
-            - Curtailment observado pelo ONS.
-        
-            **1**
-            - EVT nos conjuntos vertendo.
-        
-            **2**
-            - EVT no parque hidráulico completo.
-        
-            **3**
-            - Rateio apenas entre EOL e UFV.
-        
-            **4**
-            - Rateio por fonte.
-        
-            **Nacional**
-            - Rateio proporcional considerando todo o SIN.
-        
-            **Condicionado ao descolamento**
-            - Rateio ajustado pelo descolamento de PLD entre submercados.
+    ### Cenário Atual - Curtailment observado pelo ONS.
+    
+    ### Cenário 1 - EVT nos conjuntos vertendo.
+    
+    ### Cenário 2 - EVT no parque hidráulico completo.
+    
+    ### Cenário 3 - Rateio apenas entre EOL e UFV.
+    
+    ### Cenário 4 - Rateio por fonte.
+    
+    ### Rateio Nacional - Rateio considerando todo o SIN.
+    
+    ### Rateio condicionado ao PLD - Rateio ajustado pelo descolamento de PLD entre submercados.
             """
         )
 
