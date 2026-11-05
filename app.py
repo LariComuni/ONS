@@ -7462,52 +7462,53 @@ def renderizar_pagina_cp45(
     # ========================================================
     # TABELA RESUMO
     # ========================================================
-    with st.container(key="informacoes_cp45"):
-        with st.container(border=True,key="card_tabela_cp45"):
     
-            st.html(
-                """
-                <div class="titulo-card-grafico">
-                    Resumo dos Cenários
-                </div>
-                """
-            )
+    with st.container(border=True,key="card_tabela_cp45"):
     
-            st.dataframe(
-                resumo_cenarios[
-                    [
-                        "codigo",
-                        "cenario",
-                        "curtailment_gwh",
-                        "corte_pct",
-                        "diferenca_atual_gwh",
-                        "diferenca_atual_pp",
-                    ]
-                ],
-                hide_index=True,
-                width="stretch",
-            )
+        st.html(
+             """
+            <div class="titulo-card-grafico">
+                Resumo dos Cenários
+            </div>
+            """
+        )
+    
+        st.dataframe(
+            resumo_cenarios[
+                [
+                    "codigo",
+                    "cenario",
+                    "curtailment_gwh",
+                    "corte_pct",
+                    "diferenca_atual_gwh",
+                    "diferenca_atual_pp",
+                ]
+            ],
+            hide_index=True,
+            width="stretch",
+        )
     # ====================================================
     # CARD PREMISSAS
     # ====================================================
-    with st.expander("Premissas da análise",expanded=False):
-        st.markdown(
+    with st.container(key="informacoes_cp45"):
+        with st.expander("Premissas da análise",expanded=False):
+            st.write(
+                """
+            • Atual: Curtailment observado pelo ONS.
+            
+            • Cenário 1: EVT nos conjuntos vertendo.
+            
+            • Cenário 2: EVT no parque hidráulico completo.
+            
+            • Cenário 3: Rateio apenas entre EOL e UFV.
+            
+            • Cenário 4: Rateio por fonte.
+            
+            • Rateio Nacional: Rateio proporcional considerando todo o SIN.
+            
+            • Rateio condicionado ao PLD: Rateio ajustado pelo descolamento de PLD entre submercados.
             """
-    ### Cenário Atual - Curtailment observado pelo ONS.
-    
-    ### Cenário 1 - EVT nos conjuntos vertendo.
-    
-    ### Cenário 2 - EVT no parque hidráulico completo.
-    
-    ### Cenário 3 - Rateio apenas entre EOL e UFV.
-    
-    ### Cenário 4 - Rateio por fonte.
-    
-    ### Rateio Nacional - Rateio considerando todo o SIN.
-    
-    ### Rateio condicionado ao PLD - Rateio ajustado pelo descolamento de PLD entre submercados.
-            """
-        )
+            )
 
 @st.cache_data(show_spinner=False)
 def calcular_kpis_subsistemas_aplicacao(
