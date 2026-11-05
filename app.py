@@ -7315,6 +7315,7 @@ def renderizar_pagina_cp45(
     )
 
     nomes_cenarios_cp45 = {
+        "Atual": "Cenário atual",
         "1A": "EVT vertendo",
         "1B": "EVT vertendo (PLD)",
         "2A": "EVT Parque completo",
