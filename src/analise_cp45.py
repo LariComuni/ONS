@@ -618,6 +618,9 @@ def obter_indicadores_cp45(
         .idxmin()
     ]
 
+    if (melhor["curtailment_gwh"] >= atual["curtailment_gwh"]):
+        melhor = atual.copy()
+
     pior = simulados.loc[
         simulados[
             "curtailment_gwh"
