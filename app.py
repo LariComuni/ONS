@@ -7467,7 +7467,7 @@ def renderizar_pagina_cp45(
                 "Rateio",
                 options=[
                     "Nacional",
-                    "Descolamento de submercado",
+                    "Condicionado ao PLD",
                 ],
                 index=0,
                 horizontal=True,
