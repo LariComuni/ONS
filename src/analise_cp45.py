@@ -1626,8 +1626,16 @@ def preparar_analise_fonte_cp45(
             f"{sorted(fontes.tolist())}."
         )
 
-    fonte = str(
-        fontes[0]
+    MAPA_FONTE_EXIBICAO = {
+        "UFV": "Solar",
+        "EOL": "Eólica",
+    }
+    
+    fonte = (
+        MAPA_FONTE_EXIBICAO.get(
+            str(fontes[0]),
+            str(fontes[0]),
+        )
     )
 
     ativos = sorted(
