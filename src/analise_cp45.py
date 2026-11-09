@@ -504,13 +504,13 @@ def filtrar_base_fonte_cp45(
             "posterior ao período final."
         )
 
-    usina_selecionada = str(
-        usina_selecionada
+    fonte_selecionada = str(
+        fonte_selecionada
     ).strip()
 
-    if not usina_selecionada:
+    if not fonte_selecionada:
         raise ValueError(
-            "A usina selecionada não pode ser vazia."
+            "A fonte selecionada não pode ser vazia."
         )
 
     mascara = (
@@ -546,7 +546,7 @@ def filtrar_base_fonte_cp45(
     if resultado.empty:
         raise ValueError(
             "Não foram encontrados registros para "
-            "a usina e o período selecionados."
+            "a fonte e o período selecionados."
         )
 
     return resultado
