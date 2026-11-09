@@ -1269,7 +1269,7 @@ def resumir_mensal_cp45(
         )
     )
 
-def _individual_cp45(
+def preparar_analise_individual_cp45(
     df,
     ano_inicial,
     mes_inicial,
