@@ -1269,7 +1269,7 @@ def resumir_mensal_cp45(
         )
     )
 
-def preparar_analise_individual_cp45(
+def _individual_cp45(
     df,
     ano_inicial,
     mes_inicial,
@@ -1573,7 +1573,7 @@ def preparar_analise_fonte_cp45(
     mes_final,
     fonte_selecionada,
 ):
-   """
+    """
     Prepara a análise completa da CP45 para uma fonte
     (Solar ou Eólica) e um período selecionados.
     """
