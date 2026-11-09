@@ -7416,18 +7416,35 @@ def renderizar_pagina_cp45(
         )
     )
 
-    resumo_cp45.html(
-        (
-            '<div class="resumo-subsistemas-filtros">'
-            '<span class="resumo-subsistemas-indicador">●</span>'
-            '<span>'
-            f'Usina <strong>{indicadores["ativo"]}</strong> | '
-            f'Fonte <strong>{indicadores["fonte"]}</strong> | '
-            f'Subsistema <strong>{indicadores["subsistema"]}</strong>'
-            '</span>'
-            '</div>'
+    if escopo_cp45 == "Usina":
+
+        resumo_cp45.html(
+            (
+                '<div class="resumo-subsistemas-filtros">'
+                '<span class="resumo-subsistemas-indicador">●</span>'
+                '<span>'
+                f'Usina <strong>{indicadores["ativo"]}</strong> | '
+                f'Fonte <strong>{indicadores["fonte"]}</strong> | '
+                f'Subsistema <strong>{indicadores["subsistema"]}</strong>'
+                '</span>'
+                '</div>'
+            )
         )
-    )
+    
+    else:
+    
+        resumo_cp45.html(
+            (
+                '<div class="resumo-subsistemas-filtros">'
+                '<span class="resumo-subsistemas-indicador">●</span>'
+                '<span>'
+                f'Fonte <strong>{indicadores["fonte"]}</strong> | '
+                f'{indicadores["quantidade_ativos"]} ativos | '
+                f'Subsistemas <strong>{", ".join(indicadores["subsistemas"])}</strong>'
+                '</span>'
+                '</div>'
+            )
+        )
 
     # ========================================================
     # KPIs
