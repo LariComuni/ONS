@@ -7051,8 +7051,7 @@ def renderizar_pagina_cp45(
 
         (
             filtros_aplicados,
-            status_cp45,
-            resumo_cp45,
+            status_cp45
         ) = renderizar_filtros_cp45(
             ultimo_ano_completo=(
                 ultimo_ano_completo
