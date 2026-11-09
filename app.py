@@ -61,6 +61,7 @@ from src.cenarios_cp45 import (
 from src.analise_cp45 import (
     obter_opcoes_filtros_cp45,
     preparar_analise_individual_cp45,
+    preparar_analise_fonte_cp45,
 )
 from src.graficos_cp45 import (
     grafico_curtailment_cenarios_cp45,
@@ -7253,48 +7254,109 @@ def renderizar_pagina_cp45(
         )
         return
     # ========================================================
-    # SELETOR DE USINA
+    # SELETOR DE ESCOPO
     # ========================================================
-    with st.container(border=True,key="seletor_usina_cp45"):
-        usina_selecionada = st.selectbox(
-            "Usina",
-            options=usinas_disponiveis,
-            index=0,
-            key="cp45_usina",
+    
+    with st.container(
+        border=True,
+        key="seletor_usina_cp45",
+    ):
+    
+        coluna_escopo, coluna_selecao = st.columns(
+            [1, 3]
         )
+    
+        with coluna_escopo:
+    
+            escopo_cp45 = st.segmented_control(
+                "Escopo",
+                options=[
+                    "Usina",
+                    "Fonte",
+                ],
+                default="Usina",
+                key="cp45_escopo",
+                selection_mode="single",
+            )
+    
+        with coluna_selecao:
+    
+            if escopo_cp45 == "Usina":
+    
+                selecao_cp45 = st.selectbox(
+                    "Usina",
+                    options=usinas_disponiveis,
+                    key="cp45_usina",
+                )
+    
+            else:
+    
+                selecao_cp45 = st.selectbox(
+                    "Fonte",
+                    options=[
+                        "Solar",
+                        "Eólica",
+                    ],
+                    key="cp45_fonte",
+                )
     # ========================================================
     # PREPARA ANÁLISE DA USINA
     # ========================================================
-    analise_cp45 = (
-        preparar_analise_cp45_aplicacao(
-            df_ativos_cenarios_cp45=(
-                df_ativos_cenarios_cp45
-            ),
-            ano_inicial=(
-                filtros_cp45[
-                    "ano_inicial"
-                ]
-            ),
-            mes_inicial=(
-                filtros_cp45[
-                    "mes_inicial"
-                ]
-            ),
-            ano_final=(
-                filtros_cp45[
-                    "ano_final"
-                ]
-            ),
-            mes_final=(
-                filtros_cp45[
-                    "mes_final"
-                ]
-            ),
-            usina_selecionada=(
-                usina_selecionada
-            ),
+    if escopo_cp45 == "Usina":
+        analise_cp45 = (
+            preparar_analise_cp45_aplicacao(
+                df_ativos_cenarios_cp45=(
+                    df_ativos_cenarios_cp45
+                ),
+                ano_inicial=(
+                    filtros_cp45["ano_inicial"]
+                ),
+                mes_inicial=(
+                    filtros_cp45["mes_inicial"]
+                ),
+                ano_final=(
+                    filtros_cp45["ano_final"]
+                ),
+                mes_final=(
+                    filtros_cp45["mes_final"]
+                ),
+                usina_selecionada=(
+                    selecao_cp45
+                ),
+            )
         )
-    )
+    
+    else:
+    
+        mapa_fontes = {
+            "Solar": "UFV",
+            "Eólica": "EOL",
+        }
+    
+        analise_cp45 = (
+            preparar_analise_fonte_cp45_aplicacao(
+                df_ativos_cenarios_cp45=(
+                    df_ativos_cenarios_cp45
+                ),
+                ano_inicial=(
+                    filtros_cp45["ano_inicial"]
+                ),
+                mes_inicial=(
+                    filtros_cp45["mes_inicial"]
+                ),
+                ano_final=(
+                    filtros_cp45["ano_final"]
+                ),
+                mes_final=(
+                    filtros_cp45["mes_final"]
+                ),
+                fonte_selecionada=(
+                    mapa_fontes[
+                        selecao_cp45
+                    ]
+                ),
+            )
+        )
 
     indicadores = (
         analise_cp45[
@@ -7774,9 +7836,7 @@ def carregar_evt_ano_cp45_aplicacao(
 # CACHE: PREPARAÇÃO HORÁRIA DA CP45
 # ============================================================
 
-@st.cache_data(
-    show_spinner=False,
-)
+@st.cache_data(show_spinner=False)
 def montar_base_fontes_cp45_aplicacao(
     df_curtailment,
     df_evt,
@@ -7796,9 +7856,7 @@ def montar_base_fontes_cp45_aplicacao(
         ),
     )
 
-@st.cache_data(
-    show_spinner=False,
-)
+@st.cache_data(show_spinner=False)
 def preparar_ativos_cp45_aplicacao(
     df_curtailment,
 ):
@@ -7813,9 +7871,7 @@ def preparar_ativos_cp45_aplicacao(
 # CACHE: CENÁRIOS DA CP45
 # ============================================================
 
-@st.cache_data(
-    show_spinner=False,
-)
+@st.cache_data(show_spinner=False)
 def montar_cenarios_cp45_aplicacao(
     df_base_fontes_cp45,
     df_ativos_cp45,
@@ -7831,9 +7887,7 @@ def montar_cenarios_cp45_aplicacao(
 # CACHE: OPÇÕES DOS FILTROS DA CP45
 # ============================================================
 
-@st.cache_data(
-    show_spinner=False,
-)
+@st.cache_data(show_spinner=False)
 def obter_opcoes_cp45_aplicacao(
     df_ativos_cenarios_cp45,
 ):
@@ -7846,9 +7900,7 @@ def obter_opcoes_cp45_aplicacao(
 # CACHE: ANÁLISE INDIVIDUAL DA CP45
 # ============================================================
 
-@st.cache_data(
-    show_spinner=False,
-)
+@st.cache_data(show_spinner=False)
 def preparar_analise_cp45_aplicacao(
     df_ativos_cenarios_cp45,
     ano_inicial,
@@ -7882,6 +7934,64 @@ def preparar_analise_cp45_aplicacao(
             usina_selecionada
         ).strip(),
     )
+
+# ============================================================
+# CACHE: ANÁLISE POR FONTE DA CP45
+# ============================================================
+
+@st.cache_data(show_spinner=False)
+def preparar_analise_fonte_cp45_aplicacao(
+    df_ativos_cenarios_cp45,
+    ano_inicial,
+    mes_inicial,
+    ano_final,
+    mes_final,
+    fonte_selecionada,
+):
+    """
+    Prepara indicadores, resumo dos cenários e
+    resultados mensais da fonte selecionada.
+    """
+
+    return preparar_analise_fonte_cp45(
+        df=(
+            df_ativos_cenarios_cp45
+        ),
+        ano_inicial=int(
+            ano_inicial
+        ),
+        mes_inicial=int(
+            mes_inicial
+        ),
+        ano_final=int(
+            ano_final
+        ),
+        mes_final=int(
+            mes_final
+        ),
+        fonte_selecionada=str(
+            fonte_selecionada
+        ).strip(),
+    )
+
+@st.cache_data(show_spinner=False)
+def obter_fontes_cp45_aplicacao(
+    df_ativos_cenarios_cp45,
+):
+    """
+    Retorna as fontes disponíveis na base CP45.
+    """
+
+    return sorted(
+        df_ativos_cenarios_cp45[
+            "fonte"
+        ]
+        .dropna()
+        .astype(str)
+        .unique()
+        .tolist()
+    )
+
 
 
 @st.cache_data(show_spinner=False)
