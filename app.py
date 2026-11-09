@@ -3199,13 +3199,11 @@ def renderizar_filtros_cp45(
             )
 
         status_cp45 = st.empty()
-        resumo_cp45 = st.empty()
 
     if not aplicar_filtros:
         return (
             None,
             status_cp45,
-            resumo_cp45,
         )
 
     validar_periodo_interface(
@@ -3228,8 +3226,7 @@ def renderizar_filtros_cp45(
             "ano_final": ano_final,
             "mes_final": mes_final,
         },
-        status_cp45,
-        resumo_cp45,
+        status_cp45
     )
     
 def renderizar_pagina_subsistemas(
@@ -7299,6 +7296,7 @@ def renderizar_pagina_cp45(
                     ],
                     key="cp45_fonte",
                 )
+        resumo_selecao_cp45 = st.empty()
     # ========================================================
     # PREPARA ANÁLISE DA USINA
     # ========================================================
@@ -7418,7 +7416,7 @@ def renderizar_pagina_cp45(
 
     if escopo_cp45 == "Usina":
 
-        resumo_cp45.html(
+        resumo_selecao_cp45.html(
             (
                 '<div class="resumo-subsistemas-filtros">'
                 '<span class="resumo-subsistemas-indicador">●</span>'
@@ -7433,7 +7431,7 @@ def renderizar_pagina_cp45(
     
     else:
     
-        resumo_cp45.html(
+        resumo_selecao_cp45.html(
             (
                 '<div class="resumo-subsistemas-filtros">'
                 '<span class="resumo-subsistemas-indicador">●</span>'
