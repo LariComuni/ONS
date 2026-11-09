@@ -444,6 +444,113 @@ def filtrar_base_cp45(
 
     return resultado
 
+def filtrar_base_fonte_cp45(
+    df,
+    ano_inicial,
+    mes_inicial,
+    ano_final,
+    mes_final,
+    fonte_selecionada
+):
+    """
+    Filtra a base da CP45 por período mensal e fonte.
+    """
+
+    validar_base_analise_cp45(
+        df
+    )
+
+    base = df.copy()
+
+    base["din_instante"] = pd.to_datetime(
+        base["din_instante"],
+        errors="coerce",
+    )
+
+    base["fonte"] = (
+        base["fonte"]
+        .astype("string")
+        .str.strip()
+    )
+
+    data_inicial = pd.Timestamp(
+        year=int(
+            ano_inicial
+        ),
+        month=int(
+            mes_inicial
+        ),
+        day=1,
+    )
+
+    data_final_exclusiva = (
+        pd.Timestamp(
+            year=int(
+                ano_final
+            ),
+            month=int(
+                mes_final
+            ),
+            day=1,
+        )
+        + pd.offsets.MonthBegin(
+            1
+        )
+    )
+
+    if data_inicial >= data_final_exclusiva:
+        raise ValueError(
+            "O período inicial não pode ser "
+            "posterior ao período final."
+        )
+
+    usina_selecionada = str(
+        usina_selecionada
+    ).strip()
+
+    if not usina_selecionada:
+        raise ValueError(
+            "A usina selecionada não pode ser vazia."
+        )
+
+    mascara = (
+        (
+            base["din_instante"]
+            >= data_inicial
+        )
+        & (
+            base["din_instante"]
+            < data_final_exclusiva
+        )
+        & (
+            base["fonte"]
+            .eq(
+                fonte_selecionada
+            )
+        )
+    )
+
+    resultado = (
+        base.loc[
+            mascara
+        ]
+        .copy()
+        .sort_values(
+            "din_instante"
+        )
+        .reset_index(
+            drop=True
+        )
+    )
+
+    if resultado.empty:
+        raise ValueError(
+            "Não foram encontrados registros para "
+            "a usina e o período selecionados."
+        )
+
+    return resultado
+
 def resumir_cenarios_cp45(
     df_filtrado,
 ):
@@ -714,6 +821,212 @@ def obter_indicadores_cp45(
                 "diferenca_atual_pp"
             ]
         ),
+        "pior_cenario_codigo": str(
+            pior[
+                "codigo"
+            ]
+        ),
+        "pior_cenario": str(
+            pior[
+                "cenario"
+            ]
+        ),
+        "pior_cenario_gwh": float(
+            pior[
+                "curtailment_gwh"
+            ]
+        ),
+        "pior_aumento_pct": (
+            float(
+                100
+                * (
+                    pior[
+                        "curtailment_gwh"
+                    ]
+                    - atual[
+                        "curtailment_gwh"
+                    ]
+                )
+                / atual[
+                    "curtailment_gwh"
+                ]
+            )
+            if atual[
+                "curtailment_gwh"
+            ] > 0
+            else 0.0
+        ),
+        "pior_corte_pct": float(
+            pior[
+                "corte_pct"
+            ]
+        ),
+        "pior_diferenca_gwh": float(
+            pior[
+                "diferenca_atual_gwh"
+            ]
+        ),
+        "pior_diferenca_pp": float(
+            pior[
+                "diferenca_atual_pp"
+            ]
+        ),
+    }
+
+def obter_indicadores_fonte_cp45(
+    df_filtrado,
+):
+    """
+    Retorna os principais indicadores da análise CP45
+    agregada por fonte.
+    """
+
+    resumo = resumir_cenarios_cp45(
+        df_filtrado
+    )
+
+    atual = (
+        resumo.loc[
+            resumo["codigo"]
+            .eq("Atual")
+        ]
+        .iloc[0]
+    )
+
+    simulados = (
+        resumo.loc[
+            ~resumo["codigo"]
+            .eq("Atual")
+        ]
+        .copy()
+    )
+
+    melhor = simulados.loc[
+        simulados[
+            "curtailment_gwh"
+        ]
+        .idxmin()
+    ]
+
+    if (
+        melhor["curtailment_gwh"]
+        >= atual["curtailment_gwh"]
+    ):
+        melhor = atual.copy()
+
+    pior = simulados.loc[
+        simulados[
+            "curtailment_gwh"
+        ]
+        .idxmax()
+    ]
+
+    fonte = str(
+        df_filtrado[
+            "fonte"
+        ]
+        .dropna()
+        .iloc[0]
+    )
+
+    ativos = sorted(
+        df_filtrado[
+            "ativo"
+        ]
+        .dropna()
+        .astype(str)
+        .unique()
+        .tolist()
+    )
+
+    subsistemas = sorted(
+        df_filtrado[
+            "subsistema"
+        ]
+        .dropna()
+        .astype(str)
+        .unique()
+        .tolist()
+    )
+
+    return {
+        "fonte": fonte,
+        "quantidade_ativos": len(
+            ativos
+        ),
+        "ativos": ativos,
+        "quantidade_subsistemas": len(
+            subsistemas
+        ),
+        "subsistemas": subsistemas,
+
+        "geracao_esperada_gwh": float(
+            atual[
+                "geracao_esperada_gwh"
+            ]
+        ),
+        "curtailment_atual_gwh": float(
+            atual[
+                "curtailment_gwh"
+            ]
+        ),
+        "corte_atual_pct": float(
+            atual[
+                "corte_pct"
+            ]
+        ),
+
+        "melhor_cenario_codigo": str(
+            melhor[
+                "codigo"
+            ]
+        ),
+        "melhor_cenario": str(
+            melhor[
+                "cenario"
+            ]
+        ),
+        "melhor_cenario_gwh": float(
+            melhor[
+                "curtailment_gwh"
+            ]
+        ),
+        "melhor_corte_pct": float(
+            melhor[
+                "corte_pct"
+            ]
+        ),
+        "melhor_diferenca_gwh": float(
+            melhor[
+                "diferenca_atual_gwh"
+            ]
+        ),
+        "melhor_reducao_pct": (
+            float(
+                100
+                * (
+                    atual[
+                        "curtailment_gwh"
+                    ]
+                    - melhor[
+                        "curtailment_gwh"
+                    ]
+                )
+                / atual[
+                    "curtailment_gwh"
+                ]
+            )
+            if atual[
+                "curtailment_gwh"
+            ] > 0
+            else 0.0
+        ),
+        "melhor_diferenca_pp": float(
+            melhor[
+                "diferenca_atual_pp"
+            ]
+        ),
+
         "pior_cenario_codigo": str(
             pior[
                 "codigo"
@@ -1251,3 +1564,286 @@ def preparar_analise_individual_cp45(
         "resumo_mensal": resumo_mensal,
         "diagnostico": diagnostico,
     }
+
+def preparar_analise_fonte_cp45(
+    df,
+    ano_inicial,
+    mes_inicial,
+    ano_final,
+    mes_final,
+    fonte_selecionada,
+):
+   """
+    Prepara a análise completa da CP45 para uma fonte
+    (Solar ou Eólica) e um período selecionados.
+    """
+
+    # ========================================================
+    # FILTRO
+    # ========================================================
+
+    base_filtrada = filtrar_base_fonte_cp45(
+        df=df,
+        ano_inicial=ano_inicial,
+        mes_inicial=mes_inicial,
+        ano_final=ano_final,
+        mes_final=mes_final,
+        fonte_selecionada=(
+            fonte_selecionada
+        ),
+    )
+
+    # ========================================================
+    # VALIDAÇÃO CADASTRAL DA FONTE
+    # ========================================================
+
+    cadastro_fonte = (
+        base_filtrada[
+            [
+                "ativo",
+                "fonte",
+                "subsistema",
+            ]
+        ]
+        .drop_duplicates()
+        .reset_index(
+            drop=True
+        )
+    )
+
+    fontes = (
+        cadastro_fonte[
+            "fonte"
+        ]
+        .dropna()
+        .unique()
+    )
+
+    if len(fontes) != 1:
+        raise ValueError(
+            "A análise por fonte retornou mais de uma "
+            "fonte distinta: "
+            f"{sorted(fontes.tolist())}."
+        )
+
+    fonte = str(
+        fontes[0]
+    )
+
+    ativos = sorted(
+        cadastro_fonte[
+            "ativo"
+        ]
+        .dropna()
+        .astype(str)
+        .unique()
+        .tolist()
+    )
+
+    subsistemas = sorted(
+        cadastro_fonte[
+            "subsistema"
+        ]
+        .dropna()
+        .astype(str)
+        .unique()
+        .tolist()
+    )
+
+    # ========================================================
+    # RESUMOS E INDICADORES
+    # ========================================================
+
+    resumo_cenarios = (
+        resumir_cenarios_cp45(
+            base_filtrada
+        )
+    )
+
+    indicadores = (
+        obter_indicadores_fonte_cp45(
+            base_filtrada
+        )
+    )
+
+    resumo_mensal = (
+        resumir_mensal_cp45(
+            base_filtrada
+        )
+    )
+
+    # ========================================================
+    # DIAGNÓSTICO
+    # ========================================================
+
+    colunas_cenarios = [
+        configuracao[
+            "coluna_curtailment"
+        ]
+        for configuracao
+        in CENARIOS_CP45.values()
+    ]
+
+    quantidade_nulos = int(
+        base_filtrada[
+            [
+                "geracao_esperada_mwh",
+                *colunas_cenarios,
+            ]
+        ]
+        .isna()
+        .sum()
+        .sum()
+    )
+
+    quantidade_infinitos = int(
+        np.isinf(
+            base_filtrada[
+                [
+                    "geracao_esperada_mwh",
+                    *colunas_cenarios,
+                ]
+            ]
+            .to_numpy(
+                dtype=float
+            )
+        )
+        .sum()
+    )
+
+    duplicidades_horarias = int(
+        base_filtrada
+        .duplicated(
+            subset=[
+                "din_instante",
+                "ativo",
+                "subsistema",
+                "fonte",
+            ]
+        )
+        .sum()
+    )
+
+    data_minima = (
+        base_filtrada[
+            "din_instante"
+        ]
+        .min()
+    )
+
+    data_maxima = (
+        base_filtrada[
+            "din_instante"
+        ]
+        .max()
+    )
+
+    horas_esperadas = int(
+        (
+            data_maxima.floor("h")
+            - data_minima.floor("h")
+        )
+        / pd.Timedelta(
+            hours=1
+        )
+        + 1
+    )
+
+    quantidade_horas = int(
+        base_filtrada[
+            "din_instante"
+        ]
+        .nunique()
+    )
+
+    horas_ausentes = max(
+        horas_esperadas
+        - quantidade_horas,
+        0,
+    )
+
+    diagnostico = {
+        "fonte": fonte,
+        "ativos": ativos,
+        "subsistemas": subsistemas,
+        "quantidade_ativos": len(
+            ativos
+        ),
+        "quantidade_subsistemas": len(
+            subsistemas
+        ),
+        "data_inicial": data_minima,
+        "data_final": data_maxima,
+        "quantidade_linhas": int(
+            len(
+                base_filtrada
+            )
+        ),
+        "quantidade_horas": (
+            quantidade_horas
+        ),
+        "horas_esperadas": (
+            horas_esperadas
+        ),
+        "horas_ausentes": (
+            horas_ausentes
+        ),
+        "quantidade_meses": int(
+            resumo_mensal[
+                "mes_referencia"
+            ]
+            .nunique()
+        ),
+        "quantidade_cenarios": int(
+            resumo_cenarios[
+                "codigo"
+            ]
+            .nunique()
+        ),
+        "duplicidades_horarias": (
+            duplicidades_horarias
+        ),
+        "quantidade_nulos": (
+            quantidade_nulos
+        ),
+        "quantidade_infinitos": (
+            quantidade_infinitos
+        ),
+    }
+
+    problemas = {
+        chave: valor
+        for chave, valor in {
+            "duplicidades_horarias": (
+                duplicidades_horarias
+            ),
+            "quantidade_nulos": (
+                quantidade_nulos
+            ),
+            "quantidade_infinitos": (
+                quantidade_infinitos
+            ),
+        }.items()
+        if valor > 0
+    }
+
+    if problemas:
+        raise ValueError(
+            "A análise por fonte da CP45 apresentou "
+            "problemas de consistência: "
+            f"{problemas}."
+        )
+
+    return {
+        "fonte": fonte,
+        "ativos": ativos,
+        "subsistemas": subsistemas,
+        "periodo_inicial": data_minima,
+        "periodo_final": data_maxima,
+        "base_horaria": base_filtrada,
+        "resumo_cenarios": resumo_cenarios,
+        "indicadores": indicadores,
+        "resumo_mensal": resumo_mensal,
+        "diagnostico": diagnostico,
+    }
+
