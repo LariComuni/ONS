@@ -2686,8 +2686,21 @@ def validar_periodo_interface(
             "está completamente disponível."
         )
 
-@st.cache_resource(show_spinner=False)
-def executar_pipeline_aplicacao(
+from src.leitura_parquet import identidade_snapshot
+
+def executar_pipeline_aplicacao(ano_inicial, mes_inicial, ano_final, mes_final,
+                                fontes, data_referencia, timeout):
+    if "UFV" in fontes and (ano_inicial, mes_inicial) < (2024, 4):
+        st.warning(
+            "A base solar começa em abril de 2024. Janeiro a março de 2024 "
+            "não têm cobertura UFV e não são contabilizados como geração ou corte zero."
+        )
+    return _executar_pipeline_snapshot(
+        ano_inicial, mes_inicial, ano_final, mes_final, fontes,
+        data_referencia, timeout, identidade_snapshot())
+
+@st.cache_resource(show_spinner=False, max_entries=2)
+def _executar_pipeline_snapshot(
     ano_inicial,
     mes_inicial,
     ano_final,
@@ -2695,6 +2708,7 @@ def executar_pipeline_aplicacao(
     fontes,
     data_referencia,
     timeout,
+    snapshot_id,
 ):
     """
     Executa o pipeline e mantém os resultados em cache.
@@ -2781,7 +2795,7 @@ def renderizar_filtros_subsistemas(
     anos_disponiveis = list(
         range(
             ANO_MINIMO,
-            ultimo_ano_completo + 1,
+            min(ultimo_ano_completo, 2026) + 1,
         )
     )
 
@@ -2947,7 +2961,7 @@ def renderizar_filtros_ativos_elera(
     anos_disponiveis = list(
         range(
             ANO_MINIMO,
-            ultimo_ano_completo + 1,
+            min(ultimo_ano_completo, 2026) + 1,
         )
     )
 
@@ -3105,7 +3119,7 @@ def renderizar_filtros_cp45(
     anos_disponiveis = list(
         range(
             ANO_MINIMO,
-            ultimo_ano_completo + 1,
+            min(ultimo_ano_completo, 2026) + 1,
         )
     )
 
@@ -7135,7 +7149,7 @@ def renderizar_pagina_cp45(
 
                     for ano in range(
                         ANO_MINIMO,
-                        ultimo_ano_completo + 1,
+                        min(ultimo_ano_completo, 2026) + 1,
                     ):
 
                         mes_final = (
@@ -7758,7 +7772,6 @@ def preparar_exportacao_detalhada_elera_aplicacao(df_curtailment,recorte_selecio
     
 # FUNCOES COM CACHE: BASES DE PLD DA CP45
 
-@st.cache_resource(show_spinner=False)
 def carregar_base_curtailment_cp45(
     ano_inicial,
     mes_inicial,
@@ -8299,7 +8312,24 @@ html_navbar = (
 )
 
 st.html(html_navbar)
+st.caption(
+    "Cobertura do histórico: EOL a partir de janeiro/2024; UFV a partir de abril/2024. "
+    "Meses anteriores ao início da fonte não representam geração ou curtailment zero."
+)
 
+
+# Remove resultados de sessões antigas quando uma nova coleta chega ao deploy.
+try:
+    snapshot_atual = identidade_snapshot()
+except (OSError, ValueError) as erro_snapshot:
+    st.error(str(erro_snapshot))
+    st.stop()
+if st.session_state.get("_snapshot_curtailment") != snapshot_atual:
+    for chave in ("dados_pipeline", "periodo_processado", "dados_subsistemas",
+                  "periodo_processado_subsistemas", "dados_ativos_elera",
+                  "periodo_processado_ativos_elera", "df_ativos_cenarios_cp45"):
+        st.session_state.pop(chave, None)
+    st.session_state["_snapshot_curtailment"] = snapshot_atual
 
 # ============================================================
 # CONTEÚDO DA ABA SUBSISTEMAS
@@ -8340,7 +8370,7 @@ if pagina_ativa == "cp45":
 anos_disponiveis = list(
     range(
         ANO_MINIMO,
-        ultimo_ano_completo + 1,
+        min(ultimo_ano_completo, 2026) + 1,
     )
 )
 
