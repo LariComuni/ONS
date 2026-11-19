@@ -27,7 +27,7 @@ from .coleta_auxiliares import (
     carregar_subestacoes,
     carregar_ultimo_fator_capacidade_completo,
 )
-from .coleta_ons import carregar_periodo_ons
+from .leitura_parquet import carregar_periodo_parquet
 from .enriquecimento_geografico import (
     enriquecer_curtailment,
     reduzir_fator_capacidade,
@@ -389,6 +389,9 @@ def coletar_e_calcular_curtailment(
         DataFrame consolidado e relatórios das coletas e
         dos cálculos.
     """
+    validar_periodo(ano_inicial, mes_inicial, ano_final, mes_final)
+    if not 2024 <= ano_inicial <= ano_final <= 2026:
+        raise ValueError("O histórico disponível abrange somente 2024 a 2026.")
     fontes_validadas = validar_fontes(
         fontes
     )
@@ -422,29 +425,17 @@ def coletar_e_calcular_curtailment(
             (
                 df_bruto,
                 relatorio_coleta,
-            ) = carregar_periodo_ons(
+            ) = carregar_periodo_parquet(
                 fonte=fonte,
                 ano=ano_periodo,
                 mes_inicial=mes_inicial_periodo,
                 mes_final=mes_final_periodo,
             )
 
-            validar_dataframe(
-                dataframe=df_bruto,
-                nome=(
-                    "os dados brutos de curtailment "
-                    f"da fonte {fonte} para "
-                    f"{mes_inicial_periodo:02d}/"
-                    f"{ano_periodo} a "
-                    f"{mes_final_periodo:02d}/"
-                    f"{ano_periodo}"
-                ),
-            )
-
-            df_fonte_periodo = calcular_curtailment(
-                df=df_bruto,
-                fonte=fonte,
-            )
+            # Antes de abril/2024 não há cobertura solar nesta base.
+            if df_bruto.empty:
+                continue
+            df_fonte_periodo = df_bruto
 
             validar_dataframe(
                 dataframe=df_fonte_periodo,
@@ -478,6 +469,9 @@ def coletar_e_calcular_curtailment(
                 "coleta": relatorio_coleta,
             }
 
+        if not dados_fonte:
+            continue
+
         df_fonte = pd.concat(
             dados_fonte,
             ignore_index=True,
@@ -506,6 +500,9 @@ def coletar_e_calcular_curtailment(
                 relatorios_periodos
             ),
         }
+
+    if not dados_curtailment:
+        raise ValueError("Sem cobertura solar antes de abril de 2024. Selecione outro período.")
 
     df_curtailment = pd.concat(
         dados_curtailment,
