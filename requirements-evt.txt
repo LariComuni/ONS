@@ -1,0 +1,5 @@
+# ambiente independente do Streamlit/mapas
+numpy==2.2.6
+pandas==2.2.3
+pyarrow==19.0.1
+requests==2.32.5
