@@ -90,7 +90,9 @@ def test_ui_coverage_notice_and_cache_contract():
     assert "identidade_snapshot()" in wrapper
     cached = funcs["_executar_pipeline_snapshot"]
     assert "snapshot_id" in [a.arg for a in cached.args.args]
-    assert not funcs["carregar_base_curtailment_cp45"].decorator_list
+    cp45 = ast.get_source_segment(app, funcs["renderizar_pagina_cp45"])
+    assert "preparar_cp45_mensal(" in cp45
+    assert "executar_pipeline_aplicacao(" not in cp45
 
 def test_pyarrow_python_version_markers():
     from pathlib import Path
@@ -106,5 +108,13 @@ def test_pyarrow_python_version_markers():
 def test_year_filters_capped():
     from pathlib import Path
     app = (Path(__file__).resolve().parents[1]/"app.py").read_text()
-    assert app.count("min(ultimo_ano_completo, 2026) + 1") == 5
-    assert "ultimo_ano_completo + 1," not in app
+    import ast
+    filters = [n.value for n in ast.walk(ast.parse(app)) if isinstance(n, ast.Assign)
+               and any(isinstance(t, ast.Name) and t.id == "anos_disponiveis" for t in n.targets)]
+    assert filters
+    bound = ast.parse("min(ultimo_ano_completo, 2026) + 1", mode="eval").body
+    for expression in filters:
+        ranges = [n for n in ast.walk(expression) if isinstance(n, ast.Call)
+                  and isinstance(n.func, ast.Name) and n.func.id == "range"]
+        assert ranges
+        assert all(len(n.args) > 1 and ast.dump(n.args[1]) == ast.dump(bound) for n in ranges)
