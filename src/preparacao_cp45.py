@@ -188,6 +188,8 @@ def calcular_percentual_seguro(
 def preparar_curtailment_horario_fonte_cp45(
     df_curtailment,
     fonte,
+    *,
+    permitir_ufv_antes_cobertura=False,
 ):
     """
     Prepara curtailment ENE e geração esperada de uma
@@ -258,6 +260,15 @@ def preparar_curtailment_horario_fonte_cp45(
             fonte
         )
     ].copy()
+
+    if base.empty and fonte == "UFV" and permitir_ufv_antes_cobertura:
+        return pd.DataFrame({
+            "din_instante": pd.Series(dtype=df_curtailment["din_instante"].dtype),
+            "subsistema": pd.Series(dtype="string"),
+            "curtailment_ufv_mwh": pd.Series(dtype="float64"),
+            "geracao_ufv_mwh": pd.Series(dtype="float64"),
+            "corte_ufv_pct": pd.Series(dtype="float64"),
+        })
 
     if base.empty:
         raise ValueError(
@@ -759,6 +770,8 @@ def montar_base_fontes_cp45(
     df_curtailment,
     df_evt,
     df_pld_aberto,
+    *,
+    permitir_ufv_antes_cobertura=False,
 ):
     """
     Monta a base horária de fontes e subsistemas da CP45.
@@ -796,6 +809,7 @@ def montar_base_fontes_cp45(
                 df_curtailment
             ),
             fonte="UFV",
+            permitir_ufv_antes_cobertura=permitir_ufv_antes_cobertura,
         )
     )
 

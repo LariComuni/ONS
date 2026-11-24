@@ -1753,14 +1753,13 @@ def preparar_resumo_subsistemas(
         # HORA CRÍTICA
         # ====================================================
 
-        perfil_horario = (
-            df_sub
-            .groupby(
-                "hora",
-                observed=True,
-            )["val_curtailment"]
-            .mean()
-        )
+        por_hora = df_sub.groupby("hora", observed=True)
+        if "_registros" in df_sub:
+            perfil_horario = (
+                por_hora["val_curtailment"].sum() / por_hora["_registros"].sum()
+            )
+        else:
+            perfil_horario = por_hora["val_curtailment"].mean()
 
         if perfil_horario.empty:
             hora_critica = (

@@ -353,18 +353,8 @@ def filtrar_base_cp45(
         df
     )
 
-    base = df.copy()
-
-    base["din_instante"] = pd.to_datetime(
-        base["din_instante"],
-        errors="coerce",
-    )
-
-    base["ativo"] = (
-        base["ativo"]
-        .astype("string")
-        .str.strip()
-    )
+    instantes = pd.to_datetime(df["din_instante"], errors="coerce")
+    nomes = df["ativo"].astype("string").str.strip()
 
     data_inicial = pd.Timestamp(
         year=int(
@@ -408,33 +398,25 @@ def filtrar_base_cp45(
 
     mascara = (
         (
-            base["din_instante"]
+            instantes
             >= data_inicial
         )
         & (
-            base["din_instante"]
+            instantes
             < data_final_exclusiva
         )
         & (
-            base["ativo"]
+            nomes
             .eq(
                 usina_selecionada
             )
         )
     )
 
-    resultado = (
-        base.loc[
-            mascara
-        ]
-        .copy()
-        .sort_values(
-            "din_instante"
-        )
-        .reset_index(
-            drop=True
-        )
-    )
+    resultado = df.loc[mascara].copy()
+    resultado["din_instante"] = instantes.loc[mascara].array
+    resultado["ativo"] = nomes.loc[mascara].array
+    resultado = resultado.sort_values("din_instante", ignore_index=True)
 
     if resultado.empty:
         raise ValueError(
@@ -460,18 +442,8 @@ def filtrar_base_fonte_cp45(
         df
     )
 
-    base = df.copy()
-
-    base["din_instante"] = pd.to_datetime(
-        base["din_instante"],
-        errors="coerce",
-    )
-
-    base["fonte"] = (
-        base["fonte"]
-        .astype("string")
-        .str.strip()
-    )
+    instantes = pd.to_datetime(df["din_instante"], errors="coerce")
+    nomes = df["fonte"].astype("string").str.strip()
 
     data_inicial = pd.Timestamp(
         year=int(
@@ -515,33 +487,25 @@ def filtrar_base_fonte_cp45(
 
     mascara = (
         (
-            base["din_instante"]
+            instantes
             >= data_inicial
         )
         & (
-            base["din_instante"]
+            instantes
             < data_final_exclusiva
         )
         & (
-            base["fonte"]
+            nomes
             .eq(
                 fonte_selecionada
             )
         )
     )
 
-    resultado = (
-        base.loc[
-            mascara
-        ]
-        .copy()
-        .sort_values(
-            "din_instante"
-        )
-        .reset_index(
-            drop=True
-        )
-    )
+    resultado = df.loc[mascara].copy()
+    resultado["din_instante"] = instantes.loc[mascara].array
+    resultado["fonte"] = nomes.loc[mascara].array
+    resultado = resultado.sort_values("din_instante", ignore_index=True)
 
     if resultado.empty:
         raise ValueError(

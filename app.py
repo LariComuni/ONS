@@ -23,7 +23,8 @@ from src.mapa import (
     criar_mapa_inicial,
     criar_mapa_interativo,
 )
-from src.pipeline import preparar_dados_aplicacao, coletar_e_calcular_curtailment
+from src.pipeline import preparar_dados_aplicacao
+from src.processamento_mensal_portfolio import carregar_portfolio_mensal, preparar_cp45_mensal
 from src.analise_subsistemas import (
     calcular_kpis_curtailment,
     preparar_curtailment_mensal_subsistemas,
@@ -44,18 +45,11 @@ from src.analise_ativos_elera import (
     preparar_analise_individual_ativo_elera,
     preparar_exportacao_detalhada_ativos_elera,
 )
-from src.periodo_evt_cp45 import carregar_evt_selecionado, DadosEVTIndisponiveis
-from src.leitura_evt_parquet import carregar_periodo_evt_parquet, identidade_snapshot_evt
+from src.periodo_evt_cp45 import DadosEVTIndisponiveis
+from src.leitura_evt_parquet import identidade_snapshot_evt
 from src.dados_pld import (
     carregar_bases_pld,
     preparar_pld_aberto,
-)
-from src.preparacao_cp45 import (
-    montar_base_fontes_cp45,
-    preparar_ativos_horarios_cp45,
-)
-from src.cenarios_cp45 import (
-    montar_base_cenarios_cp45,
 )
 from src.analise_cp45 import (
     obter_opcoes_filtros_cp45,
@@ -2723,6 +2717,24 @@ def _executar_pipeline_snapshot(
         timeout=timeout,
     )
 
+from src.pipeline_mapa_eficiente import preparar_dados_mapa
+
+
+def executar_mapa_aplicacao(ano_inicial, mes_inicial, ano_final, mes_final,
+                            fontes, data_referencia, timeout):
+    if "UFV" in fontes and (ano_inicial, mes_inicial) < (2024, 4):
+        st.warning("A base solar começa em abril de 2024; meses anteriores não são contabilizados como zero.")
+    return _executar_mapa_snapshot(ano_inicial, mes_inicial, ano_final, mes_final,
+                                  fontes, data_referencia, timeout, identidade_snapshot())
+
+
+@st.cache_resource(show_spinner=False, max_entries=1)
+def _executar_mapa_snapshot(ano_inicial, mes_inicial, ano_final, mes_final,
+                            fontes, data_referencia, timeout, snapshot_id):
+    return preparar_dados_mapa(ano_inicial, mes_inicial, ano_final, mes_final,
+                               fontes, data_referencia, timeout)
+
+
 @st.cache_data(show_spinner=False)
 
 def carregar_ufs_aplicacao(
@@ -3251,6 +3263,8 @@ def renderizar_pagina_subsistemas(
     Renderiza a página de análise dos subsistemas.
     """
 
+    from src.subsistemas_monthly import preparar_dados_subsistemas
+
     try:
         (
             filtros_aplicados,
@@ -3334,7 +3348,7 @@ def renderizar_pagina_subsistemas(
                     mensagem_processamento
                 ):
                     dados_subsistemas = (
-                        executar_pipeline_aplicacao(
+                        preparar_dados_subsistemas(
                             ano_inicial=(
                                 filtros_subsistemas[
                                     "ano_inicial"
@@ -3360,8 +3374,6 @@ def renderizar_pagina_subsistemas(
                                     "fontes"
                                 ]
                             ),
-                            data_referencia=hoje,
-                            timeout=TIMEOUT_PIPELINE,
                         )
                     )
         
@@ -5328,41 +5340,47 @@ def renderizar_pagina_subsistemas(
         granularidade_codigo = (GRANULARIDADES_EXPORTACAO[granularidade_rotulo])
     
         arquivo_exportacao_xlsx = None
-    
-        try:
-            dados_exportacao_subsistemas = (
-                preparar_exportacao_subsistemas_aplicacao(
-                    df_curtailment=(df_curtailment_subsistemas),
-                    granularidade=(granularidade_codigo)
-                )
+        with coluna_download_detalhado:
+            preparar_exportacao = st.button(
+                "Preparar Excel", key="preparar_exportacao_detalhada_subsistemas"
             )
+
+        if preparar_exportacao:
     
-            nome_planilha_exportacao = {
-                "DIA_HORA": "Dia e hora",
-                "MES_HORA": "Mês e hora",
-                "ANO_HORA": "Ano e hora",
-                "DIA": "Dia",
-                "MES": "Mês",
-                "ANO": "Ano",
-            }[granularidade_codigo]
-    
-            arquivo_exportacao_xlsx = (
-                gerar_excel_dataframe(
-                    df=dados_exportacao_subsistemas,
-                    nome_planilha=(
-                        nome_planilha_exportacao
-                    ),
+            try:
+                dados_exportacao_subsistemas = (
+                    preparar_exportacao_subsistemas_aplicacao(
+                        df_curtailment=(df_curtailment_subsistemas),
+                        granularidade=(granularidade_codigo)
+                    )
                 )
-            )
     
-        except (
-            TypeError,
-            ValueError,
-            KeyError,
-        ) as erro_exportacao:
-            st.warning("Não foi possível preparar a análise detalhada para download.")
+                nome_planilha_exportacao = {
+                    "DIA_HORA": "Dia e hora",
+                    "MES_HORA": "Mês e hora",
+                    "ANO_HORA": "Ano e hora",
+                    "DIA": "Dia",
+                    "MES": "Mês",
+                    "ANO": "Ano",
+                }[granularidade_codigo]
+
+                arquivo_exportacao_xlsx = (
+                    gerar_excel_dataframe(
+                        df=dados_exportacao_subsistemas,
+                        nome_planilha=(
+                            nome_planilha_exportacao
+                        ),
+                    )
+                )
     
-            st.caption(str(erro_exportacao))
+            except (
+                TypeError,
+                ValueError,
+                KeyError,
+            ) as erro_exportacao:
+                st.warning("Não foi possível preparar a análise detalhada para download.")
+    
+                st.caption(str(erro_exportacao))
     
         with coluna_download_detalhado:
             with st.container(
@@ -5388,7 +5406,8 @@ def renderizar_pagina_subsistemas(
                         file_name=(nome_arquivo_exportacao),
                         mime=("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"),
                         help=("Baixar a análise detalhada por subsistema na granularidade selecionada"),
-                        key="botao_download_detalhado"
+                        key="botao_download_detalhado",
+                        on_click="ignore",
                     )
 
 def renderizar_pagina_ativos_elera(
@@ -5435,6 +5454,8 @@ def renderizar_pagina_ativos_elera(
     #==========================================
     
     if filtros_aplicados is not None:
+        st.session_state.pop("dados_ativos_elera", None)
+        st.session_state.pop("periodo_processado_ativos_elera", None)
         st.session_state["filtros_ativos_elera"] = filtros_aplicados
         st.session_state["processar_ativos_elera"] = True
         
@@ -5466,17 +5487,21 @@ def renderizar_pagina_ativos_elera(
         try:
             with status_ativos_elera.container():
                 with st.spinner(mensagem_processamento):
-                    dados_ativos_elera = (
-                        executar_pipeline_aplicacao(
-                            ano_inicial=(filtros_ativos_elera["ano_inicial"]),
-                            mes_inicial=(filtros_ativos_elera["mes_inicial"]),
-                            ano_final=(filtros_ativos_elera["ano_final"]),
-                            mes_final=(filtros_ativos_elera["mes_final"]),
-                            fontes=tuple(filtros_ativos_elera["fontes"]),
-                            data_referencia=hoje,
-                            timeout=TIMEOUT_PIPELINE,
+                    if ("UFV" in filtros_ativos_elera["fontes"] and
+                        (filtros_ativos_elera["ano_inicial"], filtros_ativos_elera["mes_inicial"]) < (2024, 4)):
+                        st.warning(
+                            "A base solar começa em abril de 2024. Janeiro a março de 2024 "
+                            "não têm cobertura UFV e não são contabilizados como geração ou corte zero."
                         )
-                    )
+                    dados_ativos_elera = {
+                        "df_curtailment": carregar_portfolio_mensal(
+                            filtros_ativos_elera["ano_inicial"],
+                            filtros_ativos_elera["mes_inicial"],
+                            filtros_ativos_elera["ano_final"],
+                            filtros_ativos_elera["mes_final"],
+                            filtros_ativos_elera["fontes"],
+                        )
+                    }
 
             st.session_state["dados_ativos_elera"] = dados_ativos_elera
 
@@ -7137,57 +7162,14 @@ def renderizar_pagina_cp45(
                     # BASES
                     # ------------------------------------
 
-                    df_curtailment = (
-                        carregar_base_curtailment_cp45(
-                            ano_inicial=filtros_cp45["ano_inicial"],
-                            mes_inicial=filtros_cp45["mes_inicial"],
-                            ano_final=filtros_cp45["ano_final"],
-                            mes_final=filtros_cp45["mes_final"],
-                            hoje=hoje,
-                        )
-                    )
-
-                    df_pld, _ = (
-                        carregar_pld_cp45_aplicacao()
-                    )
-
-                    df_pld_aberto = (
-                        preparar_pld_aberto_cp45_aplicacao(
-                            df_pld
-                        )
-                    )
-
-                    df_evt = carregar_evt_selecionado(
-                        ano_inicial=filtros_cp45["ano_inicial"],
-                        mes_inicial=filtros_cp45["mes_inicial"],
-                        ano_final=filtros_cp45["ano_final"],
-                        mes_final=filtros_cp45["mes_final"],
-                        carregar_periodo=carregar_evt_ano_cp45_aplicacao,
-                    )
-
-                    df_base_fontes_cp45 = (
-                        montar_base_fontes_cp45_aplicacao(
-                            df_curtailment=(
-                                df_curtailment
-                            ),
-                            df_evt=df_evt,
-                            df_pld_aberto=(
-                                df_pld_aberto
-                            ),
-                        )
-                    )
-
-                    df_ativos_cp45 = (
-                        preparar_ativos_cp45_aplicacao(
-                            df_curtailment
-                        )
-                    )
-
-                    df_ativos_cenarios_cp45 = (
-                        montar_cenarios_cp45_aplicacao(
-                            df_base_fontes_cp45,
-                            df_ativos_cp45,
-                        )["ativos"]
+                    df_pld, _ = carregar_pld_cp45_aplicacao()
+                    df_pld_aberto = preparar_pld_aberto_cp45_aplicacao(df_pld)
+                    df_ativos_cenarios_cp45 = preparar_cp45_mensal(
+                        filtros_cp45["ano_inicial"],
+                        filtros_cp45["mes_inicial"],
+                        filtros_cp45["ano_final"],
+                        filtros_cp45["mes_final"],
+                        df_pld_aberto,
                     )
 
                     st.session_state[
@@ -7698,7 +7680,7 @@ def calcular_kpis_subsistemas_aplicacao(
 
 # FUNÇÕES COM CACHE - ATIVOS ELERA
 
-@st.cache_data(show_spinner=False)
+@st.cache_data(show_spinner=False, max_entries=1)
 def calcular_kpis_ativos_elera_aplicacao(
     df_curtailment,
 ):
@@ -7708,7 +7690,7 @@ def calcular_kpis_ativos_elera_aplicacao(
 
     return calcular_kpis_ativos_elera(df_curtailment)
 
-@st.cache_data(show_spinner=False)
+@st.cache_data(show_spinner=False, max_entries=1)
 def preparar_curtailment_mensal_elera_aplicacao(
     df_curtailment,
 ):
@@ -7719,7 +7701,7 @@ def preparar_curtailment_mensal_elera_aplicacao(
     return preparar_curtailment_mensal_ativos_elera(df_curtailment)
 
 
-@st.cache_data(show_spinner=False)
+@st.cache_data(show_spinner=False, max_entries=1)
 def preparar_participacao_curtailment_elera_aplicacao(
     df_curtailment,
 ):
@@ -7729,7 +7711,7 @@ def preparar_participacao_curtailment_elera_aplicacao(
 
     return preparar_participacao_curtailment_ativos_elera(df_curtailment)
 
-@st.cache_data(show_spinner=False)
+@st.cache_data(show_spinner=False, max_entries=1)
 def preparar_geracao_mensal_elera_aplicacao(
     df_curtailment,
 ):
@@ -7739,7 +7721,7 @@ def preparar_geracao_mensal_elera_aplicacao(
 
     return preparar_geracao_esperada_mensal_ativos_elera(df_curtailment)
 
-@st.cache_data(show_spinner=False)
+@st.cache_data(show_spinner=False, max_entries=1)
 def preparar_participacao_geracao_elera_aplicacao(
     df_curtailment,
 ):
@@ -7749,14 +7731,14 @@ def preparar_participacao_geracao_elera_aplicacao(
 
     return preparar_participacao_geracao_ativos_elera(df_curtailment)
 
-@st.cache_data(show_spinner=False)
+@st.cache_data(show_spinner=False, max_entries=1)
 def preparar_analise_individual_elera_aplicacao(
     df_curtailment,
     ativo_selecionado,
 ):
     return preparar_analise_individual_ativo_elera(df=df_curtailment, ativo_selecionado=ativo_selecionado)
 
-@st.cache_data(show_spinner=False)
+@st.cache_data(show_spinner=False, max_entries=1)
 def preparar_exportacao_detalhada_elera_aplicacao(df_curtailment,recorte_selecionado,granularidade):
     """
     Prepara a base detalhada para exportação.
@@ -7765,24 +7747,6 @@ def preparar_exportacao_detalhada_elera_aplicacao(df_curtailment,recorte_selecio
     return preparar_exportacao_detalhada_ativos_elera(df=df_curtailment,recorte_selecionado=recorte_selecionado,granularidade=granularidade)
     
 # FUNCOES COM CACHE: BASES DE PLD DA CP45
-
-def carregar_base_curtailment_cp45(
-    ano_inicial,
-    mes_inicial,
-    ano_final,
-    mes_final,
-    hoje,
-):
-    # CP45 utiliza apenas a base de curtailment, sem mapas/cadastros geográficos.
-    # O resultado permanece na sessão e é invalidado pelo snapshot global.
-    df_curtailment, _ = coletar_e_calcular_curtailment(
-        ano_inicial=ano_inicial,
-        mes_inicial=mes_inicial,
-        ano_final=ano_final,
-        mes_final=mes_final,
-        fontes=("EOL", "UFV"),
-    )
-    return df_curtailment
 
 @st.cache_data(show_spinner=False)
 def carregar_pld_cp45_aplicacao():
@@ -7823,84 +7787,7 @@ def preparar_resumo_subsistemas_aplicacao(
 
     return preparar_resumo_subsistemas(df_curtailment)
 # ============================================================
-# CACHE: ENERGIA VERTIDA TURBINÁVEL
 # ============================================================
-
-def carregar_evt_ano_cp45_aplicacao(
-    ano,
-    mes_inicial,
-    mes_final,
-):
-    """
-    Carrega um intervalo mensal da base EVT para um ano.
-    """
-
-    df_evt, relatorio_evt = (
-        carregar_periodo_evt_parquet(
-            ano=int(
-                ano
-            ),
-            mes_inicial=int(
-                mes_inicial
-            ),
-            mes_final=int(
-                mes_final
-            ),
-        )
-    )
-
-    return (df_evt,relatorio_evt)
-
-# ============================================================
-# CACHE: PREPARAÇÃO HORÁRIA DA CP45
-# ============================================================
-
-@st.cache_data(show_spinner=False)
-def montar_base_fontes_cp45_aplicacao(
-    df_curtailment,
-    df_evt,
-    df_pld_aberto,
-):
-    """
-    Monta a base horária por fonte e subsistema.
-    """
-
-    return montar_base_fontes_cp45(
-        df_curtailment=(
-            df_curtailment
-        ),
-        df_evt=df_evt,
-        df_pld_aberto=(
-            df_pld_aberto
-        ),
-    )
-
-@st.cache_data(show_spinner=False)
-def preparar_ativos_cp45_aplicacao(
-    df_curtailment,
-):
-    """
-    Prepara todos os ativos EOL e UFV em
-    granularidade horária.
-    """
-
-    return preparar_ativos_horarios_cp45(df_curtailment=(df_curtailment))
-
-# ============================================================
-# CACHE: CENÁRIOS DA CP45
-# ============================================================
-
-@st.cache_data(show_spinner=False)
-def montar_cenarios_cp45_aplicacao(
-    df_base_fontes_cp45,
-    df_ativos_cp45,
-):
-    """
-    Calcula as taxas dos cenários e aplica os
-    resultados aos ativos.
-    """
-
-    return montar_base_cenarios_cp45(df_base_fontes_cp45=(df_base_fontes_cp45),df_ativos_cp45=(df_ativos_cp45))
 
 # ============================================================
 # CACHE: OPÇÕES DOS FILTROS DA CP45
@@ -7919,7 +7806,7 @@ def obter_opcoes_cp45_aplicacao(
 # CACHE: ANÁLISE INDIVIDUAL DA CP45
 # ============================================================
 
-@st.cache_data(show_spinner=False)
+@st.cache_data(show_spinner=False, max_entries=1)
 def preparar_analise_cp45_aplicacao(
     df_ativos_cenarios_cp45,
     ano_inicial,
@@ -7933,7 +7820,7 @@ def preparar_analise_cp45_aplicacao(
     resultados mensais da usina selecionada.
     """
 
-    return preparar_analise_individual_cp45(
+    resultado = preparar_analise_individual_cp45(
         df=(
             df_ativos_cenarios_cp45
         ),
@@ -7953,12 +7840,14 @@ def preparar_analise_cp45_aplicacao(
             usina_selecionada
         ).strip(),
     )
+    resultado.pop("base_horaria", None)
+    return resultado
 
 # ============================================================
 # CACHE: ANÁLISE POR FONTE DA CP45
 # ============================================================
 
-@st.cache_data(show_spinner=False)
+@st.cache_data(show_spinner=False, max_entries=1)
 def preparar_analise_fonte_cp45_aplicacao(
     df_ativos_cenarios_cp45,
     ano_inicial,
@@ -7972,7 +7861,7 @@ def preparar_analise_fonte_cp45_aplicacao(
     resultados mensais da fonte selecionada.
     """
 
-    return preparar_analise_fonte_cp45(
+    resultado = preparar_analise_fonte_cp45(
         df=(
             df_ativos_cenarios_cp45
         ),
@@ -7992,6 +7881,8 @@ def preparar_analise_fonte_cp45_aplicacao(
             fonte_selecionada
         ).strip(),
     )
+    resultado.pop("base_horaria", None)
+    return resultado
 
 @st.cache_data(show_spinner=False)
 def obter_fontes_cp45_aplicacao(
@@ -8577,7 +8468,7 @@ if (
                 mensagem_processamento
             ):
                 dados_pipeline = (
-                    executar_pipeline_aplicacao(
+                    executar_mapa_aplicacao(
                         ano_inicial=(
                             periodo_selecionado[
                                 "ano_inicial"
