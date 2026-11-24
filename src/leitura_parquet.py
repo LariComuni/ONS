@@ -7,6 +7,9 @@ from .calculo_curtailment import COLUNAS_RESULTADO
 
 DIRETORIO = Path(__file__).resolve().parents[1] / "data" / "curtailment"
 
+INICIO_COBERTURA_UFV = (2024, 4)
+
+
 def identidade_snapshot(diretorio=None):
     """Hash do manifesto e estado dos arquivos para invalidar caches."""
     raiz = Path(diretorio) if diretorio is not None else DIRETORIO
@@ -32,7 +35,7 @@ def carregar_periodo_parquet(fonte, ano, mes_inicial, mes_final, diretorio=None)
     frames, ignorados, arquivos = [], [], []
     for mes in range(mes_inicial, mes_final + 1):
         competencia = f"{ano:04d}-{mes:02d}"
-        if fonte == "UFV" and competencia < "2024-04":
+        if fonte == "UFV" and (ano, mes) < INICIO_COBERTURA_UFV:
             ignorados.append(competencia)
             continue
         chave = f"{fonte}/{competencia}.parquet"

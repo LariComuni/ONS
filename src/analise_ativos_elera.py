@@ -66,6 +66,24 @@ ORDEM_ATIVOS_ELERA = [
 ]
 
 
+def obter_opcoes_ativos_elera(df):
+    """Mostra apenas ativos presentes no recorte, mesmo com corte igual a zero."""
+    presentes = set(df["nom_usina"].astype("string").str.strip().dropna().unique())
+    fontes_por_ativo = {
+        dados["nome_exibicao"]: dados["fonte"]
+        for nome, dados in ATIVOS_ELERA.items()
+        if nome in presentes
+    }
+    ativos = [nome for nome in ORDEM_ATIVOS_ELERA if nome in fontes_por_ativo]
+    fontes = set(fontes_por_ativo.values())
+    recortes = ["Portfólio inteiro"]
+    if "Solar" in fontes:
+        recortes.append("Somente solares")
+    if "Eólica" in fontes:
+        recortes.append("Somente eólicas")
+    return ativos, [*recortes, *ativos]
+
+
 def filtrar_ativos_elera(
     df,
 ):
