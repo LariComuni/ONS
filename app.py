@@ -36,7 +36,7 @@ from src.analise_subsistemas import (
     preparar_exportacao_subsistemas
 )
 from src.analise_ativos_elera import (
-    ORDEM_ATIVOS_ELERA,
+    obter_opcoes_ativos_elera,
     calcular_kpis_ativos_elera,
     preparar_curtailment_mensal_ativos_elera,
     preparar_geracao_esperada_mensal_ativos_elera,
@@ -2679,7 +2679,50 @@ def validar_periodo_interface(
             "está completamente disponível."
         )
 
-from src.leitura_parquet import identidade_snapshot
+from src.leitura_parquet import INICIO_COBERTURA_UFV, identidade_snapshot
+
+
+def exibir_cobertura_solar(filtros, *, cp45=False, fonte_resultado=None):
+    """Avisa sobre a seleção aplicada; retorna se há dados para analisá-la."""
+    if not cp45 and "UFV" not in filtros["fontes"]:
+        return True
+    inicio = filtros["ano_inicial"], filtros["mes_inicial"]
+    fim = filtros["ano_final"], filtros["mes_final"]
+    if inicio >= INICIO_COBERTURA_UFV:
+        return True
+    if fim < INICIO_COBERTURA_UFV and (cp45 or "EOL" not in filtros["fontes"]):
+        if cp45:
+            st.info(
+                "A CP45 precisa de cobertura solar para comparar todos os cenários. "
+                "O ONS não tem dados solares antes de abril/2024. "
+                "Selecione um período que inclua abril/2024 ou um mês posterior."
+            )
+        else:
+            st.info(
+                "Sem dados solares no período selecionado. A base do ONS começa em abril/2024. "
+                "Selecione um período a partir de abril/2024 ou escolha Eólica."
+            )
+        return False
+    inicio_excluido = formatar_competencia(*inicio)
+    fim_excluido = formatar_competencia(*min(fim, (2024, 3)))
+    meses_excluidos = (
+        inicio_excluido if inicio_excluido == fim_excluido
+        else f"{inicio_excluido} a {fim_excluido}"
+    )
+    if cp45 and fonte_resultado == "EOL":
+        st.info(
+            f"Em {meses_excluidos}, há dados eólicos, mas não há cobertura solar. "
+            "Nesses meses, os cenários combinados não incluem dados solares."
+        )
+    else:
+        aviso = (
+            f"Sem cobertura solar em {meses_excluidos}. A base solar começa em abril/2024. "
+            "Os meses sem dados solares não são exibidos como zero."
+        )
+        if not cp45 and "EOL" in filtros["fontes"]:
+            aviso += " Os dados eólicos desses meses permanecem na análise."
+        st.info(aviso)
+    return True
 
 def executar_pipeline_aplicacao(ano_inicial, mes_inicial, ano_final, mes_final,
                                 fontes, data_referencia, timeout):
@@ -2722,8 +2765,6 @@ from src.pipeline_mapa_eficiente import preparar_dados_mapa
 
 def executar_mapa_aplicacao(ano_inicial, mes_inicial, ano_final, mes_final,
                             fontes, data_referencia, timeout):
-    if "UFV" in fontes and (ano_inicial, mes_inicial) < (2024, 4):
-        st.warning("A base solar começa em abril de 2024; meses anteriores não são contabilizados como zero.")
     return _executar_mapa_snapshot(ano_inicial, mes_inicial, ano_final, mes_final,
                                   fontes, data_referencia, timeout, identidade_snapshot())
 
@@ -3294,6 +3335,8 @@ def renderizar_pagina_subsistemas(
     )
 
     if filtros_aplicados is not None:
+        st.session_state.pop("dados_subsistemas", None)
+        st.session_state.pop("periodo_processado_subsistemas", None)
         st.session_state[
             "filtros_subsistemas"
         ] = filtros_aplicados
@@ -3308,7 +3351,10 @@ def renderizar_pagina_subsistemas(
 
     if filtros_subsistemas is None:
         return
-    
+    if not exibir_cobertura_solar(filtros_subsistemas):
+        st.session_state["processar_subsistemas"] = False
+        return
+
     if st.session_state.get(
         "processar_subsistemas",
         False,
@@ -5462,7 +5508,10 @@ def renderizar_pagina_ativos_elera(
     filtros_ativos_elera = (st.session_state.get("filtros_ativos_elera"))
     if filtros_ativos_elera is None:
         return
-    
+    if not exibir_cobertura_solar(filtros_ativos_elera):
+        st.session_state["processar_ativos_elera"] = False
+        return
+
     #==========================================
     # PROCESSAMENTO
     #==========================================
@@ -5487,12 +5536,6 @@ def renderizar_pagina_ativos_elera(
         try:
             with status_ativos_elera.container():
                 with st.spinner(mensagem_processamento):
-                    if ("UFV" in filtros_ativos_elera["fontes"] and
-                        (filtros_ativos_elera["ano_inicial"], filtros_ativos_elera["mes_inicial"]) < (2024, 4)):
-                        st.warning(
-                            "A base solar começa em abril de 2024. Janeiro a março de 2024 "
-                            "não têm cobertura UFV e não são contabilizados como geração ou corte zero."
-                        )
                     dados_ativos_elera = {
                         "df_curtailment": carregar_portfolio_mensal(
                             filtros_ativos_elera["ano_inicial"],
@@ -6138,11 +6181,17 @@ def renderizar_pagina_ativos_elera(
         "Faísa": "≈ Faísa",
     }
     
+    ativos_disponiveis, recortes_disponiveis = obter_opcoes_ativos_elera(
+        df_curtailment_ativos_elera
+    )
+    # O Streamlit pode manter a escolha anterior quando as opções mudam.
+    if st.session_state.get("ativo_individual_elera") not in ativos_disponiveis:
+        st.session_state.pop("ativo_individual_elera", None)
     with st.container(key="seletor_ativo_elera"):
         ativo_selecionado_elera = st.pills(
             "Selecione o ativo",
-            options=ORDEM_ATIVOS_ELERA,
-            default="Janaúba",
+            options=ativos_disponiveis,
+            default=ativos_disponiveis[0],
             selection_mode="single",
             required=True,
             format_func=lambda ativo: (
@@ -6980,16 +7029,11 @@ def renderizar_pagina_ativos_elera(
             )
     
         with coluna_recorte_exportacao_elera:
-            opcoes_recorte_exportacao = [
-                "Portfólio inteiro",
-                "Somente solares",
-                "Somente eólicas",
-                *ORDEM_ATIVOS_ELERA,
-            ]
-    
+            if st.session_state.get("recorte_exportacao_elera") not in recortes_disponiveis:
+                st.session_state.pop("recorte_exportacao_elera", None)
             recorte_exportacao_elera = st.selectbox(
                 "Ativos",
-                options=opcoes_recorte_exportacao,
+                options=recortes_disponiveis,
                 index=0,
                 key="recorte_exportacao_elera",
             )
@@ -7119,6 +7163,17 @@ def renderizar_pagina_cp45(
         return
 
     # ========================================================
+    # CABEÇALHO
+    # ========================================================
+    st.html(
+        """
+        <div class="cabecalho-cp45">
+            <h1>CP45</h1>
+        </div>
+        """
+    )
+
+    # ========================================================
     # SALVA FILTROS
     # ========================================================
 
@@ -7139,6 +7194,10 @@ def renderizar_pagina_cp45(
     )
 
     if filtros_cp45 is None:
+        return
+    if (filtros_cp45["ano_final"], filtros_cp45["mes_final"]) < INICIO_COBERTURA_UFV:
+        st.session_state["processar_cp45"] = False
+        exibir_cobertura_solar(filtros_cp45, cp45=True)
         return
 
     # ========================================================
@@ -7200,17 +7259,6 @@ def renderizar_pagina_cp45(
             )
 
             return
-    # ========================================================
-    # CABEÇALHO
-    # ========================================================
-    st.html(
-        """
-        <div class="cabecalho-cp45">
-            <h1>CP45</h1>
-        </div>
-        """
-    )
-
     # ========================================================
     # RESULTADOS
     # ========================================================
@@ -7350,6 +7398,7 @@ def renderizar_pagina_cp45(
             "indicadores"
         ]
     )
+    exibir_cobertura_solar(filtros_cp45, cp45=True, fonte_resultado=indicadores["fonte"])
 
     resumo_cenarios = (
         analise_cp45[
@@ -8390,6 +8439,8 @@ if carregar_periodo:
             ),
         )
 
+        st.session_state.pop("dados_pipeline", None)
+        st.session_state.pop("periodo_processado", None)
         st.session_state[
             "periodo_selecionado"
         ] = {
@@ -8412,7 +8463,7 @@ if carregar_periodo:
             str(erro)
         )
 
-        if "periodo_selecionado" in st.session_state:
+        if "periodo_processado" in st.session_state:
             st.info(
                 "O período anterior continuará ativo até que "
                 "uma nova seleção válida seja aplicada."
@@ -8426,6 +8477,8 @@ if carregar_periodo:
 periodo_selecionado = st.session_state.get(
     "periodo_selecionado"
 )
+if periodo_selecionado is not None and not exibir_cobertura_solar(periodo_selecionado):
+    st.session_state["processar_periodo"] = False
 
 # ============================================================
 # EXECUÇÃO DO PIPELINE
