@@ -10,6 +10,8 @@ Regras das bases:
 from datetime import date
 from pathlib import Path
 from io import BytesIO
+import re
+import unicodedata
 
 import pandas as pd
 import plotly.express as px
@@ -56,6 +58,7 @@ from src.analise_cp45 import (
     preparar_analise_individual_cp45,
     preparar_analise_fonte_cp45,
 )
+from src.exportacao_cp45 import gerar_excel_horario_cp45
 from src.graficos_cp45 import (
     grafico_curtailment_cenarios_cp45,
     grafico_corte_cenarios_cp45,
@@ -7696,6 +7699,48 @@ def renderizar_pagina_cp45(
             hide_index=True,
             width="stretch",
         )
+    with st.container(border=True, key="card_exportacao_cp45"):
+        st.html('<div class="titulo-card-grafico">Exportação horária por cenário</div>')
+        st.caption(
+            f"{escopo_cp45}: {selecao_cp45}. O Excel usa o período aplicado e tem uma aba "
+            "para cada cenário. Horas sem geração esperada positiva ficam sem percentual."
+        )
+        st.caption(
+            "Descolamento PLD: Sim, Não ou Sem dados dos quatro submercados. "
+            "O arquivo reproduz os cenários calculados no painel."
+        )
+        if st.button("Preparar Excel", key="cp45_preparar_excel"):
+            try:
+                with st.spinner("Preparando o Excel da CP45..."):
+                    df_pld, _ = carregar_pld_cp45_aplicacao()
+                    pld_aberto = preparar_pld_aberto_cp45_aplicacao(df_pld)
+                    from src.analise_cp45 import filtrar_base_cp45, filtrar_base_fonte_cp45
+
+                    filtro = filtrar_base_cp45 if escopo_cp45 == "Usina" else filtrar_base_fonte_cp45
+                    selecao = selecao_cp45 if escopo_cp45 == "Usina" else mapa_fontes[selecao_cp45]
+                    base_horaria = filtro(
+                        df_ativos_cenarios_cp45,
+                        filtros_cp45["ano_inicial"], filtros_cp45["mes_inicial"],
+                        filtros_cp45["ano_final"], filtros_cp45["mes_final"], selecao,
+                    )
+                    arquivo = gerar_excel_horario_cp45(base_horaria, pld_aberto)
+            except (ValueError, TypeError, KeyError, OSError) as erro:
+                st.warning("Não foi possível preparar o Excel da CP45.")
+                st.caption(str(erro))
+            else:
+                recorte = unicodedata.normalize("NFKD", selecao_cp45).encode("ascii", "ignore").decode()
+                recorte = re.sub(r"[^a-zA-Z0-9]+", "_", recorte).strip("_")[:90].lower()
+                inicio = f"{filtros_cp45['ano_inicial']}-{filtros_cp45['mes_inicial']:02d}"
+                fim = f"{filtros_cp45['ano_final']}-{filtros_cp45['mes_final']:02d}"
+                st.download_button(
+                    "Baixar Excel",
+                    data=arquivo,
+                    file_name=f"SINmulator_CP45_{escopo_cp45.lower()}_{recorte}_{inicio}_{fim}.xlsx",
+                    mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                    on_click="ignore",
+                    key="cp45_baixar_excel",
+                )
+
     # ====================================================
     # CARD PREMISSAS
     # ====================================================
