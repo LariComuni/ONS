@@ -7714,7 +7714,16 @@ def renderizar_pagina_cp45(
                 with st.spinner("Preparando o Excel da CP45..."):
                     df_pld, _ = carregar_pld_cp45_aplicacao()
                     pld_aberto = preparar_pld_aberto_cp45_aplicacao(df_pld)
-                    
+                    from src.analise_cp45 import filtrar_base_cp45, filtrar_base_fonte_cp45
+
+                    filtro = filtrar_base_cp45 if escopo_cp45 == "Usina" else filtrar_base_fonte_cp45
+                    selecao = selecao_cp45 if escopo_cp45 == "Usina" else mapa_fontes[selecao_cp45]
+                    base_horaria = filtro(
+                        df_ativos_cenarios_cp45,
+                        filtros_cp45["ano_inicial"], filtros_cp45["mes_inicial"],
+                        filtros_cp45["ano_final"], filtros_cp45["mes_final"], selecao,
+                    )
+                    arquivo = gerar_excel_horario_cp45(base_horaria, pld_aberto)
             except (ValueError, TypeError, KeyError, OSError) as erro:
                 st.warning("Não foi possível preparar o Excel da CP45.")
                 st.caption(str(erro))
