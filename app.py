@@ -7714,7 +7714,7 @@ def renderizar_pagina_cp45(
                 with st.spinner("Preparando o Excel da CP45..."):
                     df_pld, _ = carregar_pld_cp45_aplicacao()
                     pld_aberto = preparar_pld_aberto_cp45_aplicacao(df_pld)
-                    arquivo = gerar_excel_horario_cp45(analise_cp45["base_horaria"], pld_aberto)
+                    
             except (ValueError, TypeError, KeyError, OSError) as erro:
                 st.warning("Não foi possível preparar o Excel da CP45.")
                 st.caption(str(erro))
