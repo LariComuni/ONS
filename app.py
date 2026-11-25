@@ -3532,6 +3532,7 @@ def renderizar_pagina_subsistemas(
     ]
     
     try:
+        perfil_subsistemas = preparar_download_perfil_horario(df_curtailment_subsistemas)
         kpis_subsistemas = (
             calcular_kpis_subsistemas_aplicacao(
                 df_curtailment_subsistemas
@@ -4419,19 +4420,11 @@ def renderizar_pagina_subsistemas(
                         # ====================================================
                 
                         try:
-                            dados_download_heatmap = (
-                                preparar_download_perfil_horario(
-                                    df_curtailment_subsistemas
-                                )
+                            arquivo_heatmap_xlsx = gerar_excel_dataframe(
+                                df=perfil_subsistemas,
+                                nome_planilha="Perfil horário",
                             )
-                
-                            arquivo_heatmap_xlsx = (
-                                gerar_excel_dataframe(
-                                    df=dados_download_heatmap,
-                                    nome_planilha="Perfil horário",
-                                )
-                            )
-                
+
                         except (
                             TypeError,
                             ValueError,
@@ -4604,6 +4597,7 @@ def renderizar_pagina_subsistemas(
                                     "#A61E4D",
                                 ],
                             ],
+                            zmin=0,
                             aspect="auto",
                             labels={
                                 "x": "Hora do dia",
@@ -4613,6 +4607,7 @@ def renderizar_pagina_subsistemas(
                         )
                         
                         fig_heatmap.update_traces(
+                            hoverongaps=False,
                             xgap=3,
                             ygap=5,
                             hovertemplate=(
@@ -4709,6 +4704,11 @@ def renderizar_pagina_subsistemas(
                         ) 
                         
                 
+                        st.caption(
+                            "Média do corte total a cada 30 min, incluindo os intervalos "
+                            "observados sem corte. Células em branco indicam ausência de dados."
+                        )
+
                 with coluna_direita_inferior:
                     with st.container(
                         border=True,
@@ -5122,7 +5122,8 @@ def renderizar_pagina_subsistemas(
     try:
         tabela_resumo_subsistemas = (
             preparar_resumo_subsistemas_aplicacao(
-                df_curtailment_subsistemas
+                df_curtailment_subsistemas,
+                perfil_subsistemas,
             )
         )
     
@@ -5345,6 +5346,7 @@ def renderizar_pagina_subsistemas(
             st.html(
                 html_tabela_resumo
             )
+            st.caption("Hora crítica: maior corte médio no perfil horário de Todos.")
 
     # ============================================================
     # EXPORTAÇÃO DA ANÁLISE DETALHADA
@@ -7829,12 +7831,13 @@ def preparar_pld_aberto_cp45_aplicacao(
 @st.cache_data(show_spinner=False)
 def preparar_resumo_subsistemas_aplicacao(
     df_curtailment,
+    perfil_subsistemas,
 ):
     """
     Prepara a tabela de resumo da página Subsistemas.
     """
 
-    return preparar_resumo_subsistemas(df_curtailment)
+    return preparar_resumo_subsistemas(df_curtailment, perfil=perfil_subsistemas)
 # ============================================================
 # ============================================================
 
